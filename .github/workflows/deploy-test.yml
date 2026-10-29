@@ -84,3 +84,22 @@ jobs:
           done
           ssh "lumenfall@${IP}" 'cd ~/app/deploy && docker compose logs --tail 60 nakama'
           exit 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/loadbots/go.mod
+          cache-dependency-path: tools/loadbots/go.sum
+
+      - name: Test de fumée (5 faux joueurs, connexion Discord)
+        env:
+          HOST: ${{ vars.LF_SERVER_HOST }}
+          SERVER_KEY: ${{ vars.LF_SERVER_KEY }}
+        run: |
+          LOC=$(curl -s -o /dev/null -w '%{redirect_url}' "https://${HOST}/lumenfall/discord/start?state=fumee0123456789abcdefghijklmn")
+          case "$LOC" in
+            https://discord.com/oauth2/authorize*) echo "✅ La porte Discord redirige bien vers Discord" ;;
+            *) echo "::warning::La connexion Discord n'est pas encore configurée (LF_DISCORD_CLIENT_ID / LF_DISCORD_CLIENT_SECRET)" ;;
+          esac
+          cd tools/loadbots
+          go run . -n 5 -duree 20s -prefixe fumee -serveur "https://${HOST}" -cle "${SERVER_KEY}" | tee /tmp/fumee.txt
+          grep -q "Bots entrés dans le monde : 5 / 5" /tmp/fumee.txt
