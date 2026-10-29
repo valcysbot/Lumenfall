@@ -1,0 +1,90 @@
+{
+ "image": [
+  48,
+  64
+ ],
+ "ancre": [
+  24,
+  58
+ ],
+ "directions": 8,
+ "anims": {
+  "repos": {
+   "debut": 0,
+   "images": 4,
+   "fps": 4,
+   "boucle": true
+  },
+  "marche": {
+   "debut": 4,
+   "images": 8,
+   "fps": 10,
+   "boucle": true
+  },
+  "course": {
+   "debut": 12,
+   "images": 8,
+   "fps": 14,
+   "boucle": true
+  },
+  "salut": {
+   "debut": 20,
+   "images": 6,
+   "fps": 5,
+   "boucle": false
+  }
+ },
+ "pieces": {
+  "corps": [
+   ""
+  ],
+  "pantalon": [
+   ""
+  ],
+  "bottes": [
+   ""
+  ],
+  "tunique": [
+   "0",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8",
+   "9",
+   "10",
+   "11"
+  ],
+  "gants": [
+   ""
+  ],
+  "cape": [
+   ""
+  ],
+  "cheveux_court": [
+   "noir",
+   "brun",
+   "chatain",
+   "blond",
+   "roux",
+   "blanc"
+  ],
+  "cheveux_long": [
+   "noir",
+   "brun",
+   "chatain",
+   "blond",
+   "roux",
+   "blanc"
+  ],
+  "casque": [
+   ""
+  ],
+  "epee": [
+   ""
+  ]
+ }
+}

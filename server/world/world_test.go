@@ -146,3 +146,19 @@ func TestSeparationHerosSuperposes(t *testing.T) {
 		}
 	}
 }
+
+func TestCourse(t *testing.T) {
+	m := clairiere(t)
+	for _, run := range []bool{false, true} {
+		b := Body{X: m.Spawn[0], Y: m.Spawn[1], Run: run}
+		b.SetInput(0, 1000)
+		b.Step(m, 0.1)
+		want := WalkSpeed * 0.1
+		if run {
+			want = RunSpeed * 0.1
+		}
+		if d := math.Hypot(b.X-m.Spawn[0], b.Y-m.Spawn[1]); math.Abs(d-want) > 1e-6 {
+			t.Fatalf("course=%v : %.3f cases en 0,1 s, attendu %.3f", run, d, want)
+		}
+	}
+}

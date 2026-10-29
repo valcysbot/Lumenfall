@@ -1,15 +1,16 @@
 class_name Pawn
 extends Node2D
-## Le héros de l'Acte I : un pion propre et provisoire, avec son nom,
-## sa direction et ses bulles de chat. Le vrai héros en couches arrive à l'Acte II.
+## Un héros dans le monde : son allure en couches (HeroSprite), son ombre,
+## son nom et ses bulles de chat.
 
-var color := Color.WHITE
+var look := {}
 var hero_name := ""
 var dir := 2
 var is_me := false
 var walking := false
+var running := false
 
-var _bob := 0.0
+var sprite: HeroSprite
 var _name_label: Label
 var _bubble: PanelContainer
 var _bubble_label: Label
@@ -17,6 +18,11 @@ var _bubble_time := 0.0
 
 
 func _ready() -> void:
+	sprite = HeroSprite.new()
+	add_child(sprite)
+	sprite.dress(look)
+	sprite.dir = dir
+
 	_name_label = Label.new()
 	_name_label.text = hero_name
 	_name_label.add_theme_font_size_override("font_size", 15)
@@ -63,7 +69,8 @@ static func _wrap(text: String, width: int) -> String:
 
 
 func _process(delta: float) -> void:
-	_bob = fmod(_bob + delta * (9.0 if walking else 2.0), TAU)
+	sprite.dir = dir
+	sprite.set_motion(walking, running)
 	if _bubble.visible:
 		_bubble_time -= delta
 		_bubble.position = Vector2(-_bubble.size.x / 2, -84 - _bubble.size.y)
@@ -75,42 +82,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_pawn(self, color, dir, _bob, walking, is_me)
-
-
-## Dessine un pion. Partagé avec l'aperçu de l'écran de création.
-static func draw_pawn(ci: CanvasItem, c: Color, d: int, bob: float, moving: bool, me: bool, s: float = 1.0, o: Vector2 = Vector2.ZERO) -> void:
-	var lift := (absf(sin(bob)) * 4.0 if moving else sin(bob) * 0.8) * s
-	# Ombre au sol.
-	ci.draw_set_transform(o, 0, Vector2(1, 0.5))
-	ci.draw_circle(Vector2.ZERO, 17 * s, Color(0, 0, 0, 0.32))
-	if me:
-		ci.draw_arc(Vector2.ZERO, 22 * s, 0, TAU, 40, Color(UI.LUMEN, 0.8), 2.0 * s, true)
-	ci.draw_set_transform(o + Vector2(0, -lift), 0, Vector2.ONE)
-	var dark := c.darkened(0.35)
-	# Socle.
-	ci.draw_set_transform(o + Vector2(0, -lift - 6 * s), 0, Vector2(1, 0.5))
-	ci.draw_circle(Vector2.ZERO, 15 * s, dark)
-	ci.draw_set_transform(o + Vector2(0, -lift - 9 * s), 0, Vector2(1, 0.5))
-	ci.draw_circle(Vector2.ZERO, 15 * s, c)
-	ci.draw_set_transform(o + Vector2(0, -lift), 0, Vector2.ONE)
-	# Corps en cloche.
-	var body := PackedVector2Array([
-		Vector2(-11, -9), Vector2(-8, -28), Vector2(-5, -36), Vector2(5, -36), Vector2(8, -28), Vector2(11, -9),
-	])
-	for i in body.size():
-		body[i] *= s
-	ci.draw_colored_polygon(body, c)
-	ci.draw_polyline(body, dark, 1.5 * s, true)
-	# Tête.
-	ci.draw_circle(Vector2(0, -45) * s, 11 * s, c.lightened(0.08))
-	ci.draw_arc(Vector2(0, -45) * s, 11 * s, 0, TAU, 32, dark, 1.5 * s, true)
-	ci.draw_circle(Vector2(-3.5, -49) * s, 3.5 * s, Color(1, 1, 1, 0.35))
-	# Regard : deux yeux tournés vers la direction du héros (vue isométrique).
-	var f := Iso.dir_to_screen(d)
-	if f.y > -0.3:
-		var side := Vector2(-f.y, f.x).normalized() * 3.6
-		var eye := Vector2(0, -45) + f * Vector2(6.0, 3.0)
-		for k in [-1, 1]:
-			ci.draw_circle((eye + side * k) * s, 1.9 * s, UI.NIGHT)
-	ci.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	# Ombre au sol, et un anneau doré sous ton propre héros.
+	draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.5))
+	draw_circle(Vector2.ZERO, 14, Color(0, 0, 0, 0.32))
+	if is_me:
+		draw_arc(Vector2.ZERO, 19, 0, TAU, 40, Color(UI.LUMEN, 0.8), 2.0, true)
+	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)

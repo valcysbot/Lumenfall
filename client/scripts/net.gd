@@ -8,12 +8,14 @@ signal discord_waiting(url: String)
 const OP_MOVE_DIR := 1
 const OP_MOVE_TO := 2
 const OP_CHAT := 3
+const OP_EMOTE := 4
 const OP_SNAPSHOT := 10
 const OP_DELTA := 11
 const OP_JOIN := 12
 const OP_LEAVE := 13
 const OP_CHAT_OUT := 14
 const OP_NOTICE := 15
+const OP_EMOTE_OUT := 16
 
 const SESSION_PATH := "user://session.cfg"
 

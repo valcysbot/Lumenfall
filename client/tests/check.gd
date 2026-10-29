@@ -23,5 +23,20 @@ func _ready() -> void:
 	if Pawn._wrap("On fait un tour près de l'étang ce soir ?", 26).split("\n").size() != 2:
 		printerr("Découpage des bulles incorrect")
 		failed += 1
+	# Toutes les planches du héros en couches existent, pour chaque tenue possible.
+	var m := HeroSprite.meta()
+	for anim in ["repos", "marche", "course", "salut"]:
+		if not m.anims.has(anim):
+			printerr("Animation manquante : ", anim)
+			failed += 1
+	for c in 12:
+		for who in ["Elowyn", "D'Arvel", "Mael-Tor", "Braise"]:
+			var look := HeroSprite.look_for(who, c)
+			for piece in look:
+				var v: String = look[piece]
+				var file: String = ("cheveux_" + v) if piece == "cheveux" else (piece + ("_" + v if v != "" else ""))
+				if not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
+					printerr("Planche manquante : ", file)
+					failed += 1
 	print("Vérification du client : %s" % ("OK" if failed == 0 else "%d erreur(s)" % failed))
 	get_tree().quit(1 if failed > 0 else 0)

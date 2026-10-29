@@ -2,8 +2,11 @@ package world
 
 import "math"
 
-// Vitesse de marche d'un héros, en cases par seconde.
-const WalkSpeed = 4.0
+// Vitesses d'un héros, en cases par seconde.
+const (
+	WalkSpeed = 4.0
+	RunSpeed  = 6.5
+)
 
 // Body est la partie « physique » d'un héros dans la simulation.
 // Le client n'envoie que des intentions (une direction ou une destination) :
@@ -13,6 +16,8 @@ type Body struct {
 	// Dir est la dernière direction regardée, de 0 à 7 (0 = est, sens horaire
 	// à l'écran en vue de dessus : 2 = sud, 4 = ouest, 6 = nord).
 	Dir int
+	// Run : le joueur court (touche Maj ou bouton de course).
+	Run bool
 
 	inputX, inputY float64      // direction demandée au clavier ou au joystick
 	path           [][2]float64 // trajet demandé par un clic
@@ -56,7 +61,7 @@ func (b *Body) Step(m *Map, dt float64) bool {
 // héros de la foule (crowd peut être nil).
 func (b *Body) StepAmong(m *Map, crowd *Crowd, dt float64) bool {
 	ox, oy, od := b.X, b.Y, b.Dir
-	budget := WalkSpeed * dt
+	budget := b.Speed() * dt
 	if b.inputX != 0 || b.inputY != 0 {
 		b.move(m, crowd, b.inputX*budget, b.inputY*budget)
 	} else {
@@ -80,6 +85,14 @@ func (b *Body) StepAmong(m *Map, crowd *Crowd, dt float64) bool {
 		}
 	}
 	return b.X != ox || b.Y != oy || b.Dir != od
+}
+
+// Speed renvoie la vitesse actuelle du héros.
+func (b *Body) Speed() float64 {
+	if b.Run {
+		return RunSpeed
+	}
+	return WalkSpeed
 }
 
 // move applique un petit déplacement en glissant le long des obstacles.
