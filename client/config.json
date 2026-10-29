@@ -1,0 +1,8 @@
+{
+	"_note": "Adresse du serveur. Un fichier user://config.json du même format remplace celui-ci.",
+	"scheme": "http",
+	"host": "127.0.0.1",
+	"port": 7350,
+	"server_key": "lumenfall-dev-key",
+	"test_login": true
+}

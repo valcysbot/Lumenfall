@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  serveur:
+    name: Serveur (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: Tests du serveur
+        working-directory: server
+        run: |
+          go vet ./...
+          go test ./...
+      - name: Compilation du greffon Nakama
+        working-directory: server
+        run: go build -buildmode=plugin -trimpath -o /tmp/lumenfall.so .
+      - name: Les deux copies de la Clairière sont identiques
+        run: cmp server/world/maps/clairiere.json client/data/maps/clairiere.json
+      - name: Faux joueurs
+        working-directory: tools/loadbots
+        run: go vet . && go build .
+
+  client:
+    name: Client (Godot)
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.7.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
+      - name: Import du projet
+        run: timeout 300 ./godot --headless --path client --import || true
+      - name: Vérification des scripts
+        run: timeout 120 ./godot --headless --path client res://tests/check.tscn

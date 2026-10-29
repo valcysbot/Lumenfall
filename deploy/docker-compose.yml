@@ -1,0 +1,61 @@
+# Lancement sur un VPS : docker compose --env-file .env up -d --build
+# Services : PostgreSQL (base de données), Nakama + Lumenfall, Caddy (HTTPS).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe PostgreSQL manquant}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama"]
+      interval: 5s
+      retries: 10
+
+  nakama:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ecx
+      - >
+        /nakama/nakama migrate up --database.address nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama &&
+        exec /nakama/nakama --config /nakama/data/lumenfall.yml
+        --database.address nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama
+        --socket.server_key ${LF_SERVER_KEY}
+        --session.encryption_key ${LF_SESSION_KEY}
+        --session.refresh_encryption_key ${LF_REFRESH_KEY}
+        --runtime.http_key ${LF_HTTP_KEY}
+        --console.username ${LF_CONSOLE_USER} --console.password ${LF_CONSOLE_PASSWORD}
+        --runtime.env LF_ENV=${LF_ENV}
+        --runtime.env LF_ALLOW_TEST_LOGIN=${LF_ALLOW_TEST_LOGIN}
+        --runtime.env LF_PUBLIC_URL=https://${LF_DOMAIN}
+        --runtime.env LF_DISCORD_CLIENT_ID=${LF_DISCORD_CLIENT_ID}
+        --runtime.env LF_DISCORD_CLIENT_SECRET=${LF_DISCORD_CLIENT_SECRET}
+    expose:
+      - "7350"
+    ports:
+      - "127.0.0.1:7351:7351"   # console d'admin, accessible seulement par tunnel SSH
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [nakama]
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from ${LF_DOMAIN} --to nakama:7350
+    volumes:
+      - caddydata:/data
+
+volumes:
+  pgdata:
+  caddydata:
