@@ -1,0 +1,61 @@
+name: Déploiement du serveur de test
+
+# Met à jour le serveur de test à chaque changement du serveur sur main,
+# ou à la demande (onglet Actions → « Run workflow »).
+# Réglages du dépôt nécessaires (affichés par deploy/bootstrap-vps.sh) :
+#   secret LF_DEPLOY_SSH_KEY, variable LF_SERVER_HOST,
+#   et pour Discord : variable LF_DISCORD_CLIENT_ID, secret LF_DISCORD_CLIENT_SECRET.
+
+on:
+  push:
+    branches: [main]
+    paths: ["server/**", "deploy/**", ".github/workflows/deploy-test.yml"]
+  workflow_dispatch:
+
+concurrency: deploy-test
+
+jobs:
+  deploy:
+    if: ${{ vars.LF_SERVER_HOST != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clé SSH
+        env:
+          KEY: ${{ secrets.LF_DEPLOY_SSH_KEY }}
+          HOST: ${{ vars.LF_SERVER_HOST }}
+        run: |
+          IP=$(echo "${HOST%.sslip.io}" | tr - .)
+          echo "IP=$IP" >> $GITHUB_ENV
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 "$IP" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Envoi du code
+        run: rsync -az --delete --exclude .env server deploy "lumenfall@${IP}:app/"
+
+      - name: Réglages Discord et redémarrage
+        env:
+          DISCORD_ID: ${{ vars.LF_DISCORD_CLIENT_ID }}
+          DISCORD_SECRET: ${{ secrets.LF_DISCORD_CLIENT_SECRET }}
+        run: |
+          ssh "lumenfall@${IP}" 'bash -s' <<EOF
+          set -e
+          cd ~/app/deploy
+          sed -i "s|^LF_DISCORD_CLIENT_ID=.*|LF_DISCORD_CLIENT_ID=${DISCORD_ID}|" .env
+          sed -i "s|^LF_DISCORD_CLIENT_SECRET=.*|LF_DISCORD_CLIENT_SECRET=${DISCORD_SECRET}|" .env
+          docker compose --env-file .env up -d --build --remove-orphans
+          docker image prune -f >/dev/null
+          EOF
+
+      - name: Le serveur répond ?
+        env:
+          HOST: ${{ vars.LF_SERVER_HOST }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "https://${HOST}/healthcheck" >/dev/null; then echo "✅ Serveur de test en ligne : https://${HOST}"; exit 0; fi
+            sleep 10
+          done
+          ssh "lumenfall@${IP}" 'cd ~/app/deploy && docker compose logs --tail 60 nakama'
+          exit 1

@@ -1,0 +1,58 @@
+# Lancement sur un VPS : docker compose --env-file .env up -d --build
+# Services : PostgreSQL (base de données), Nakama + Lumenfall, Caddy (HTTPS).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe PostgreSQL manquant}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama"]
+      interval: 5s
+      retries: 10
+
+  nakama:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      LF_ENV: ${LF_ENV}
+      LF_ALLOW_TEST_LOGIN: ${LF_ALLOW_TEST_LOGIN}
+      LF_DOMAIN: ${LF_DOMAIN}
+      LF_SERVER_KEY: ${LF_SERVER_KEY}
+      LF_SESSION_KEY: ${LF_SESSION_KEY}
+      LF_REFRESH_KEY: ${LF_REFRESH_KEY}
+      LF_HTTP_KEY: ${LF_HTTP_KEY}
+      LF_CONSOLE_USER: ${LF_CONSOLE_USER}
+      LF_CONSOLE_PASSWORD: ${LF_CONSOLE_PASSWORD}
+      LF_DISCORD_CLIENT_ID: ${LF_DISCORD_CLIENT_ID}
+      LF_DISCORD_CLIENT_SECRET: ${LF_DISCORD_CLIENT_SECRET}
+    entrypoint: ["/bin/sh", "/nakama/data/start.sh"]
+    expose:
+      - "7350"
+    ports:
+      - "127.0.0.1:7351:7351"   # console d'admin, accessible seulement par tunnel SSH
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [nakama]
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from ${LF_DOMAIN} --to nakama:7350
+    volumes:
+      - caddydata:/data
+
+volumes:
+  pgdata:
+  caddydata:

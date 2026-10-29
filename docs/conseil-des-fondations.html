@@ -1,0 +1,461 @@
+<title>Le Conseil des Fondations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une forge nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Apprenti bâtisseur<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/21</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte I, les fondations</div>
+    <h1>Le Conseil des Fondations</h1>
+    <p class="lead">Avant de poser la première pierre d'Erydor, Braise et moi avons 21 questions pour toi, en 4 chapitres. Elles décident du serveur, de la connexion Discord, du premier pas du héros et de la façon dont tu testes. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Salut, bâtisseur ! Moi c'est Braise, dragonneau officiel du chantier. Réponds, je commente. Promis, je ne crache du feu que sur les bugs.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "forge", icon: "🏰", title: "La forge du serveur", sub: "Où vit le monde, et à quel rythme il respire.",
+    chest: { title: "Fragment I : la pluie de lumière", lore: "Avant les royaumes, Erydor n'était qu'une nuit sans fond. Puis une pluie de lumière tomba du ciel, et on l'appela le Lumenfall. Chaque éclat devint une source, un dieu, ou une étoile qu'on peut encore toucher du doigt." },
+    qs: [
+      { id: "heberg", t: "Où tourne le serveur pendant l'Acte I ?", why: "Un coût mensuel démarre dès qu'on achète un VPS. Rien ne s'achète sans ton feu vert.", rec: 0, o: [
+        ["Chez moi d'abord, VPS de test à la fin", "Je développe et teste tout dans ma machine de travail, gratuitement. On achète le petit VPS de test (environ 5 €/mois) seulement pour la V0.1 que tu lances avec tes amis."],
+        ["Le petit VPS de test tout de suite", "Environ 5 €/mois dès maintenant. Tu peux te connecter plus tôt, mais il n'y aura pas grand-chose à voir les premières semaines."],
+        ["Le grand VPS 8 Go tout de suite", "La plus grosse part du budget, alors que 50 joueurs ne viendront pas avant longtemps."] ] },
+      { id: "region", t: "Dans quelle région du monde (réel) installer le serveur ?", why: "Plus le serveur est proche des joueurs, plus le jeu répond vite (moins de « lag »).", rec: 0, o: [
+        ["Europe (France, Allemagne ou Pays-Bas)", "Idéal pour toi et des amis francophones."],
+        ["Amérique du Nord", "Seulement si une bonne partie des joueurs y vit."],
+        ["Peu importe", "Je prends le moins cher qui reste proche de toi."] ] },
+      { id: "tick", t: "À quelle vitesse le monde « respire » ?", why: "Le serveur recalcule le monde plusieurs fois par seconde. Plus c'est rapide, plus c'est réactif, et plus le VPS travaille.", rec: 0, o: [
+        ["10 fois par seconde", "Le rythme de beaucoup de MMO. Léger pour un petit VPS, et le jeu lisse les mouvements entre deux calculs."],
+        ["20 fois par seconde", "Plus nerveux pour le combat rapide de l'Acte III, environ deux fois plus de charge."],
+        ["30 fois par seconde", "Proche d'un jeu de tir. Probablement trop pour notre budget."] ] },
+      { id: "save", t: "Quand le héros est-il sauvegardé ?", why: "Si le serveur plante, on perd ce qui s'est passé depuis la dernière sauvegarde.", rec: 0, o: [
+        ["Toutes les 30 secondes et à la déconnexion", "Au pire 30 secondes perdues. Les choses importantes (butin rare, échange) seront sauvées tout de suite plus tard."],
+        ["À chaque pas", "Rien n'est jamais perdu, mais la base de données souffre vite avec beaucoup de joueurs."],
+        ["Seulement à la déconnexion", "Le plus léger, mais un plantage efface toute la session."] ] },
+    ] },
+  { id: "discord", icon: "🔮", title: "Le sceau de Discord", sub: "Comment on entre à Erydor.",
+    chest: { title: "Fragment II : la Flétrissure", lore: "Là où passe la Flétrissure, les fleurs gardent leur forme mais perdent leur couleur. Les anciens disent que Xal'Morath ne détruit rien. Il efface." },
+    qs: [
+      { id: "appdiscord", t: "Quelle application Discord pour la connexion ?", why: "La connexion Discord passe par une « application » créée sur le portail développeur de Discord. C'est toi qui la crées (5 minutes, je te guide pas à pas).", rec: 0, o: [
+        ["Une nouvelle application « Lumenfall »", "Propre et séparée de tout le reste. Elle servira aussi au futur bot compagnon."],
+        ["Réutiliser celle de rpg-bot", "Plus rapide, mais les deux projets resteraient mêlés."],
+        ["Je l'ai déjà créée", "Dis-moi son nom dans 📝 Précision. Ne colle jamais la clé secrète ici, je te dirai où la mettre."] ] },
+      { id: "invite", t: "Une porte dérobée pour les tests ?", why: "Pour lancer 50 faux joueurs et tester sans 50 comptes Discord, il faut une connexion de test.", rec: 0, o: [
+        ["Oui, seulement sur le serveur de test", "Le vrai serveur n'accepte que Discord. Le serveur de test accepte aussi des comptes de test."],
+        ["Non, Discord partout", "Plus simple à expliquer, mais les tests de charge deviennent très compliqués."],
+        ["Oui, et un compte e-mail pour les joueurs sans Discord", "Ouvre le jeu à plus de monde, mais ajoute mots de passe, récupération et RGPD à gérer."] ] },
+      { id: "profil", t: "Que garde Lumenfall de ton compte Discord ?", why: "Le RGPD demande de ne garder que le nécessaire.", rec: 0, o: [
+        ["Identifiant, pseudo et avatar", "Assez pour la fiche du héros et le futur bot. Rien d'autre."],
+        ["Identifiant seul", "Le minimum absolu. Le bot ne pourra pas afficher ton avatar."],
+        ["Tout ça plus l'adresse e-mail", "Utile pour des notifications un jour, mais c'est une donnée de plus à protéger."] ] },
+      { id: "persos", t: "Combien de héros par compte dès l'Acte I ?", why: "Le script prévoit 3 personnages par compte.", rec: 0, o: [
+        ["3 emplacements dès maintenant", "Le bon modèle de données tout de suite, pour ne rien refaire plus tard."],
+        ["1 seul pour l'instant", "Un peu plus simple aujourd'hui, à reprendre à l'Acte IV."] ] },
+    ] },
+  { id: "pas", icon: "🧭", title: "Le premier pas du héros", sub: "Ce que tu verras et toucheras dans la V0.1.",
+    chest: { title: "Fragment III : la cité du serment", lore: "Au centre du monde se dresse une cité que les trois factions ont juré de ne jamais assiéger. Elles ont toutes juré. Aucune n'a tenu parole." },
+    qs: [
+      { id: "vue", t: "Quelle vue pour la carte de l'Acte I ?", why: "Le jeu final est en 3/4 isométrique, façon Dofus.", rec: 0, o: [
+        ["Isométrique 3/4 dès maintenant", "On construit sur la bonne base. L'Acte II n'aura qu'à l'embellir."],
+        ["Vue de dessus simple, isométrique à l'Acte II", "Un peu plus rapide aujourd'hui, mais une partie du travail sera à refaire."] ] },
+      { id: "allure", t: "Quelle allure pour le héros de l'Acte I ?", why: "Le vrai héros en couches et en 8 directions, c'est l'Acte II. La règle du projet : corriger les défauts graphiques avant d'ajouter du contenu.", rec: 0, o: [
+        ["Un pion propre et provisoire", "Une silhouette simple avec ombre et couleur, nette et sans défaut. Tout le monde sait que c'est temporaire."],
+        ["Premiers sprites générés par IA", "Plus joli, mais ce sera à jeter, et des sprites imparfaits enfreignent la règle graphique."],
+        ["Déjà le vrai système en couches", "Retarde la V0.1 de plusieurs semaines."] ] },
+      { id: "carte", t: "Où se fait le premier pas ?", why: "La carte de l'Acte I sert à tester, pas à raconter.", rec: 0, o: [
+        ["Une clairière de test avec quelques obstacles", "Environ 40 × 40 cases, des arbres et rochers pour tester les collisions."],
+        ["Une place de ville provisoire", "Plus d'ambiance, plus de travail graphique."],
+        ["Une grande plaine vide", "Parfaite pour le test de charge, mais triste."] ] },
+      { id: "pc", t: "Comment le héros se déplace sur PC ?", why: "Le combat de l'Acte III est en temps réel avec ciblage, comme WoW.", rec: 0, o: [
+        ["Clic pour y aller, plus les touches ZQSD", "Le meilleur des deux mondes, et prêt pour le combat."],
+        ["Clic seul, façon Dofus", "Simple, mais moins vif pour l'esquive."],
+        ["Clavier seul", "Très direct, mais moins agréable pour explorer."] ] },
+      { id: "tel", t: "Et sur ton téléphone Android ?", why: "Le script prévoit joystick et boutons pour le corps-à-corps.", rec: 0, o: [
+        ["Joystick virtuel, plus toucher pour y aller", "Le joystick pour bouger, un toucher sur la carte pour un trajet automatique."],
+        ["Joystick seul", "Comme la plupart des jeux mobiles d'action."],
+        ["Toucher seul", "Simple, mais pénible en combat."] ] },
+      { id: "creation", t: "Que choisit-on en créant un héros à l'Acte I ?", why: "La vraie création (15 races, 17 classes, personnalisation) arrive à l'Acte IV.", rec: 0, o: [
+        ["Juste un nom unique", "On teste déjà la règle « nom unique sur le serveur »."],
+        ["Un nom et une couleur de pion", "Plus facile de se reconnaître entre amis."],
+        ["Un nom, une race et une classe provisoires", "Donne un avant-goût, mais tout sera à refaire."] ] },
+      { id: "social", t: "Qu'est-ce qu'on voit des autres joueurs ?", why: "Le chat complet est prévu à l'Acte VI.", rec: 0, o: [
+        ["Leur nom au-dessus de la tête et un chat général avec bulles", "De quoi dire bonjour et se retrouver dès la V0.1."],
+        ["Juste leur nom", "Le chat attend l'Acte VI."] ] },
+      { id: "charge", t: "Combien de faux joueurs pour le test de charge ?", why: "Ton ambition : 50 joueurs connectés en même temps la première année.", rec: 1, o: [
+        ["50 faux joueurs", "Exactement l'objectif, sans marge."],
+        ["100 faux joueurs", "Le double de l'objectif : si ça tient, on est tranquilles."],
+        ["200 faux joueurs", "Très rassurant, mais demande plus de temps à optimiser dès l'Acte I."] ] },
+    ] },
+  { id: "essai", icon: "🧪", title: "Le banc d'essai", sub: "Comment tu reçois et testes chaque version.",
+    chest: { title: "Fragment IV : Braise", lore: "Braise prétend être le dernier dragonneau né d'un éclat du Lumenfall. Braise prétend aussi avoir inventé le pain. Une seule de ces affirmations est vérifiable." },
+    qs: [
+      { id: "livpc", t: "Comment reçois-tu la version PC ?", why: "Publier sur itch.io, même en privé, est une étape qui attend ton feu vert.", rec: 0, o: [
+        ["Un fichier zip Windows sur GitHub, en privé", "Tu télécharges, tu décompresses, tu joues. Rien de public."],
+        ["Une page itch.io privée dès maintenant", "Gratuit, et prépare l'alpha, mais réserve-nous le nom tôt."],
+        ["Les deux", "Un peu plus de travail à chaque version."] ] },
+      { id: "livand", t: "Et la version Android ?", why: "Un APK s'installe en autorisant les « sources inconnues » une fois sur le téléphone.", rec: 0, o: [
+        ["Un APK à installer à la main", "Gratuit et immédiat."],
+        ["Test interne du Play Store", "Mises à jour automatiques, mais le compte développeur Google coûte 25 $ une fois."] ] },
+      { id: "testeurs", t: "Qui teste pendant l'Acte I ?", why: "Tu veux un jeu complet avant de le tester vraiment, mais il faut au moins vérifier le multijoueur à plusieurs.", rec: 0, o: [
+        ["Toi seul, puis quelques amis pour la V0.1", "Tes amis découvrent une version qui tient debout."],
+        ["Toi et 2 ou 3 amis dès les premières versions", "Plus de retours, mais ils verront le chantier brut."],
+        ["Toi seul pendant tout l'acte", "Le multijoueur sera testé avec les faux joueurs."] ] },
+      { id: "rythme", t: "À quel rythme veux-tu des notes de mise à jour ?", why: "Chaque note a les captures avant / après et comment tester.", rec: 0, o: [
+        ["Une petite note chaque jour de travail", "Le chantier avance sous tes yeux."],
+        ["Une note à chaque étape finie", "Moins de messages, des notes plus grosses."],
+        ["Une grosse note par semaine", "Le calme, mais tu vois les problèmes plus tard."] ] },
+      { id: "journal", t: "Où vit le journal de suivi du projet ?", why: "La mémoire de ce projet est désactivée, donc le journal doit vivre quelque part de durable.", rec: 0, o: [
+        ["Un fichier SUIVI.md dans le dépôt", "Toujours à jour avec le code, fait, reste à faire, décisions."],
+        ["Le fichier, plus une jolie page illustrée", "Une page façon carte d'aventure, mise à jour à chaque acte."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const LEVELS = ["Apprenti bâtisseur", "Tailleur de pierre", "Compagnon forgeron", "Maître d'œuvre", "Architecte d'Erydor", "Gardien des fondations"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, certifié sans bug (pour l'instant).", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou.", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et j'allume la forge.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / 50) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? 50 : x % 50;
+  document.getElementById("xpfill").style.width = (inLevel / 50 * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte I)" : `${50 - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Fragment provisoire : la bible du monde arrive bientôt, et tu valideras chaque mot. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les 21 réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, je mets à jour le journal de suivi, et la forge s'allume.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>
