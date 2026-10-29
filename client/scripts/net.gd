@@ -16,6 +16,7 @@ const OP_LEAVE := 13
 const OP_CHAT_OUT := 14
 const OP_NOTICE := 15
 const OP_EMOTE_OUT := 16
+const OP_WEATHER := 17
 
 const SESSION_PATH := "user://session.cfg"
 

@@ -15,6 +15,7 @@ const ZOOM_MAX := 2.2
 var hero := {}
 
 var iso_map: IsoMap
+var sky: WorldSky
 var entities: Node2D
 var camera: Camera2D
 var marker: Node2D
@@ -28,6 +29,7 @@ var chat_log: VBoxContainer
 var chat_edit: LineEdit
 var joystick: TouchStick
 var run_btn: Button
+var settings: PanelContainer
 var toast: Label
 
 var _last_dir := Vector2.ZERO
@@ -36,6 +38,14 @@ var _run_toggle := false
 var _last_dir_sent := 0.0
 var _clock := 0.0
 var _marker_t := 0.0
+var _info_t := 0.0
+
+const WEATHER_TEXT := {
+	"clair": "Braise dit : le ciel se dégage !",
+	"pluie": "La pluie se met à tomber sur la région.",
+	"brouillard": "Un brouillard épais se lève…",
+	"orage": "L'orage gronde ! Braise se cache sous ta cape.",
+}
 
 
 func _ready() -> void:
@@ -53,6 +63,8 @@ func _ready() -> void:
 	camera.position_smoothing_speed = 8.0
 	add_child(camera)
 	camera.make_current()
+	sky = WorldSky.new()
+	add_child(sky)
 	_build_hud()
 
 	if not iso_map.load_map(hero.get("map", "clairiere")):
@@ -100,10 +112,15 @@ func _build_hud() -> void:
 	var chat_btn := UI.button("💬 Parler")
 	chat_btn.pressed.connect(_open_chat)
 	buttons.add_child(chat_btn)
+	var gear := UI.button("⚙")
+	gear.tooltip_text = "Réglages"
+	gear.pressed.connect(func(): settings.visible = not settings.visible)
+	buttons.add_child(gear)
 	var quit := UI.button("Quitter")
 	quit.pressed.connect(func(): quit_world.emit())
 	buttons.add_child(quit)
 	root.add_child(buttons)
+	_build_settings(root)
 
 	var touch := DisplayServer.is_touchscreen_available()
 	chat_log = VBoxContainer.new()
@@ -158,8 +175,36 @@ func _build_hud() -> void:
 	_update_info()
 
 
+func _build_settings(root: Control) -> void:
+	settings = PanelContainer.new()
+	settings.add_theme_stylebox_override("panel", UI.box(Color(UI.NIGHT, 0.92), UI.LUMEN, 12, 1, 14))
+	settings.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 14)
+	settings.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	settings.position.y += 64
+	settings.visible = false
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	settings.add_child(col)
+	col.add_child(UI.label("Réglages", 20, UI.LUMEN))
+	var l := UI.label("Luminosité de la nuit", 16, UI.MUTED)
+	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	col.add_child(l)
+	var slider := HSlider.new()
+	slider.custom_minimum_size = Vector2(240, 32)
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = sky.night_brightness
+	slider.value_changed.connect(sky.set_night_brightness)
+	col.add_child(slider)
+	var hint := UI.label("Plus à gauche : nuits noires, la torche devient précieuse.", 14, UI.MUTED)
+	hint.custom_minimum_size = Vector2(240, 0)
+	col.add_child(hint)
+	root.add_child(settings)
+
+
 func _update_info() -> void:
-	info.text = "%s · La Clairière · %d %s" % [hero.get("name", ""), pawns.size(), "aventurier en ligne" if pawns.size() <= 1 else "aventuriers en ligne"]
+	info.text = "%s · La Clairière · %s · %d %s" % [hero.get("name", ""), sky.describe(), pawns.size(), "aventurier en ligne" if pawns.size() <= 1 else "aventuriers en ligne"]
 
 
 func _show_toast(text: String) -> void:
@@ -214,6 +259,8 @@ func _on_state(op: int, d: Dictionary) -> void:
 	match op:
 		Net.OP_SNAPSHOT:
 			my_sid = int(d.you)
+			if d.has("sky"):
+				sky.set_sky(d.sky)
 			for p in d.players:
 				_add_pawn(p)
 			_add_chat_line("", "Bienvenue dans la Clairière ! Braise te souhaite une belle balade.", true)
@@ -242,6 +289,10 @@ func _on_state(op: int, d: Dictionary) -> void:
 		Net.OP_NOTICE:
 			_add_chat_line("", d.m, true)
 			_show_toast(d.m)
+		Net.OP_WEATHER:
+			sky.set_weather(d.w)
+			_add_chat_line("", WEATHER_TEXT.get(d.w, ""), true)
+			_update_info()
 		Net.OP_EMOTE_OUT:
 			var sid := int(d.s)
 			if pawns.has(sid):
@@ -274,6 +325,11 @@ func _process(delta: float) -> void:
 	_clock += delta
 	_interpolate()
 	_read_direction()
+	sky.update_torches(pawns, my_sid)
+	_info_t += delta
+	if _info_t > 1.0:
+		_info_t = 0.0
+		_update_info()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
 	if marker.visible:
