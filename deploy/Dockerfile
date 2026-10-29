@@ -11,4 +11,4 @@ RUN go build --trimpath --buildmode=plugin -o /out/lumenfall.so .
 
 FROM heroiclabs/nakama:${NAKAMA_VERSION}
 COPY --from=builder /out/lumenfall.so /nakama/data/modules/lumenfall.so
-COPY deploy/nakama.yml /nakama/data/lumenfall.yml
+COPY deploy/start.sh /nakama/data/start.sh

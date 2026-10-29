@@ -23,23 +23,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    entrypoint:
-      - /bin/sh
-      - -ecx
-      - >
-        /nakama/nakama migrate up --database.address nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama &&
-        exec /nakama/nakama --config /nakama/data/lumenfall.yml
-        --database.address nakama:${POSTGRES_PASSWORD}@postgres:5432/nakama
-        --socket.server_key ${LF_SERVER_KEY}
-        --session.encryption_key ${LF_SESSION_KEY}
-        --session.refresh_encryption_key ${LF_REFRESH_KEY}
-        --runtime.http_key ${LF_HTTP_KEY}
-        --console.username ${LF_CONSOLE_USER} --console.password ${LF_CONSOLE_PASSWORD}
-        --runtime.env LF_ENV=${LF_ENV}
-        --runtime.env LF_ALLOW_TEST_LOGIN=${LF_ALLOW_TEST_LOGIN}
-        --runtime.env LF_PUBLIC_URL=https://${LF_DOMAIN}
-        --runtime.env LF_DISCORD_CLIENT_ID=${LF_DISCORD_CLIENT_ID}
-        --runtime.env LF_DISCORD_CLIENT_SECRET=${LF_DISCORD_CLIENT_SECRET}
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      LF_ENV: ${LF_ENV}
+      LF_ALLOW_TEST_LOGIN: ${LF_ALLOW_TEST_LOGIN}
+      LF_DOMAIN: ${LF_DOMAIN}
+      LF_SERVER_KEY: ${LF_SERVER_KEY}
+      LF_SESSION_KEY: ${LF_SESSION_KEY}
+      LF_REFRESH_KEY: ${LF_REFRESH_KEY}
+      LF_HTTP_KEY: ${LF_HTTP_KEY}
+      LF_CONSOLE_USER: ${LF_CONSOLE_USER}
+      LF_CONSOLE_PASSWORD: ${LF_CONSOLE_PASSWORD}
+      LF_DISCORD_CLIENT_ID: ${LF_DISCORD_CLIENT_ID}
+      LF_DISCORD_CLIENT_SECRET: ${LF_DISCORD_CLIENT_SECRET}
+    entrypoint: ["/bin/sh", "/nakama/data/start.sh"]
     expose:
       - "7350"
     ports:
