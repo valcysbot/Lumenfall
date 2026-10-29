@@ -32,12 +32,23 @@ jobs:
           # Le terminal du navigateur abîme parfois la clé au copier-coller
           # (retours à la ligne perdus, espaces en trop) : on la remet en forme.
           python3 - <<'PY'
-          import os, re, textwrap
+          import base64, os, re, textwrap
           raw = os.environ["KEY"].replace("\r", "")
           m = re.search(r"-----BEGIN ([A-Z ]+)-----(.*?)-----END \1-----", raw, re.S)
-          if not m:
-              raise SystemExit("Le secret LF_DEPLOY_SSH_KEY ne contient pas de clé (lignes BEGIN et END).")
-          kind, body = m.group(1), re.sub(r"\s+", "", m.group(2))
+          if m:
+              kind, body = m.group(1), re.sub(r"\s+", "", m.group(2))
+          else:
+              # Lignes BEGIN / END oubliées : on accepte le corps seul s'il s'agit bien d'une clé privée OpenSSH.
+              body = re.sub(r"-----[A-Z ]*-----|\s+", "", raw)
+              try:
+                  ok = base64.b64decode(body + "=" * (-len(body) % 4)).startswith(b"openssh-key-v1\0")
+              except Exception:
+                  ok = False
+              if not ok:
+                  hint = " (c'est la clé publique, il faut la privée)" if raw.strip().startswith("ssh-") else ""
+                  raise SystemExit("::error::Le secret LF_DEPLOY_SSH_KEY n'est pas la clé privée de déploiement" + hint
+                                   + ". Sur le VPS, affiche-la avec : cat /root/lumenfall-deploy-key")
+              kind = "OPENSSH PRIVATE KEY"
           pem = f"-----BEGIN {kind}-----\n" + "\n".join(textwrap.wrap(body, 70)) + f"\n-----END {kind}-----\n"
           path = os.path.expanduser("~/.ssh/id_ed25519")
           open(path, "w").write(pem)
