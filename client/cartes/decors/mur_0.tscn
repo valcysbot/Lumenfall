@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/mur_0.png" id="1_8h7vl"]
+
+[node name="Mur0" type="Sprite2D" unique_id=2002786476]
+texture_filter = 1
+texture = ExtResource("1_8h7vl")
+centered = false
+offset = Vector2(-21, -97)
+metadata/decor = "mur_0"
+metadata/emprise = Vector2i(1, 1)

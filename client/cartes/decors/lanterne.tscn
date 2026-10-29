@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/lanterne.png" id="1_peg8u"]
+
+[node name="Lanterne" type="Sprite2D" unique_id=158585469]
+texture_filter = 1
+texture = ExtResource("1_peg8u")
+centered = false
+offset = Vector2(-10, -82)
+metadata/decor = "lanterne"
+metadata/emprise = Vector2i(1, 1)
+
+[node name="Lumiere" type="PointLight2D" parent="." unique_id=2135326594 groups=["lumieres"]]
+position = Vector2(0, -68.4)
+enabled = false

@@ -1,0 +1,405 @@
+{
+ "auberge": {
+  "ancre": [
+   185,
+   224
+  ],
+  "emprise": [
+   6,
+   5
+  ],
+  "porte": [
+   0,
+   2.5
+  ]
+ },
+ "bouleau": {
+  "ancre": [
+   25,
+   123
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "buisson_0": {
+  "ancre": [
+   16,
+   21
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "buisson_1": {
+  "ancre": [
+   16,
+   21
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "caisse": {
+  "ancre": [
+   19,
+   32
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "cheminee": {
+  "ancre": [
+   31,
+   85
+  ],
+  "emprise": [
+   2,
+   1
+  ],
+  "lumiere": [
+   -14.1,
+   -5.1
+  ]
+ },
+ "chene_0": {
+  "ancre": [
+   54,
+   139
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "chene_1": {
+  "ancre": [
+   51,
+   139
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "chene_2": {
+  "ancre": [
+   48,
+   139
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "cloture_0": {
+  "ancre": [
+   18,
+   29
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "cloture_1": {
+  "ancre": [
+   18,
+   29
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "comptoir": {
+  "ancre": [
+   59,
+   62
+  ],
+  "emprise": [
+   3,
+   1
+  ]
+ },
+ "etagere": {
+  "ancre": [
+   24,
+   81
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "etal_0": {
+  "ancre": [
+   49,
+   78
+  ],
+  "emprise": [
+   2,
+   1
+  ]
+ },
+ "etal_1": {
+  "ancre": [
+   49,
+   78
+  ],
+  "emprise": [
+   2,
+   1
+  ]
+ },
+ "etal_2": {
+  "ancre": [
+   49,
+   78
+  ],
+  "emprise": [
+   2,
+   1
+  ]
+ },
+ "forge": {
+  "ancre": [
+   116,
+   165
+  ],
+  "emprise": [
+   4,
+   3
+  ],
+  "lumiere": [
+   -72.0,
+   4.6
+  ]
+ },
+ "lanterne": {
+  "ancre": [
+   10,
+   82
+  ],
+  "emprise": [
+   1,
+   1
+  ],
+  "lumiere": [
+   0.0,
+   -68.4
+  ]
+ },
+ "lit": {
+  "ancre": [
+   38,
+   52
+  ],
+  "emprise": [
+   1,
+   2
+  ]
+ },
+ "maison_0": {
+  "ancre": [
+   134,
+   180
+  ],
+  "emprise": [
+   4,
+   4
+  ],
+  "porte": [
+   -0.26516504294495535,
+   2.0
+  ]
+ },
+ "maison_1": {
+  "ancre": [
+   134,
+   180
+  ],
+  "emprise": [
+   4,
+   4
+  ],
+  "porte": [
+   -0.26516504294495535,
+   2.0
+  ]
+ },
+ "maison_2": {
+  "ancre": [
+   134,
+   180
+  ],
+  "emprise": [
+   4,
+   4
+  ],
+  "porte": [
+   -0.26516504294495535,
+   2.0
+  ]
+ },
+ "meule": {
+  "ancre": [
+   23,
+   35
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "moulin": {
+  "ancre": [
+   102,
+   161
+  ],
+  "emprise": [
+   4,
+   4
+  ]
+ },
+ "mouton": {
+  "ancre": [
+   13,
+   25
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "mur_0": {
+  "ancre": [
+   21,
+   97
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "mur_1": {
+  "ancre": [
+   21,
+   97
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "panneau": {
+  "ancre": [
+   15,
+   44
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "pin_0": {
+  "ancre": [
+   42,
+   139
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "pin_1": {
+  "ancre": [
+   42,
+   139
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "puits": {
+  "ancre": [
+   33,
+   80
+  ],
+  "emprise": [
+   2,
+   2
+  ]
+ },
+ "rocher": {
+  "ancre": [
+   17,
+   21
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "souche": {
+  "ancre": [
+   10,
+   17
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "table": {
+  "ancre": [
+   21,
+   32
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ },
+ "tapis": {
+  "ancre": [
+   22,
+   12
+  ],
+  "emprise": [
+   1,
+   1
+  ],
+  "passable": true
+ },
+ "temple": {
+  "ancre": [
+   178,
+   180
+  ],
+  "emprise": [
+   5,
+   5
+  ],
+  "porte": [
+   0,
+   2.5
+  ]
+ },
+ "tonneau": {
+  "ancre": [
+   13,
+   30
+  ],
+  "emprise": [
+   1,
+   1
+  ]
+ }
+}

@@ -44,3 +44,10 @@ jobs:
         run: timeout 300 ./godot --headless --path client --import || true
       - name: Vérification des scripts
         run: timeout 120 ./godot --headless --path client res://tests/check.tscn
+      - name: La carte exportée correspond à la scène Godot
+        run: |
+          timeout 120 ./godot --headless --path client --script res://outils/exporter_carte.gd -- glennmor
+          git diff --exit-code server/world/maps client/data/maps || {
+            echo "::error::La carte a été retouchée sans être exportée : lance outils/exporter_carte.gd (voir README)."
+            exit 1
+          }

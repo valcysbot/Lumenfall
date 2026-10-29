@@ -20,3 +20,6 @@ tools/loadbots/loadbots
 .DS_Store
 Thumbs.db
 .run/
+
+# Python
+__pycache__/

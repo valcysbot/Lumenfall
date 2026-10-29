@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1.3 « Le ciel d'Erydor » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
+**Version actuelle :** V0.1.4 « Bourg-Lanterne » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
 
 ---
 
@@ -63,17 +63,20 @@
 - ✓ **La fabrique des dessins** : l'IA d'images n'est pas accessible depuis l'environnement de Claude ; Elowan a choisi le pixel art dessiné par code.
 - ✓ **La forge des héros** (`tools/sprites/forge_heros.py`) : un mannequin 3D photographié dans la vraie vue du jeu, pièce par pièce. 10 pièces (corps, pantalon, bottes, tunique en 12 couleurs, gants, cape, cheveux courts ou longs en 6 couleurs, casque, épée), 8 directions, 4 animations (repos, marche, course, salut).
 - ✓ **Habits neufs (V0.1.2)** : le pion est remplacé par le héros en couches, avec la course, le salut et le zoom.
+- ✓ **Bourg-Lanterne (V0.1.4)** : le Val de Glennmor (200 × 200 cases) remplace la Clairière. Bourg-Lanterne, sa place, son puits et son marché ; l'auberge La Chope Pleine et 2 maisons où l'on entre ; le temple de Solenn, la forge, le moulin, les fermes et le pré de Gwenn, la rivière et son pont, la Lisière Grise à l'est. Les lanternes s'allument la nuit.
+- ✓ **La fabrique des cartes** : `forge_tuiles.py` (sol), `forge_decors.py` (36 décors), `gen_glennmor.py` (premier jet), puis `construire_carte.gd` en fait une scène Godot qu'on retouche à la souris, et `exporter_carte.gd` en tire les cases bloquées et les portes pour le serveur.
 - ✓ **Le ciel d'Erydor (V0.1.3)** : jour et nuit sur 2 heures, la même heure pour tout le monde ; pluie, brouillard et orage décidés par le serveur pour chaque région ; torches automatiques la nuit ; réglage de luminosité de la nuit.
 
 ### ○ Quêtes à venir (V0.2)
 
-- ○ Le Val de Glennmor (≈ 200 × 200 cases) et Bourg-Lanterne : auberge La Chope Pleine + 2 maisons où l'on entre.
 - ○ Une dizaine de PNJ avec leurs habitudes, accueil par Maître Mabon, bulles + boîte de dialogue, Braise qui suit le héros.
 
 ### ⚠️ Points d'attention
 
 - **Nuits très sombres (choix d'Elowan)** : la torche s'allume toute seule la nuit, et un réglage de luminosité protège la lisibilité sur téléphone. Pour ménager les téléphones, seuls les 10 héros les plus proches portent une torche allumée.
 - **Casque, gants et cape visibles (choix d'Elowan)** : presque deux fois plus de dessins par direction et par animation. Avec la forge par code, ça ne coûte que du temps de calcul (3 minutes pour tout redessiner).
+- **Beaucoup de décors** : le val compte près de 7 000 décors (surtout des arbres). Godot n'affiche que ceux à l'écran, mais il faudra vérifier la fluidité sur ton téléphone ; si ça rame, on regroupera les forêts lointaines.
+- **Héros de la Clairière** : la Clairière est fermée. Les héros qui y étaient réapparaissent sur la place de Bourg-Lanterne.
 - **Cheveux tirés du nom** : en attendant la personnalisation de l'Acte IV, la coupe et la couleur des cheveux sont choisies à partir du nom du héros.
 - **Pixel art et écrans** : sur un écran qui n'est pas un multiple de 1280 × 720, les pixels du héros peuvent être de tailles un peu inégales. Le zoom le règle en partie ; un vrai réglage « pixels nets » viendra avec la V0.2.
 
@@ -140,6 +143,17 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.1.4 · « Bourg-Lanterne » (30 octobre 2026)
+
+- 🆕 Bienvenue dans le **Val de Glennmor** : 200 × 200 cases de forêts et de prairies, une rivière et son pont, le moulin, les fermes, le pré de Gwenn et ses moutons. À l'est, la **Lisière Grise**, où les couleurs s'effacent…
+- 🆕 **Bourg-Lanterne**, le village d'accueil : la place pavée, le puits, le marché, le temple de Solenn, la forge de Doran et ses maisons à colombages.
+- 🆕 On entre dans **l'auberge La Chope Pleine** et dans **2 maisons** : il suffit de marcher sur la porte. Dedans, il fait toujours bon (ni pluie, ni nuit noire).
+- 🆕 La nuit, **les lanternes du village s'allument** toutes seules.
+- ✨ Tout est dessiné par code, dans le même style que les héros : sol, arbres, maisons, meubles.
+- ✨ La carte est une scène Godot : on peut la retoucher à la souris (peindre les chemins, déplacer une maison).
+
+Captures : [Bourg-Lanterne](docs/captures/v0.1.4/bourg-lanterne.png) · [la nuit](docs/captures/v0.1.4/bourg-lanterne-nuit.png) · [La Chope Pleine](docs/captures/v0.1.4/la-chope-pleine.png) · [la rivière](docs/captures/v0.1.4/riviere.png) · [le plan du val](docs/captures/v0.1.4/plan-glennmor.png)
 
 ### V0.1.3 · « Le ciel d'Erydor » (30 octobre 2026)
 

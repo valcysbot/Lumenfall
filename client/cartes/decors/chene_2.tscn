@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/chene_2.png" id="1_gw3hv"]
+
+[node name="Chene2" type="Sprite2D" unique_id=199690285]
+texture_filter = 1
+texture = ExtResource("1_gw3hv")
+centered = false
+offset = Vector2(-48, -139)
+metadata/decor = "chene_2"
+metadata/emprise = Vector2i(1, 1)

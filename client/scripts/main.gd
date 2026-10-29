@@ -97,6 +97,10 @@ func _capture() -> void:
 		hero = heroes[0]
 	enter_world(hero)
 	await get_tree().create_timer(float(args.get("wait", "4"))).timeout
+	if args.has("aller"):
+		var t: PackedStringArray = args.aller.split(",")
+		Net.send(Net.OP_MOVE_TO, {"t": [float(t[0]), float(t[1])], "r": true})
+		await get_tree().create_timer(float(args.get("marche", "6"))).timeout
 	if args.has("salut"):
 		current._wave()
 	if args.has("chat"):

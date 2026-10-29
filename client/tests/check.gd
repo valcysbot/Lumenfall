@@ -11,9 +11,12 @@ func _ready() -> void:
 			if s == null or not (s as GDScript).can_instantiate():
 				printerr("Script en erreur : ", f)
 				failed += 1
-	var map = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps/clairiere.json"))
+	var map = JSON.parse_string(FileAccess.get_file_as_string("res://data/maps/glennmor.json"))
 	if not (map is Dictionary) or map.rows.size() != int(map.height):
-		printerr("Carte de la Clairière illisible")
+		printerr("Carte du Val de Glennmor illisible")
+		failed += 1
+	if not ResourceLoader.exists("res://cartes/glennmor.tscn"):
+		printerr("Scène du Val de Glennmor manquante")
 		failed += 1
 	# Aller-retour monde <-> écran.
 	var p := Vector2(12.25, 30.5)

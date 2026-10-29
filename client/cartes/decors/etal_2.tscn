@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/etal_2.png" id="1_hj60g"]
+
+[node name="Etal2" type="Sprite2D" unique_id=561726430]
+texture_filter = 1
+texture = ExtResource("1_hj60g")
+centered = false
+offset = Vector2(-49, -78)
+metadata/decor = "etal_2"
+metadata/emprise = Vector2i(2, 1)

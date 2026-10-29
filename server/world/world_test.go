@@ -162,3 +162,38 @@ func TestCourse(t *testing.T) {
 		}
 	}
 }
+
+func TestGlennmor(t *testing.T) {
+	m, err := LoadMap("glennmor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m.Doors) < 6 {
+		t.Fatalf("il manque des portes : %d", len(m.Doors))
+	}
+	// Depuis la place du village, on peut marcher jusqu'à chaque porte de dehors,
+	// et chaque porte mène à un endroit d'où l'on peut ressortir.
+	for _, d := range m.Doors {
+		if d.From[1] >= 200 {
+			continue // porte intérieure
+		}
+		if p := m.FindPath(m.Spawn[0], m.Spawn[1], float64(d.From[0])+0.5, float64(d.From[1])+0.5, 20000); p == nil {
+			t.Errorf("la porte en %v est inaccessible depuis la place", d.From)
+		}
+		if m.DoorAt(float64(d.From[0])+0.5, float64(d.From[1])+0.5) != &m.Doors[indexOf(m, d)] {
+			t.Errorf("DoorAt ne retrouve pas la porte %v", d.From)
+		}
+		if m.DoorAt(d.To[0], d.To[1]) != nil {
+			t.Errorf("la porte %v dépose le héros sur une autre porte", d.From)
+		}
+	}
+}
+
+func indexOf(m *Map, d Door) int {
+	for i := range m.Doors {
+		if m.Doors[i].From == d.From {
+			return i
+		}
+	}
+	return -1
+}

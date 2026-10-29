@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/comptoir.png" id="1_6kqui"]
+
+[node name="Comptoir" type="Sprite2D" unique_id=218338635]
+texture_filter = 1
+texture = ExtResource("1_6kqui")
+centered = false
+offset = Vector2(-59, -62)
+metadata/decor = "comptoir"
+metadata/emprise = Vector2i(3, 1)

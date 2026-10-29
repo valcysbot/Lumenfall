@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/puits.png" id="1_ui0j3"]
+
+[node name="Puits" type="Sprite2D" unique_id=1698838421]
+texture_filter = 1
+texture = ExtResource("1_ui0j3")
+centered = false
+offset = Vector2(-33, -80)
+metadata/decor = "puits"
+metadata/emprise = Vector2i(2, 2)

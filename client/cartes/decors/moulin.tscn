@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/moulin.png" id="1_fonmd"]
+
+[node name="Moulin" type="Sprite2D" unique_id=13544620]
+texture_filter = 1
+texture = ExtResource("1_fonmd")
+centered = false
+offset = Vector2(-102, -161)
+metadata/decor = "moulin"
+metadata/emprise = Vector2i(4, 4)

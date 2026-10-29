@@ -25,8 +25,17 @@ type Map struct {
 	Spawn    [2]float64 `json:"spawn"`
 	Blocking string     `json:"blocking"`
 	Rows     []string   `json:"rows"`
+	Doors    []Door     `json:"doors"`
 
 	blocked []bool
+	doors   map[[2]int]*Door
+}
+
+// Door est une porte : marcher sur la case From emmène le héros au point To
+// (par exemple, de la rue à l'intérieur de l'auberge).
+type Door struct {
+	From [2]int     `json:"from"`
+	To   [2]float64 `json:"to"`
 }
 
 // LoadMap charge une carte embarquée par son identifiant.
@@ -57,10 +66,23 @@ func ParseMap(raw []byte) (*Map, error) {
 			m.blocked[y*m.Width+x] = strings.ContainsRune(m.Blocking, c)
 		}
 	}
+	m.doors = map[[2]int]*Door{}
+	for i := range m.Doors {
+		d := &m.Doors[i]
+		if m.BlockedCell(d.From[0], d.From[1]) || !m.Walkable(d.To[0], d.To[1]) {
+			return nil, fmt.Errorf("carte %q: porte %d bloquée", m.ID, i+1)
+		}
+		m.doors[d.From] = d
+	}
 	if !m.Walkable(m.Spawn[0], m.Spawn[1]) {
 		return nil, fmt.Errorf("carte %q: le point d'apparition est bloqué", m.ID)
 	}
 	return m, nil
+}
+
+// DoorAt renvoie la porte de la case où se trouve le point (x, y), ou nil.
+func (m *Map) DoorAt(x, y float64) *Door {
+	return m.doors[[2]int{int(math.Floor(x)), int(math.Floor(y))}]
 }
 
 // BlockedCell indique si la case (cx, cy) bloque le passage. Hors carte = bloqué.
