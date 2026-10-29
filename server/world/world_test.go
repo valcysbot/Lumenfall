@@ -108,3 +108,41 @@ func TestDirections(t *testing.T) {
 		}
 	}
 }
+
+func TestLesHerosNeSeTraversentPas(t *testing.T) {
+	m := clairiere(t)
+	a := &Body{X: 18.5, Y: 20.5}
+	b := &Body{X: 22.5, Y: 20.5}
+	a.SetInput(1, 0)
+	b.SetInput(-1, 0)
+	for i := 0; i < 30; i++ {
+		crowd := NewCrowd([]*Body{a, b})
+		a.StepAmong(m, crowd, 0.1)
+		b.StepAmong(m, crowd, 0.1)
+		Separate(m, []*Body{a, b})
+	}
+	if d := math.Hypot(a.X-b.X, a.Y-b.Y); d < 2*HeroRadius-0.25 {
+		t.Fatalf("les héros se traversent (distance %.2f)", d)
+	}
+	if a.X > b.X {
+		t.Fatal("les deux héros ont échangé leur place : ils se sont traversés")
+	}
+}
+
+func TestSeparationHerosSuperposes(t *testing.T) {
+	m := clairiere(t)
+	bodies := []*Body{{X: 20.5, Y: 20.5}, {X: 20.5, Y: 20.5}, {X: 20.5, Y: 20.5}}
+	for i := 0; i < 10; i++ {
+		Separate(m, bodies)
+	}
+	for i := range bodies {
+		if !m.Free(bodies[i].X, bodies[i].Y) {
+			t.Fatal("un héros a été poussé dans un obstacle")
+		}
+		for j := i + 1; j < len(bodies); j++ {
+			if d := math.Hypot(bodies[i].X-bodies[j].X, bodies[i].Y-bodies[j].Y); d < 2*HeroRadius-0.05 {
+				t.Fatalf("héros %d et %d encore superposés (%.2f)", i, j, d)
+			}
+		}
+	}
+}

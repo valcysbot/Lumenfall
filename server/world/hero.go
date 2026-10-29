@@ -49,10 +49,16 @@ func (b *Body) Moving() bool {
 // Step fait avancer le héros de dt secondes sur la carte m. Renvoie vrai si
 // sa position ou sa direction a changé.
 func (b *Body) Step(m *Map, dt float64) bool {
+	return b.StepAmong(m, nil, dt)
+}
+
+// StepAmong fait avancer le héros comme Step, sans traverser les autres
+// héros de la foule (crowd peut être nil).
+func (b *Body) StepAmong(m *Map, crowd *Crowd, dt float64) bool {
 	ox, oy, od := b.X, b.Y, b.Dir
 	budget := WalkSpeed * dt
 	if b.inputX != 0 || b.inputY != 0 {
-		b.move(m, b.inputX*budget, b.inputY*budget)
+		b.move(m, crowd, b.inputX*budget, b.inputY*budget)
 	} else {
 		for budget > 1e-9 && len(b.path) > 0 {
 			tx, ty := b.path[0][0], b.path[0][1]
@@ -60,7 +66,7 @@ func (b *Body) Step(m *Map, dt float64) bool {
 			d := math.Hypot(dx, dy)
 			if d <= budget {
 				px, py := b.X, b.Y
-				b.move(m, dx, dy)
+				b.move(m, crowd, dx, dy)
 				budget -= d
 				b.path = b.path[1:]
 				if math.Hypot(b.X-px, b.Y-py) < d*0.5 {
@@ -68,7 +74,7 @@ func (b *Body) Step(m *Map, dt float64) bool {
 					b.path = nil
 				}
 			} else {
-				b.move(m, dx/d*budget, dy/d*budget)
+				b.move(m, crowd, dx/d*budget, dy/d*budget)
 				budget = 0
 			}
 		}
@@ -77,7 +83,7 @@ func (b *Body) Step(m *Map, dt float64) bool {
 }
 
 // move applique un petit déplacement en glissant le long des obstacles.
-func (b *Body) move(m *Map, dx, dy float64) {
+func (b *Body) move(m *Map, crowd *Crowd, dx, dy float64) {
 	if dx == 0 && dy == 0 {
 		return
 	}
@@ -85,13 +91,16 @@ func (b *Body) move(m *Map, dx, dy float64) {
 	// On découpe en petits pas pour ne jamais traverser un mur.
 	n := int(math.Ceil(math.Hypot(dx, dy)/0.2)) + 1
 	sx, sy := dx/float64(n), dy/float64(n)
+	free := func(x, y float64) bool {
+		return m.Free(x, y) && (crowd == nil || !crowd.Blocks(b, x, y))
+	}
 	for i := 0; i < n; i++ {
-		if m.Free(b.X+sx, b.Y+sy) {
+		if free(b.X+sx, b.Y+sy) {
 			b.X += sx
 			b.Y += sy
-		} else if m.Free(b.X+sx, b.Y) {
+		} else if free(b.X+sx, b.Y) {
 			b.X += sx
-		} else if m.Free(b.X, b.Y+sy) {
+		} else if free(b.X, b.Y+sy) {
 			b.Y += sy
 		}
 	}

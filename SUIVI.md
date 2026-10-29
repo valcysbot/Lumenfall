@@ -88,6 +88,12 @@
 
 ## 📦 Notes de version
 
+### V0.1.1 · « Bousculade » (29 octobre 2026, serveur seulement)
+
+- 🐛 Corrigé : les héros se traversaient. Ils se bousculent maintenant sans pouvoir passer l'un à travers l'autre (demande d'Elowan).
+- ✨ S'éloigner d'un héros reste toujours possible, donc personne ne peut en coincer un autre contre un mur.
+- 🧪 Test de charge : 100 faux joueurs, tick moyen 0,88 ms sur 100 ms (0,51 ms sans les collisions).
+
 ### V0.1 · « Le premier pas » (29 octobre 2026)
 
 - 🆕 Écran titre avec connexion Discord et connexion de test.

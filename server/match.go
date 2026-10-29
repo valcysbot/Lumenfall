@@ -196,11 +196,26 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 
 	// Simulation des déplacements.
 	dt := 1.0 / tickRate
-	moved := make([][4]int, 0, 16)
+	changed := make(map[*player]bool)
+	all := make([]*player, 0, len(s.players))
+	bodies := make([]*world.Body, 0, len(s.players))
 	for _, pl := range s.players {
-		if pl.body.Moving() && pl.body.Step(s.m, dt) {
-			moved = append(moved, [4]int{pl.sid, cent(pl.body.X), cent(pl.body.Y), pl.body.Dir})
+		all = append(all, pl)
+		bodies = append(bodies, &pl.body)
+	}
+	crowd := world.NewCrowd(bodies)
+	for _, pl := range all {
+		if pl.body.Moving() && pl.body.StepAmong(s.m, crowd, dt) {
+			changed[pl] = true
 		}
+	}
+	// Les héros se bousculent mais ne se traversent pas.
+	for _, i := range world.Separate(s.m, bodies) {
+		changed[all[i]] = true
+	}
+	moved := make([][4]int, 0, len(changed))
+	for pl := range changed {
+		moved = append(moved, [4]int{pl.sid, cent(pl.body.X), cent(pl.body.Y), pl.body.Dir})
 	}
 	if len(moved) > 0 {
 		_ = d.BroadcastMessage(opDelta, mustJSON(map[string]interface{}{"t": tick, "p": moved}), nil, nil, false)
