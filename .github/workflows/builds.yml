@@ -1,0 +1,90 @@
+name: Builds du jeu
+
+# Construit le jeu pour Windows (zip) et Android (APK).
+# - à chaque pull request et sur main : fichiers téléchargeables dans l'onglet Actions (privés) ;
+# - sur une étiquette vX.Y : publication privée dans « Releases ».
+# L'adresse du serveur vient de la variable de dépôt LF_SERVER_HOST (serveur de test).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Godot et les modèles d'export
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          unzip -q templates.tpz -d /tmp/tpl
+          mv /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+
+      - name: Adresse du serveur
+        if: ${{ vars.LF_SERVER_HOST != '' }}
+        run: |
+          cat > client/config.json <<JSON
+          {"scheme": "https", "host": "${{ vars.LF_SERVER_HOST }}", "port": 443,
+           "server_key": "${{ vars.LF_SERVER_KEY }}", "test_login": ${{ vars.LF_TEST_LOGIN || 'false' }}}
+          JSON
+
+      - name: Préparer Android (SDK du runner, clé de debug)
+        run: |
+          keytool -genkeypair -v -keystore /tmp/debug.keystore -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Lumenfall Debug" 2>/dev/null
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.tres <<TRES
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_SDK_ROOT}"
+          export/android/java_sdk_path = "${JAVA_HOME_17_X64}"
+          export/android/debug_keystore = "/tmp/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          TRES
+
+      - name: Import du projet
+        run: timeout 300 ./godot --headless --path client --import || true
+
+      - name: Export Windows
+        run: |
+          mkdir -p client/export/windows
+          ./godot --headless --path client --export-release "Windows" export/windows/Lumenfall.exe
+          test -s client/export/windows/Lumenfall.exe
+
+      - name: Export Android
+        run: |
+          mkdir -p client/export/android
+          ./godot --headless --path client --export-debug "Android" export/android/Lumenfall.apk
+          test -s client/export/android/Lumenfall.apk
+
+      - name: Paquets
+        run: |
+          VERSION=$(grep -oP 'config/version="\K[^"]+' client/project.godot)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          mkdir -p dist
+          (cd client/export/windows && zip -q -r ../../../dist/Lumenfall-V${VERSION}-Windows.zip .)
+          cp client/export/android/Lumenfall.apk dist/Lumenfall-V${VERSION}-Android.apk
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lumenfall-V${{ env.VERSION }}
+          path: dist/*
+          retention-days: 30
+
+      - name: Publication privée (étiquette vX.Y)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --title "Lumenfall ${GITHUB_REF_NAME}" --notes-file SUIVI.md
