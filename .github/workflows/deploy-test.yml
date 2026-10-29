@@ -29,7 +29,21 @@ jobs:
           IP=$(echo "${HOST%.sslip.io}" | tr - .)
           echo "IP=$IP" >> $GITHUB_ENV
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          # Le terminal du navigateur abîme parfois la clé au copier-coller
+          # (retours à la ligne perdus, espaces en trop) : on la remet en forme.
+          python3 - <<'PY'
+          import os, re, textwrap
+          raw = os.environ["KEY"].replace("\r", "")
+          m = re.search(r"-----BEGIN ([A-Z ]+)-----(.*?)-----END \1-----", raw, re.S)
+          if not m:
+              raise SystemExit("Le secret LF_DEPLOY_SSH_KEY ne contient pas de clé (lignes BEGIN et END).")
+          kind, body = m.group(1), re.sub(r"\s+", "", m.group(2))
+          pem = f"-----BEGIN {kind}-----\n" + "\n".join(textwrap.wrap(body, 70)) + f"\n-----END {kind}-----\n"
+          path = os.path.expanduser("~/.ssh/id_ed25519")
+          open(path, "w").write(pem)
+          os.chmod(path, 0o600)
+          PY
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null || { echo "::error::La clé LF_DEPLOY_SSH_KEY est illisible. Recopie-la depuis le VPS avec : cat /root/lumenfall-deploy-key"; exit 1; }
           ssh-keyscan -t ed25519 "$IP" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Envoi du code
