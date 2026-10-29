@@ -29,7 +29,32 @@ jobs:
           IP=$(echo "${HOST%.sslip.io}" | tr - .)
           echo "IP=$IP" >> $GITHUB_ENV
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          # Le terminal du navigateur abîme parfois la clé au copier-coller
+          # (retours à la ligne perdus, espaces en trop) : on la remet en forme.
+          python3 - <<'PY'
+          import base64, os, re, textwrap
+          raw = os.environ["KEY"].replace("\r", "")
+          m = re.search(r"-----BEGIN ([A-Z ]+)-----(.*?)-----END \1-----", raw, re.S)
+          if m:
+              kind, body = m.group(1), re.sub(r"\s+", "", m.group(2))
+          else:
+              # Lignes BEGIN / END oubliées : on accepte le corps seul s'il s'agit bien d'une clé privée OpenSSH.
+              body = re.sub(r"-----[A-Z ]*-----|\s+", "", raw)
+              try:
+                  ok = base64.b64decode(body + "=" * (-len(body) % 4)).startswith(b"openssh-key-v1\0")
+              except Exception:
+                  ok = False
+              if not ok:
+                  hint = " (c'est la clé publique, il faut la privée)" if raw.strip().startswith("ssh-") else ""
+                  raise SystemExit("::error::Le secret LF_DEPLOY_SSH_KEY n'est pas la clé privée de déploiement" + hint
+                                   + ". Sur le VPS, affiche-la avec : cat /root/lumenfall-deploy-key")
+              kind = "OPENSSH PRIVATE KEY"
+          pem = f"-----BEGIN {kind}-----\n" + "\n".join(textwrap.wrap(body, 70)) + f"\n-----END {kind}-----\n"
+          path = os.path.expanduser("~/.ssh/id_ed25519")
+          open(path, "w").write(pem)
+          os.chmod(path, 0o600)
+          PY
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null || { echo "::error::La clé LF_DEPLOY_SSH_KEY est illisible. Recopie-la depuis le VPS avec : cat /root/lumenfall-deploy-key"; exit 1; }
           ssh-keyscan -t ed25519 "$IP" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Envoi du code
@@ -59,3 +84,22 @@ jobs:
           done
           ssh "lumenfall@${IP}" 'cd ~/app/deploy && docker compose logs --tail 60 nakama'
           exit 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/loadbots/go.mod
+          cache-dependency-path: tools/loadbots/go.sum
+
+      - name: Test de fumée (5 faux joueurs, connexion Discord)
+        env:
+          HOST: ${{ vars.LF_SERVER_HOST }}
+          SERVER_KEY: ${{ vars.LF_SERVER_KEY }}
+        run: |
+          LOC=$(curl -s -o /dev/null -w '%{redirect_url}' "https://${HOST}/lumenfall/discord/start?state=fumee0123456789abcdefghijklmn")
+          case "$LOC" in
+            https://discord.com/oauth2/authorize*) echo "✅ La porte Discord redirige bien vers Discord" ;;
+            *) echo "::warning::La connexion Discord n'est pas encore configurée (LF_DISCORD_CLIENT_ID / LF_DISCORD_CLIENT_SECRET)" ;;
+          esac
+          cd tools/loadbots
+          go run . -n 5 -duree 20s -prefixe fumee -serveur "https://${HOST}" -cle "${SERVER_KEY}" | tee /tmp/fumee.txt
+          grep -q "Bots entrés dans le monde : 5 / 5" /tmp/fumee.txt

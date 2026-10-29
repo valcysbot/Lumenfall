@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1 (en préparation) · **Acte en cours :** Acte I, les fondations
+**Version actuelle :** V0.1 « Le premier pas » (29 octobre 2026) · **Acte en cours :** Acte I, les fondations
 
 ---
 
@@ -37,22 +37,20 @@
 - ✓ **Le premier pas** : client Godot 4.7, vue 3/4 isométrique, clic pour aller + ZQSD (AZERTY et QWERTY), joystick + toucher sur téléphone, noms au-dessus des têtes, chat général avec bulles.
 - ✓ **L'épreuve des 100** : test de charge avec 100 faux joueurs pendant 70 s : 100/100 connectés, tick moyen **0,51 ms** sur les 100 ms disponibles, 86 Mo de mémoire.
 
+- ✓ **Les builds** : Windows (zip) et Android (APK) construits par GitHub Actions à chaque changement.
+- ✓ **Le serveur de test** : VPS Hostinger KVM 1 acheté par Elowan, installé par `deploy/bootstrap-vps.sh`, mis à jour automatiquement à chaque changement du serveur, avec un test de fumée (5 faux joueurs + porte Discord) après chaque déploiement.
+- ✓ **Application Discord « Lumenfall »** créée par Elowan.
+
 ### ✱ Quêtes en cours
 
-- ✱ Construire le jeu pour Windows (zip) et Android (APK).
-- ✱ Recette de déploiement Docker (`deploy/`) prête, à essayer sur le VPS de test.
-
-### ○ Quêtes à venir
-
-- ○ **Application Discord « Lumenfall »** : à créer par Elowan sur le portail développeur de Discord (guide pas à pas fourni).
-- ○ **VPS de test** (environ 5 €/mois) : attend le feu vert d'Elowan avant l'achat.
-- ○ **V0.1 sur PC et Android** : Elowan + 2 ou 3 amis dans la Clairière.
+- ✱ **V0.1 entre amis** : Elowan + 2 ou 3 amis dans la Clairière, sur PC et Android.
 
 ### ⚠️ Points d'attention
 
 - Le trafic sortant est d'environ 19 Ko/s par joueur avec 100 joueurs au même endroit. C'est acceptable pour l'Acte I ; à l'Acte II on n'enverra à chaque joueur que ce qui se passe près de lui.
 - Ton propre héros suit le serveur avec environ 0,1 s de retard voulu, pour un mouvement fluide. Une « prédiction » locale (le héros réagit instantanément) est prévue pour V0.2.
-- Discord exige une adresse HTTPS pour le retour de connexion : il faudra un nom de domaine pour le serveur de test (Caddy fournit le certificat gratuitement).
+- Le serveur de test utilise une adresse gratuite en `sslip.io` avec HTTPS par Caddy. Un vrai nom de domaine viendra avant l'alpha.
+- L'APK Android est signé avec une clé de test : pour le Play Store, il faudra une vraie clé de signature (Acte X).
 
 ---
 
@@ -90,7 +88,7 @@
 
 ## 📦 Notes de version
 
-### V0.1 · « Le premier pas » (en préparation)
+### V0.1 · « Le premier pas » (29 octobre 2026)
 
 - 🆕 Écran titre avec connexion Discord et connexion de test.
 - 🆕 Choix du héros : 3 emplacements, nom unique, 12 couleurs.

@@ -12,6 +12,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+permissions:
+  contents: write   # pour publier les versions dans « Releases »
+
 env:
   GODOT_VERSION: 4.7.2
 
