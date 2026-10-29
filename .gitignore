@@ -1,0 +1,22 @@
+# Secrets : jamais dans le dépôt
+.env
+*.env
+!*.env.example
+*.keystore
+*.jks
+export_credentials.cfg
+
+# Godot
+client/.godot/
+client/export/
+*.import.bak
+
+# Go
+*.so
+server/build/
+tools/loadbots/loadbots
+
+# Divers
+.DS_Store
+Thumbs.db
+.run/
