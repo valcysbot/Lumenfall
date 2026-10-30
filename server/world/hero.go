@@ -18,6 +18,13 @@ type Body struct {
 	Dir int
 	// Run : le joueur court (touche Maj ou bouton de course).
 	Run bool
+	// Mul ralentit ou accélère (ralentissement, bouclier levé) ; 0 compte comme 1.
+	Mul float64
+	// Frozen immobilise (étourdi, mort) sans oublier l'intention.
+	Frozen bool
+
+	dashX, dashY float64 // vitesse de la roulade en cours
+	dashLeft     float64 // secondes de roulade restantes
 
 	inputX, inputY float64      // direction demandée au clavier ou au joystick
 	path           [][2]float64 // trajet demandé par un clic
@@ -48,7 +55,7 @@ func (b *Body) SetPath(p [][2]float64) {
 
 // Moving indique si le héros a une intention de déplacement.
 func (b *Body) Moving() bool {
-	return b.inputX != 0 || b.inputY != 0 || len(b.path) > 0
+	return b.dashLeft > 0 || b.inputX != 0 || b.inputY != 0 || len(b.path) > 0
 }
 
 // Step fait avancer le héros de dt secondes sur la carte m. Renvoie vrai si
@@ -61,6 +68,17 @@ func (b *Body) Step(m *Map, dt float64) bool {
 // héros de la foule (crowd peut être nil).
 func (b *Body) StepAmong(m *Map, crowd *Crowd, dt float64) bool {
 	ox, oy, od := b.X, b.Y, b.Dir
+	if b.dashLeft > 0 {
+		t := math.Min(dt, b.dashLeft)
+		b.dashLeft -= dt
+		dir := b.Dir
+		b.move(m, crowd, b.dashX*t, b.dashY*t)
+		b.Dir = dir // on roule sans se retourner
+		return b.X != ox || b.Y != oy
+	}
+	if b.Frozen {
+		return false
+	}
 	budget := b.Speed() * dt
 	if b.inputX != 0 || b.inputY != 0 {
 		b.move(m, crowd, b.inputX*budget, b.inputY*budget)
@@ -95,10 +113,44 @@ func (b *Body) Teleport(x, y float64) {
 
 // Speed renvoie la vitesse actuelle du héros.
 func (b *Body) Speed() float64 {
+	v := WalkSpeed
 	if b.Run {
-		return RunSpeed
+		v = RunSpeed
 	}
-	return WalkSpeed
+	if b.Mul > 0 {
+		v *= b.Mul
+	}
+	return v
+}
+
+// Dash lance une roulade : dist cases en dur secondes, dans la direction
+// (dx, dy), ou droit devant si elle est nulle. Le trajet en cours est oublié.
+func (b *Body) Dash(dx, dy, dist, dur float64) {
+	l := math.Hypot(dx, dy)
+	if l < 1e-6 || math.IsNaN(l) || math.IsInf(l, 0) {
+		a := float64(b.Dir) * math.Pi / 4
+		dx, dy, l = math.Cos(a), math.Sin(a), 1
+	}
+	b.dashX, b.dashY = dx/l*dist/dur, dy/l*dist/dur
+	b.dashLeft = dur
+	b.Dir = DirOf(dx, dy)
+	b.path = nil
+}
+
+// Dashing indique si une roulade est en cours.
+func (b *Body) Dashing() bool { return b.dashLeft > 0 }
+
+// Stop arrête le héros (trajet et direction oubliés).
+func (b *Body) Stop() {
+	b.inputX, b.inputY = 0, 0
+	b.path = nil
+}
+
+// Face tourne le héros vers un point sans le faire bouger.
+func (b *Body) Face(x, y float64) {
+	if dx, dy := x-b.X, y-b.Y; dx != 0 || dy != 0 {
+		b.Dir = DirOf(dx, dy)
+	}
 }
 
 // move applique un petit déplacement en glissant le long des obstacles.

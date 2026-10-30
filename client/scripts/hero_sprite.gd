@@ -7,7 +7,7 @@ extends Node2D
 
 const DIR := "res://assets/heros/humain/"
 const ORDRE := ["corps", "pantalon", "bottes", "robe", "tunique", "tablier", "gants", "cape", "barbe",
-		"cheveux", "chapeau", "casque", "epee"]
+		"cheveux", "chapeau", "casque", "epee", "bouclier"]
 const STYLES_CHEVEUX := ["court", "long"]
 const COULEURS_CHEVEUX := ["noir", "brun", "chatain", "blond", "roux", "blanc"]
 
@@ -16,8 +16,12 @@ static var _textures: Dictionary = {}
 
 var dir := 1
 var anim := "repos"
+## Posture tenue tant qu'on ne bouge pas : "garde" (bouclier levé),
+## "incante" (sort en cours), "mort" (à terre, même si l'on glisse).
+var stance := ""
 var _t := 0.0
 var _once := ""
+var _t_once := 0.0
 var _layers: Array[Sprite2D] = []
 
 
@@ -29,7 +33,7 @@ static func look_for(hero_name: String, color: int) -> Dictionary:
 	return {
 		"tunique": str(clampi(color, 0, 11)),
 		"cheveux": "%s_%s" % [STYLES_CHEVEUX[h % 2], COULEURS_CHEVEUX[(h / 2) % COULEURS_CHEVEUX.size()]],
-		"corps": "", "pantalon": "", "bottes": "", "gants": "", "cape": "", "epee": "",
+		"corps": "", "pantalon": "", "bottes": "", "gants": "", "cape": "", "epee": "", "bouclier": "",
 	}
 
 
@@ -73,25 +77,32 @@ func dress(look: Dictionary) -> void:
 	_apply()
 
 
-## Joue une animation une seule fois (ex. « salut »), puis revient à la normale.
+## Joue une animation une seule fois (ex. « salut », « attaque »), puis
+## revient à la normale.
 func play_once(which: String) -> void:
+	if stance == "mort" or not meta().anims.has(which):
+		return
 	_once = which
-	_t = 0.0
+	_t_once = 0.0
 
 
 func set_motion(moving: bool, running: bool) -> void:
 	var want := "repos"
 	if moving:
 		want = "course" if running else "marche"
+	if stance == "mort" or (stance != "" and not moving):
+		want = stance
+	# Se mettre en marche interrompt le salut, pas un coup d'épée ni une roulade.
+	if (moving and _once == "salut") or want == "mort":
+		_once = ""
 	if want != anim:
-		if _once == "" or moving:
-			_once = ""
 		anim = want
 		_t = 0.0
 
 
 func _process(delta: float) -> void:
 	_t += delta
+	_t_once += delta
 	_apply()
 
 
@@ -102,11 +113,10 @@ func _apply() -> void:
 	var which := _once if _once != "" else anim
 	var a: Dictionary = m.anims[which]
 	var n := int(a.images)
-	var f := int(_t * float(a.fps))
+	var f := int((_t_once if _once != "" else _t) * float(a.fps))
 	if f >= n:
 		if _once != "":
 			_once = ""
-			_t = 0.0
 			_apply()
 			return
 		f = f % n if a.boucle else n - 1

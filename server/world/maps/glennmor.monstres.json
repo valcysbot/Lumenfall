@@ -1,0 +1,16 @@
+{
+ "_note": "Les monstres du Val de Glennmor (Acte III). Positions en cases. Les bêtes du val autour du village, les Effacés dans la Lisière Grise, à l'est. Le serveur vérifie au démarrage que chaque camp est praticable.",
+ "camps": [
+  {"sorte": "sanglier",       "centre": [70, 135],  "rayon": 5, "nombre": 4, "niveaux": [1, 2]},
+  {"sorte": "sanglier",       "centre": [58, 160],  "rayon": 6, "nombre": 4, "niveaux": [1, 3]},
+  {"sorte": "sanglier",       "centre": [150, 150], "rayon": 6, "nombre": 4, "niveaux": [2, 3]},
+  {"sorte": "loup",           "centre": [60, 62],   "rayon": 5, "nombre": 3, "niveaux": [3, 4]},
+  {"sorte": "loup",           "centre": [150, 55],  "rayon": 5, "nombre": 3, "niveaux": [3, 5]},
+  {"sorte": "loup",           "centre": [32, 130],  "rayon": 5, "nombre": 3, "niveaux": [4, 5]},
+  {"sorte": "loup_efface",    "centre": [178, 60],  "rayon": 6, "nombre": 3, "niveaux": [6, 7]},
+  {"sorte": "corbeau_efface", "centre": [177, 115], "rayon": 5, "nombre": 3, "niveaux": [6, 8]},
+  {"sorte": "loup_efface",    "centre": [180, 145], "rayon": 6, "nombre": 3, "niveaux": [7, 8]},
+  {"sorte": "corbeau_efface", "centre": [179.5, 158.5], "rayon": 4, "nombre": 3, "niveaux": [8, 9]},
+  {"sorte": "grand_sanglier", "centre": [181.5, 182.5], "rayon": 1, "nombre": 1, "niveaux": [10, 10]}
+ ]
+}

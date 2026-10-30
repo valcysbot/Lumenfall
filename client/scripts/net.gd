@@ -17,6 +17,22 @@ const OP_CHAT_OUT := 14
 const OP_NOTICE := 15
 const OP_EMOTE_OUT := 16
 const OP_WEATHER := 17
+# Le combat (Acte III).
+const OP_TARGET := 5
+const OP_SKILL := 6
+const OP_ROLL := 7
+const OP_BLOCK := 8
+const OP_POTION := 9
+const OP_HITS := 18
+const OP_VITALS := 19
+const OP_ME := 20
+const OP_CAST := 21
+const OP_ANIM := 22
+const OP_DEATH := 23
+const OP_LEVEL := 24
+const OP_LOOT := 25
+const OP_REFUSE := 26
+const OP_TELE := 27
 
 const SESSION_PATH := "user://session.cfg"
 

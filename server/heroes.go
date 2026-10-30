@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS lf_heroes (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 	UNIQUE (user_id, slot)
 )`)
+	if err != nil {
+		return err
+	}
+	// Acte III : niveau, expérience, or, potions et trophées.
+	_, err = db.ExecContext(ctx, `
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS level    SMALLINT NOT NULL DEFAULT 1;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS xp       INTEGER  NOT NULL DEFAULT 0;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS gold     INTEGER  NOT NULL DEFAULT 0;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS potions  SMALLINT NOT NULL DEFAULT 5;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS trophies JSONB    NOT NULL DEFAULT '{}'::jsonb`)
 	return err
 }
 
@@ -51,6 +61,23 @@ type Hero struct {
 	Map   string  `json:"map"`
 	X     float64 `json:"x"`
 	Y     float64 `json:"y"`
+	Level int     `json:"level"`
+
+	xp, gold, potions int
+	trophies          map[string]int
+}
+
+// heroCols : les colonnes lues pour un héros, dans l'ordre de scanHero.
+const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies`
+
+func scanHero(row interface{ Scan(...any) error }, h *Hero) error {
+	var tro []byte
+	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro); err != nil {
+		return err
+	}
+	h.trophies = map[string]int{}
+	_ = json.Unmarshal(tro, &h.trophies)
+	return nil
 }
 
 func userID(ctx context.Context) (string, error) {
@@ -62,7 +89,7 @@ func userID(ctx context.Context) (string, error) {
 }
 
 func listHeroes(ctx context.Context, db *sql.DB, uid string) ([]Hero, error) {
-	rows, err := db.QueryContext(ctx, `SELECT id, slot, name, color, map, x, y FROM lf_heroes WHERE user_id = $1 ORDER BY slot`, uid)
+	rows, err := db.QueryContext(ctx, `SELECT `+heroCols+` FROM lf_heroes WHERE user_id = $1 ORDER BY slot`, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +97,7 @@ func listHeroes(ctx context.Context, db *sql.DB, uid string) ([]Hero, error) {
 	heroes := []Hero{}
 	for rows.Next() {
 		var h Hero
-		if err := rows.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y); err != nil {
+		if err := scanHero(rows, &h); err != nil {
 			return nil, err
 		}
 		heroes = append(heroes, h)
@@ -117,12 +144,13 @@ func rpcHeroCreate(ctx context.Context, logger runtime.Logger, db *sql.DB, nk ru
 	}
 	m := worldMapsByID[defaultMap]
 	var h Hero
-	err = db.QueryRowContext(ctx, `
+	row := db.QueryRowContext(ctx, `
 INSERT INTO lf_heroes (user_id, slot, name, name_key, color, map, x, y)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, slot, name, color, map, x, y`,
+RETURNING `+heroCols,
 		uid, in.Slot, name, world.NameKey(name), in.Color, m.ID, m.Spawn[0], m.Spawn[1],
-	).Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y)
+	)
+	err = scanHero(row, &h)
 	if err != nil {
 		msg := err.Error()
 		switch {
@@ -144,8 +172,7 @@ var errHeroNotFound = errors.New("héros introuvable")
 // loadHero lit un héros en vérifiant qu'il appartient bien à l'utilisateur.
 func loadHero(ctx context.Context, db *sql.DB, uid, heroID string) (Hero, error) {
 	var h Hero
-	err := db.QueryRowContext(ctx, `SELECT id, slot, name, color, map, x, y FROM lf_heroes WHERE id = $1 AND user_id = $2`, heroID, uid).
-		Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y)
+	err := scanHero(db.QueryRowContext(ctx, `SELECT `+heroCols+` FROM lf_heroes WHERE id = $1 AND user_id = $2`, heroID, uid), &h)
 	if errors.Is(err, sql.ErrNoRows) {
 		return h, errHeroNotFound
 	}
@@ -187,42 +214,38 @@ func rpcWorldJoin(ctx context.Context, logger runtime.Logger, db *sql.DB, nk run
 	return string(out), nil
 }
 
-// saveHeroes enregistre la position de plusieurs héros en une requête.
+// saveHeroes enregistre la position et la progression de plusieurs héros
+// en une requête.
 func saveHeroes(ctx context.Context, db *sql.DB, mapID string, ps []heroPos) error {
 	if len(ps) == 0 {
 		return nil
 	}
-	ids := make([]string, len(ps))
-	xs := make([]float64, len(ps))
-	ys := make([]float64, len(ps))
-	for i, p := range ps {
-		ids[i], xs[i], ys[i] = p.id, p.x, p.y
-	}
-	idsJSON, _ := json.Marshal(ids)
-	xsJSON, _ := json.Marshal(xs)
-	ysJSON, _ := json.Marshal(ys)
+	rows, _ := json.Marshal(ps)
 	_, err := db.ExecContext(ctx, `
-UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, updated_at = now()
-FROM (
-	SELECT * FROM unnest(
-		ARRAY(SELECT jsonb_array_elements_text($2::jsonb))::uuid[],
-		ARRAY(SELECT jsonb_array_elements_text($3::jsonb))::real[],
-		ARRAY(SELECT jsonb_array_elements_text($4::jsonb))::real[]
-	) AS t(id, x, y)
-) v
-WHERE h.id = v.id`, mapID, string(idsJSON), string(xsJSON), string(ysJSON))
+UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, level = v.level, xp = v.xp, gold = v.gold,
+	potions = v.potions, trophies = v.trophies, updated_at = now()
+FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold integer,
+	potions smallint, trophies jsonb)
+WHERE h.id = v.id`, mapID, string(rows))
 	return err
 }
 
+// heroPos : ce qu'on sauvegarde d'un héros en jeu.
 type heroPos struct {
-	id   string
-	x, y float64
+	ID       string         `json:"id"`
+	X        float64        `json:"x"`
+	Y        float64        `json:"y"`
+	Level    int            `json:"level"`
+	XP       int            `json:"xp"`
+	Gold     int            `json:"gold"`
+	Potions  int            `json:"potions"`
+	Trophies map[string]int `json:"trophies"`
 }
 
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
 // À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
 // afficher (une nouvelle région, par exemple).
-const minClientVersion = "0.2.0"
+const minClientVersion = "0.3.0"
 
 // versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
 // illisible compte comme trop ancienne.

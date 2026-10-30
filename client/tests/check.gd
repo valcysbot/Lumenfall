@@ -28,7 +28,7 @@ func _ready() -> void:
 		failed += 1
 	# Toutes les planches du héros en couches existent, pour chaque tenue possible.
 	var m := HeroSprite.meta()
-	for anim in ["repos", "marche", "course", "salut"]:
+	for anim in ["repos", "marche", "course", "salut", "attaque", "bouclier", "garde", "incante", "sort", "roulade", "mort"]:
 		if not m.anims.has(anim):
 			printerr("Animation manquante : ", anim)
 			failed += 1
@@ -42,6 +42,7 @@ func _ready() -> void:
 					printerr("Planche manquante : ", file)
 					failed += 1
 	failed += _check_npcs()
+	failed += _check_monsters()
 	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
 		printerr("Braise n'a pas de planche")
 		failed += 1
@@ -77,4 +78,26 @@ func _check_npcs() -> int:
 				if ch.vers != "" and not tree.has(ch.vers):
 					printerr("Dialogue de %s : « %s » mène nulle part (%s)" % [n.id, ch.texte, ch.vers])
 					failed += 1
+	return failed
+
+
+## Chaque sorte de monstre du serveur a sa planche, avec toutes ses animations.
+func _check_monsters() -> int:
+	var failed := 0
+	var m := MonsterSprite.meta()
+	for anim in ["repos", "marche", "course", "attaque", "mort"]:
+		if not m.anims.has(anim):
+			printerr("Animation de monstre manquante : ", anim)
+			failed += 1
+	var src := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://").path_join("../server/world/monster.go"))
+	var re := RegEx.create_from_string('\n\t"([a-z_]+)": \\{ID:')
+	var n := 0
+	for hit in re.search_all(src):
+		n += 1
+		if not MonsterSprite.has_kind(hit.get_string(1)):
+			printerr("Monstre sans planche : ", hit.get_string(1))
+			failed += 1
+	if n < 5:
+		printerr("Bestiaire du serveur illisible (%d sortes trouvées)" % n)
+		failed += 1
 	return failed

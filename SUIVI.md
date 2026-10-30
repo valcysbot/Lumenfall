@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.2.1 « Les habitants » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
+**Version actuelle :** V0.3 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
 
 ---
 
@@ -84,6 +84,37 @@
 
 ---
 
+## ⚔️ Acte III, le combat
+
+### ✓ Quêtes accomplies
+
+- ✓ **Le Conseil des Armes** : 25 questions, toutes répondues le 30 octobre 2026 ([archive](docs/conseil-des-armes.html)).
+- ✓ **L'arène (serveur)** : `server/world/arena.go`. Le serveur décide de tout : portée, recharges, Ferveur, dégâts, critiques, esquive. Le client n'envoie que « je vise », « compétence 2 », « roulade », « bouclier », « potion ».
+- ✓ **Les règles** (`server/world/combat.go`) : les 6 éléments en roue (feu > air > terre > eau > feu, lumière ↔ ombre, +50 %), 4 effets d'état (brûlure, poison, étourdissement, ralentissement), la menace pour les tanks, la mort au temple de Solenn avec 2 minutes de Faiblesse.
+- ✓ **Le Paladin d'essai** : attaque de base automatique, Frappe sacrée, Coup de bouclier (étourdit), Lumière de Solenn (soin incanté), Aura de Solenn, Jugement de lumière (à distance, embrase). Ferveur, bouclier tenu au clic droit, roulade avec 2 charges d'endurance, 5 potions que Sœur Clémence remplit au village.
+- ✓ **Le bestiaire du val** (`server/world/monster.go`, camps dans `maps/glennmor.monstres.json`) : sangliers (niv. 1 à 3), loups en meute (3 à 5), loups et corbeaux effacés dans la Lisière Grise (6 à 9), et le Sanglier doré qui fuit (3 % de chance). Ils flânent, remarquent les héros, appellent la meute et rentrent chez eux si l'on fuit trop loin. La nuit, les Effacés voient les torches de plus loin.
+- ✓ **Le Grand Sanglier de Mabon** (`server/world/boss.go`), niveau 10, dans la Bauge au sud de la Lisière : charge et piétinement annoncés par des zones rouges ; sous la moitié de sa vie, la Flétrissure le dévore (phase 2 : il devient un Effacé, plus rapide, et des éclats gris tombent sur chaque héros).
+- ✓ **XP et niveaux** : sans niveau maximum, la vie et les dégâts montent à chaque niveau ; or et trophées. Tout est sauvegardé en base avec la position.
+- ✓ **La forge des bêtes** (`tools/sprites/forge_betes.py`) et 7 nouvelles animations du Paladin (attaque, coup de bouclier, garde, incantation, sort, roulade, chute) avec son écu.
+- ✓ **Le combat à l'écran** : cadre du héros (vie, Ferveur, XP, effets), cadre de la cible, barre de compétences (1 à 5, R, Espace), éventail pour le pouce sur téléphone, chiffres qui sautent, critiques dorés qui font trembler l'écran, ralenti sur le coup fatal d'un élite, zones rouges qui se remplissent, écran « Tu es tombé ».
+
+### ○ Quêtes à venir
+
+- ○ Ton avis sur la V0.3, puis les réglages (vie des monstres, dégâts, temps de recharge).
+- ○ Les duels sur invitation (choix du Conseil : juste après le boss).
+
+### ⚠️ Points d'attention
+
+- **Équilibrage à l'aveugle** : les chiffres viennent de calculs et de tests automatiques, pas encore de vraies parties. Attends-toi à ce que certains monstres soient trop durs ou trop mous : dis-moi lesquels.
+- **Tout le monde est Paladin** jusqu'à l'Acte IV : les héros existants ont reçu l'écu et les compétences du Paladin.
+- **Le Grand Sanglier se joue à plusieurs** : seul au niveau 10, il faut absolument sortir des zones rouges (dans les combats simulés sans esquive, le héros seul perd 10 fois sur 10). À deux ou trois, ça passe. Il revient 5 minutes après sa chute.
+- **L'équilibrage simulé** (`server/world/equilibre_test.go`) : 10 combats automatiques par camp vérifient qu'un Paladin du bon niveau gagne contre sangliers, loups, loups et corbeaux effacés. Le soin a reçu 6 s de recharge : sans elle, le Paladin était immortel.
+- **Planches plus larges** : le héros est maintenant dessiné sur des images de 64 pixels de large (pour la chute), et chaque planche fait 3 712 pixels de large. C'est sous la limite de 4 096 des téléphones, mais il faudra découper les planches quand les animations des 17 classes arriveront.
+- **Jeu trop ancien** : le serveur demande maintenant la v0.3.0. Les v0.2 affichent « Ton jeu est trop ancien » tant que la v0.3.0 n'est pas publiée.
+- **Le ralenti** n'existe que sur ton écran (le monde est partagé) : il ne dure qu'une demi-seconde, sur le coup fatal d'un élite ou d'un boss.
+
+---
+
 ## ⚖️ Décisions prises
 
 | Date | Décision | Choix |
@@ -139,12 +170,52 @@
 | 29/10/2026 | Braise dans le jeu | Il suit le héros et commente, désactivable ⭐ |
 | 29/10/2026 | Bible du monde | Les 31 pages du Grimoire d'Erydor validées ⭐ |
 | 29/10/2026 | 15ᵉ race | **Les Lumins**, êtres de cristal nés du Lumenfall (choix d'Elowan) |
+| 30/10/2026 | Ciblage | Clic sur le monstre ou Tab ⭐ |
+| 30/10/2026 | Attaque de base | Automatique sur la cible, les compétences à la main ⭐ |
+| 30/10/2026 | Bouger en combattant | Oui, sauf pendant une incantation ⭐ |
+| 30/10/2026 | Roulade | **Jauge d'endurance : 2 roulades d'affilée** (choix d'Elowan) |
+| 30/10/2026 | Combat sur téléphone | Éventail de 5 compétences + roulade + cible suivante ⭐ |
+| 30/10/2026 | Classe d'essai | Le Paladin seul, très soigné ⭐ |
+| 30/10/2026 | Compétences | 5 : frappe, coup de bouclier, soin, aura, jugement ⭐ |
+| 30/10/2026 | Ressource du Paladin | La Ferveur ⭐ |
+| 30/10/2026 | Bouclier | Tenu au clic droit, bloque de face ⭐ |
+| 30/10/2026 | Potions | 5, recharge de 30 s, remplies par Sœur Clémence ⭐ |
+| 30/10/2026 | Effets d'état | 4 : brûlure, poison, étourdissement, ralentissement ⭐ |
+| 30/10/2026 | Éléments | Les 6, en roue, +50 % ⭐ |
+| 30/10/2026 | Chiffres de dégâts | Qui sautent, critiques dorés avec tremblement ⭐ |
+| 30/10/2026 | Ralenti | Seulement sur le coup fatal d'un élite ou d'un boss ⭐ |
+| 30/10/2026 | Attaques annoncées | Zones rouges qui se remplissent ⭐ |
+| 30/10/2026 | Premiers monstres | Bêtes du val + leurs versions effacées vers la Lisière ⭐ |
+| 30/10/2026 | Sortes de monstres | 4 + le Sanglier doré ⭐ |
+| 30/10/2026 | Comportement | Ils flânent, attaquent de près, rentrent si l'on fuit ⭐ |
+| 30/10/2026 | Premier boss | Le Grand Sanglier de Mabon, 2 phases ⭐ |
+| 30/10/2026 | Menace | Dès maintenant ⭐ |
+| 30/10/2026 | Mort | Temple de Solenn + Faiblesse 2 min ⭐ |
+| 30/10/2026 | XP et niveaux | Dès l'Acte III, niveaux 1 à 10 dans le val ⭐ |
+| 30/10/2026 | Butin | Or + trophées rares ⭐ |
+| 30/10/2026 | PvP | Duels sur invitation juste après le boss ⭐ |
+| 30/10/2026 | Mode hardcore | À l'Acte IV, avec la création du héros ⭐ |
 
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.3 · « Premier sang » (30 octobre 2026)
+
+- 🆕 **Le combat !** Clique sur un monstre (ou Tab) pour le viser : ton héros y court et frappe tout seul. À toi les compétences : **1** Frappe sacrée, **2** Coup de bouclier, **3** Lumière de Solenn, **4** Aura de Solenn, **5** Jugement de lumière.
+- 🆕 **La Ferveur** monte quand tu frappes ou encaisses, et paie le soin et le Jugement.
+- 🆕 **Roulade** (Espace) : invincible le temps de rouler, 2 d'affilée puis tu souffles. **Bouclier** : maintiens le clic droit, il bloque les coups de face.
+- 🆕 **Potions** (R) : 5 dans ta besace, Sœur Clémence la remplit quand tu rentres au village.
+- 🆕 **Les monstres** : sangliers, loups en meute, et dans la Lisière Grise des loups et des corbeaux **effacés**, gris et tremblants. Ouvre l'œil : un **Sanglier doré** traîne parfois dans les champs, et il ne se laisse pas attraper facilement.
+- 🆕 **Le Grand Sanglier de Mabon** t'attend dans la Bauge, au sud-est. Maître Mabon n'exagérait pas. Sors des zones rouges !
+- 🆕 **XP, niveaux, or et trophées.** Si tu tombes, Sœur Clémence te relève au temple, un peu affaibli.
+- 🆕 Sur téléphone, un **éventail de boutons** sous le pouce droit.
+- ✨ Ton héros porte maintenant l'**écu** du Paladin, et sait frapper, se protéger, incanter, rouler… et tomber.
+- ✨ Braise commente tes combats.
+
+Captures : [premier combat](docs/captures/v0.3/combat-sanglier.png) · [la meute](docs/captures/v0.3/meute-de-loups.png) · [le Grand Sanglier](docs/captures/v0.3/grand-sanglier.png) · [son piétinement](docs/captures/v0.3/pietinement.png) · [sur téléphone](docs/captures/v0.3/telephone.png) · [le bestiaire](docs/captures/v0.3/bestiaire.png) · [le Paladin en action](docs/captures/v0.3/planche-paladin.png). Avant / après : [la place en V0.2 et le premier combat](docs/captures/v0.3/avant-apres.png).
 
 ### V0.2.1 · « Les habitants » (30 octobre 2026)
 

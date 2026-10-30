@@ -54,6 +54,13 @@ python3 tools/sprites/forge_braise.py           # Braise, le petit dragon
 - Où ils travaillent, où ils dorment, s'ils sortent la nuit : `server/world/maps/glennmor.pnj.json` (le serveur vérifie au démarrage que ces lieux sont praticables et reliés).
 - Leur tenue, leurs bulles et leurs dialogues : `client/data/pnj/glennmor.json`. Un dialogue est une suite de nœuds `{texte, choix: [{texte, vers}]}` qui commence à `debut` ; `vers` vide termine la conversation. `{nom}` est remplacé par le nom du héros.
 
+## Le combat et les monstres
+
+- Les règles (éléments, effets, Paladin, menace, mort, XP) : `server/world/combat.go` et `server/world/arena.go` ; le Grand Sanglier : `server/world/boss.go`.
+- Le bestiaire (vie, dégâts, vitesse, butin) : `server/world/monster.go`. Où vivent les monstres : `server/world/maps/glennmor.monstres.json` (le serveur vérifie au démarrage que chaque camp est praticable).
+- Les dessins des bêtes : `python3 tools/sprites/forge_betes.py` (environ 3 minutes), ou seulement quelques-unes : `python3 tools/sprites/forge_betes.py loup sanglier`.
+- Capture d'un combat : `--capture=world --cible=sanglier --competences=1,5,roulade` (ajoute `--tactile` pour la disposition téléphone).
+
 ## Retoucher une carte
 
 1. Premier jet (une seule fois) : `python3 tools/maps/gen_glennmor.py`, puis

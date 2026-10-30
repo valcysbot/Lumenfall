@@ -165,6 +165,8 @@
   "interieur": ["Braise s'installe près de la cheminée.", "Braise : « Enfin au chaud ! »"],
   "pnj": ["Braise : « Va lui parler, je suis sûr qu'il a des choses à raconter ! »"],
   "foret": ["Braise : « Les arbres sont grands par ici… On ne se perd pas, hein ? »"],
-  "lisiere": ["Braise frissonne : « Je n'aime pas cette couleur grise… »"]
+  "lisiere": ["Braise frissonne : « Je n'aime pas cette couleur grise… »"],
+  "effaces": ["Braise chuchote : « Les Effacés n'ont plus de couleurs. Ta lumière leur fait mal. »", "Braise : « La nuit, ils voient ta torche de loin. Fais attention. »"],
+  "combat": ["Braise : « Vas-y ! Je t'encourage très fort, de loin ! »", "Braise : « Ta Ferveur monte, tente le Jugement (5) ! »", "Braise : « Pense à ta potion, touche R ! »"]
  }
 }

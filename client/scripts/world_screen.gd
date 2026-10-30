@@ -14,6 +14,8 @@ const ZOOM_MAX := 2.2
 const TALK_REACH := 2.2     # cases : assez près pour parler à un habitant
 const BUBBLE_REACH := 4.5   # cases : un habitant te lance une bulle en passant
 const BUBBLE_EVERY := 25.0  # secondes entre deux bulles d'un même habitant
+const MELEE_REACH := 1.6    # cases : assez près pour frapper (le serveur décide)
+const TARGET_RANGE := 16.0  # cases : Tab cherche une cible jusque-là
 
 var hero := {}
 
@@ -36,6 +38,16 @@ var _chase_t := 0.0         # dernier trajet demandé vers l'habitant
 var _talk_at := Vector2.ZERO  # où l'on était en commençant à parler
 
 var hud: CanvasLayer
+var combat: CombatHud
+var fx_layer: Node2D
+var tele_layer: Node2D
+var target_sid := 0
+var _hunt := 0              # monstre vers qui l'on marche pour le frapper
+var _hunt_t := 0.0
+var _shake := 0.0
+var _slowmo := 0.0
+var _blocking := false
+var _fight_t := -1e9       # dernier coup donné ou reçu
 var info: Label
 var chat_log: VBoxContainer
 var chat_edit: LineEdit
@@ -63,6 +75,8 @@ const WEATHER_TEXT := {
 func _ready() -> void:
 	iso_map = IsoMap.new()
 	add_child(iso_map)
+	tele_layer = Node2D.new()   # les zones rouges, au ras du sol
+	add_child(tele_layer)
 	marker = Node2D.new()
 	marker.draw.connect(_draw_marker)
 	marker.visible = false
@@ -70,6 +84,9 @@ func _ready() -> void:
 	entities = Node2D.new()
 	entities.y_sort_enabled = true
 	add_child(entities)
+	fx_layer = Node2D.new()
+	fx_layer.z_index = 50
+	add_child(fx_layer)
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
@@ -127,6 +144,9 @@ func _build_hud() -> void:
 	quit.pressed.connect(func(): quit_world.emit())
 	buttons.add_child(quit)
 	root.add_child(buttons)
+	# Espace sert à rouler : aucun bouton ne doit garder le focus clavier.
+	for btn in buttons.get_children():
+		btn.focus_mode = Control.FOCUS_NONE
 	_build_settings(root)
 
 	dialogue = DialogueBox.new()
@@ -137,13 +157,22 @@ func _build_hud() -> void:
 	dialogue.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	root.add_child(dialogue)
 
-	var touch := DisplayServer.is_touchscreen_available()
+	# --tactile : la disposition téléphone sur PC (pour les captures).
+	var touch := DisplayServer.is_touchscreen_available() or "--tactile" in OS.get_cmdline_user_args()
+	combat = CombatHud.new()
+	combat.touch = touch
+	root.add_child(combat)
+	combat.skill.connect(_use_skill)
+	combat.potion.connect(func(): Net.send(Net.OP_POTION, {}))
+	combat.roll.connect(_roll)
+	combat.next_target.connect(_next_target)
+	combat.block.connect(_set_block)
 	chat_log = VBoxContainer.new()
 	chat_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chat_log.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 14)
 	chat_log.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	chat_log.custom_minimum_size = Vector2(420, 0)
-	chat_log.position.y -= 190 if touch else 60
+	chat_log.custom_minimum_size = Vector2(380, 0)
+	chat_log.position.y -= 190 if touch else 20
 	root.add_child(chat_log)
 
 	chat_edit = LineEdit.new()
@@ -164,9 +193,11 @@ func _build_hud() -> void:
 		root.add_child(joystick)
 		var side := VBoxContainer.new()
 		side.add_theme_constant_override("separation", 10)
-		side.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+		# À droite, au-dessus de l'éventail de combat.
+		side.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
 		side.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		side.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		side.grow_vertical = Control.GROW_DIRECTION_BOTH
+		side.position.y -= 110
 		for z in [["＋", 1.25], ["－", 0.8]]:
 			var zb := UI.button(z[0])
 			zb.custom_minimum_size = Vector2(64, 56)
@@ -176,13 +207,14 @@ func _build_hud() -> void:
 		run_btn.toggle_mode = true
 		run_btn.custom_minimum_size = Vector2(120, 72)
 		run_btn.toggled.connect(func(on): _run_toggle = on)
+		run_btn.focus_mode = Control.FOCUS_NONE
 		side.add_child(run_btn)
 		root.add_child(side)
 
 	toast = UI.label("", 20, UI.LUMEN)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.autowrap_mode = TextServer.AUTOWRAP_OFF
-	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 70)
+	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 150)
 	toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	toast.add_theme_color_override("font_outline_color", UI.NIGHT)
 	toast.add_theme_constant_override("outline_size", 6)
@@ -251,7 +283,7 @@ func _map_name() -> String:
 func _update_info() -> void:
 	var n := 0
 	for sid in pawns:
-		if pawns[sid].npc == "":
+		if pawns[sid].npc == "" and pawns[sid].kind == "":
 			n += 1
 	info.text = "%s · %s · %s · %d %s" % [hero.get("name", ""), _map_name(), sky.describe(), n, "aventurier en ligne" if n <= 1 else "aventuriers en ligne"]
 
@@ -325,12 +357,14 @@ func _on_state(op: int, d: Dictionary) -> void:
 			_show_toast(_map_name())
 		Net.OP_JOIN:
 			_add_pawn(d)
-			if not d.has("npc"):
+			if not d.has("npc") and not d.has("m"):
 				_add_chat_line("", "%s arrive dans la région." % d.n, true)
 		Net.OP_LEAVE:
 			var sid := int(d.s)
 			if pawns.has(sid):
-				if pawns[sid].npc == "":
+				if sid == target_sid:
+					_set_target(0)
+				if pawns[sid].npc == "" and pawns[sid].kind == "":
 					_add_chat_line("", "%s est parti." % pawns[sid].hero_name, true)
 				elif dialogue.npc == pawns[sid].npc:
 					dialogue.close()
@@ -369,7 +403,41 @@ func _on_state(op: int, d: Dictionary) -> void:
 		Net.OP_EMOTE_OUT:
 			var sid := int(d.s)
 			if pawns.has(sid):
-				pawns[sid].sprite.play_once(d.e)
+				pawns[sid].play(d.e)
+		Net.OP_HITS:
+			for h in d.h:
+				_on_hit(int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]))
+		Net.OP_VITALS:
+			for v in d.v:
+				var sid := int(v[0])
+				if pawns.has(sid):
+					pawns[sid].set_vitals(int(v[1]), int(v[2]), int(v[3]), int(v[4]))
+				if sid == my_sid:
+					combat.set_vitals(int(v[1]), int(v[2]), int(v[3]), int(v[4]))
+		Net.OP_ME:
+			combat.set_me(d)
+		Net.OP_CAST:
+			if int(d.s) == my_sid:
+				combat.start_cast(int(d.k), int(d.ms))
+		Net.OP_ANIM:
+			for a in d.a:
+				_on_anim(int(a[0]), str(a[1]))
+		Net.OP_DEATH:
+			_on_death(int(d.s), int(d.k), int(d.f))
+		Net.OP_LEVEL:
+			_on_level(int(d.s), int(d.lv))
+		Net.OP_LOOT:
+			_on_loot(d)
+		Net.OP_REFUSE:
+			_show_toast(d.m)
+		Net.OP_TELE:
+			var t := Telegraph.new()
+			t.line = bool(d.l)
+			t.a = Vector2(d.a[0], d.a[1]) / 100.0
+			t.b = Vector2(d.b[0], d.b[1]) / 100.0
+			t.r = float(d.r) / 100.0
+			t.total = float(d.ms) / 1000.0
+			tele_layer.add_child(t)
 
 
 func _add_pawn(p: Dictionary) -> void:
@@ -383,7 +451,15 @@ func _add_pawn(p: Dictionary) -> void:
 		pawn.npc = p.npc
 		pawn.look = who.get("look", pawn.look)
 		pawn.stature = float(who.get("taille", 1.0))
+	if p.has("m"):
+		pawn.kind = p.m
+		pawn.elite = bool(p.get("el", false))
 	pawn.hero_name = p.n
+	pawn.level = int(p.get("lv", 1))
+	pawn.hp = int(p.get("hp", 1))
+	pawn.hp_max = int(p.get("hpm", 1))
+	pawn.fx = int(p.get("fx", 0))
+	pawn.dead = p.has("hp") and int(p.hp) <= 0
 	pawn.dir = int(p.d)
 	pawn.is_me = sid == my_sid
 	var wp := Vector2(p.x, p.y) / 100.0
@@ -394,6 +470,9 @@ func _add_pawn(p: Dictionary) -> void:
 	if pawn.is_me:
 		camera.position = pawn.position
 		camera.reset_smoothing()
+		combat.set_vitals(pawn.hp, pawn.hp_max, pawn.fx, pawn.level)
+	if sid == target_sid:
+		pawn.targeted = true
 	_update_info()
 
 
@@ -407,12 +486,20 @@ func _process(delta: float) -> void:
 		sky.indoors = Iso.to_world(pawns[my_sid].position).y >= float(iso_map.data.get("indoors_from", 1e9))
 	sky.update_torches(pawns, my_sid)
 	_update_npcs(delta)
+	_update_hunt()
 	_info_t += delta
 	if _info_t > 1.0:
 		_info_t = 0.0
 		_update_info()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
+	# Un coup critique fait trembler l'écran ; le coup fatal d'un élite ralentit le temps (sur ton écran seulement).
+	if _shake > 0:
+		_shake = maxf(0, _shake - delta / maxf(0.05, Engine.time_scale))
+		camera.position += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * 6.0 * _shake / 0.25
+	if _slowmo > 0:
+		_slowmo -= delta / maxf(0.05, Engine.time_scale)
+		Engine.time_scale = 0.3 if _slowmo > 0 else 1.0
 	# Pendant un dialogue, on remonte la vue pour que la boîte ne cache pas la scène.
 	camera.offset = camera.offset.lerp(Vector2(0, 120) if dialogue.visible else Vector2.ZERO, minf(1.0, delta * 6))
 	if marker.visible:
@@ -505,6 +592,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			chat_edit.release_focus()
 		elif event.physical_keycode == KEY_H and not chat_edit.has_focus():
 			_wave()
+		elif not chat_edit.has_focus() and _combat_key(event):
+			get_viewport().set_input_as_handled()
+			return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		_set_block(event.pressed)
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_by(1.1)
@@ -515,10 +607,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	var target = null
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
+	if target != null and _click_fighter(target):
+		return
 	if target != null and _click_npc(target):
 		return
 	if target != null:
 		_talk_to = -1
+		_hunt = 0
 		var wp := Iso.to_world(target)
 		if iso_map.walkable(wp):
 			Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)], "r": _running()})
@@ -567,6 +662,7 @@ func _near(sid: int, reach: float) -> bool:
 
 func _update_npcs(delta: float) -> void:
 	if _talk_to != -1:
+		_hunt = 0
 		if not pawns.has(_talk_to):
 			_talk_to = -1
 		elif _near(_talk_to, TALK_REACH):
@@ -615,8 +711,10 @@ func _braise_remark() -> String:
 		kind = "pluie"
 	elif sky.is_night():
 		kind = "nuit"
+	elif _clock - _fight_t < 8.0:
+		kind = "combat"
 	elif me.x > iso_map.data.get("width", 200) * 0.8:
-		kind = "lisiere"
+		kind = "lisiere" if randf() < 0.5 else "effaces"
 	else:
 		for sid in pawns:
 			if pawns[sid].npc != "" and _near(sid, 5.0):
@@ -646,3 +744,238 @@ func _set_braise(on: bool) -> void:
 	elif not on and braise != null:
 		braise.queue_free()
 		braise = null
+
+
+# --- Le combat ------------------------------------------------------------------
+
+## Les touches de combat : 1 à 5, R (potion), Espace (roulade), Tab, Échap.
+func _combat_key(event: InputEventKey) -> bool:
+	if dialogue.visible:
+		return false   # 1 à 4 choisissent une réponse
+	var k := event.physical_keycode
+	if k >= KEY_1 and k <= KEY_5:
+		_use_skill(k - KEY_1 + 1)
+	elif k >= KEY_KP_1 and k <= KEY_KP_5:
+		_use_skill(k - KEY_KP_1 + 1)
+	elif k == KEY_R:
+		Net.send(Net.OP_POTION, {})
+	elif k == KEY_SPACE:
+		_roll()
+	elif k == KEY_TAB:
+		_next_target()
+	elif k == KEY_ESCAPE and target_sid != 0 and not dialogue.visible:
+		_set_target(0)
+	else:
+		return false
+	return true
+
+
+func _use_skill(k: int) -> void:
+	if pawns.has(my_sid) and pawns[my_sid].dead:
+		return
+	# Frappe sacrée ou coup de bouclier sur un monstre trop loin : on y va d'abord.
+	if (k == 1 or k == 2) and pawns.has(target_sid) and pawns[target_sid].kind != "" and not _in_reach(target_sid):
+		_hunt = target_sid
+		_hunt_t = -1e9
+	Net.send(Net.OP_SKILL, {"k": k})
+
+
+func _roll() -> void:
+	_hunt = 0
+	Net.send(Net.OP_ROLL, {"d": [_last_dir.x, _last_dir.y]})
+
+
+func _set_block(on: bool) -> void:
+	if on == _blocking:
+		return
+	_blocking = on
+	Net.send(Net.OP_BLOCK, {"b": on})
+
+
+func _set_target(sid: int) -> void:
+	if pawns.has(target_sid):
+		pawns[target_sid].targeted = false
+	target_sid = sid
+	if pawns.has(sid):
+		pawns[sid].targeted = true
+		combat.target = pawns[sid]
+	else:
+		target_sid = 0
+		combat.target = null
+	Net.send(Net.OP_TARGET, {"t": target_sid})
+
+
+## Tab : le monstre vivant le plus proche, puis le suivant à chaque appui.
+func _next_target() -> void:
+	if not pawns.has(my_sid):
+		return
+	var me := Iso.to_world(pawns[my_sid].position)
+	var list := []
+	for sid in pawns:
+		var p: Pawn = pawns[sid]
+		if p.kind != "" and not p.dead:
+			var d := me.distance_to(Iso.to_world(p.position))
+			if d <= TARGET_RANGE:
+				list.append([d, sid])
+	if list.is_empty():
+		_show_toast("Braise dit : aucun monstre en vue.")
+		return
+	list.sort_custom(func(a, b): return a[0] < b[0])
+	var pick: int = list[0][1]
+	for i in list.size():
+		if list[i][1] == target_sid:
+			pick = list[(i + 1) % list.size()][1]
+	_set_target(pick)
+
+
+func _in_reach(sid: int) -> bool:
+	return _near(sid, MELEE_REACH)
+
+
+## Un clic sur un monstre (on le vise et on y court) ou sur un autre héros (pour le soigner).
+func _click_fighter(at: Vector2) -> bool:
+	var best := -1
+	var best_d := 34.0
+	for sid in pawns:
+		var p: Pawn = pawns[sid]
+		if p.npc != "" or p.dead or sid == my_sid:
+			continue
+		var d := at.distance_to(p.position + Vector2(0, -16 if p.kind != "" else -28))
+		if d < best_d:
+			best_d = d
+			best = sid
+	if best == -1:
+		return false
+	_talk_to = -1
+	_set_target(best)
+	if pawns[best].kind != "":
+		_hunt = best
+		_hunt_t = -1e9
+	get_viewport().set_input_as_handled()
+	return true
+
+
+## On court vers le monstre visé jusqu'à être à portée ; l'attaque de base fait le reste.
+func _update_hunt() -> void:
+	if _hunt == 0:
+		return
+	if not pawns.has(_hunt) or pawns[_hunt].dead or _last_dir != Vector2.ZERO or not pawns.has(my_sid):
+		_hunt = 0
+		return
+	if _in_reach(_hunt):
+		_hunt = 0
+		Net.send(Net.OP_MOVE_DIR, {"d": [0, 0], "r": false})
+	elif _clock - _hunt_t > 0.5:
+		_hunt_t = _clock
+		var wp := Iso.to_world(pawns[_hunt].position)
+		Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)], "r": true})
+
+
+func _float(sid: int, text: String, color: Color, big: bool = false) -> void:
+	if not pawns.has(sid):
+		return
+	var f := FloatText.new()
+	f.text = text
+	f.color = color
+	f.big = big
+	f.position = pawns[sid].position + Vector2(randf_range(-10, 10), -pawns[sid]._head() + 6)
+	fx_layer.add_child(f)
+
+
+func _on_hit(src: int, tgt: int, value: int, flags: int, skill: int) -> void:
+	var crit := flags & 1 != 0
+	var heal := flags & 2 != 0
+	if flags & 8:
+		_float(tgt, "Esquivé !", UI.MOSS)
+		return
+	if heal:
+		if value > 0:
+			_float(tgt, "+%d" % value, Color("7fe08a"), crit)
+		return
+	if pawns.has(tgt):
+		pawns[tgt].flash()
+	var color := Color.WHITE
+	if tgt == my_sid:
+		color = Color("ff6a5a")
+	elif flags & 16:
+		color = Color("f0a03c")   # brûlure ou poison
+	elif skill == 1 or skill == 5:
+		color = Color("ffe9a0")   # la lumière
+	if crit:
+		color = Color("ffd23a")
+	var txt := str(value) + ("!" if crit else "")
+	if flags & 4:
+		txt += " 🛡"
+	_float(tgt, txt, color, crit)
+	if src == my_sid or tgt == my_sid:
+		_fight_t = _clock
+	if crit and (src == my_sid or tgt == my_sid):
+		_shake = 0.25
+	if tgt == my_sid and braise != null and randf() < 0.06:
+		braise.say(["Braise : « Aïe ! Je souffle sur la plaie ! »", "Braise : « Lève ton bouclier ! Clic droit ! »", "Braise : « Roule ! Roule ! »"].pick_random())
+
+
+func _on_anim(sid: int, anim: String) -> void:
+	if not pawns.has(sid):
+		return
+	var p: Pawn = pawns[sid]
+	match anim:
+		"releve":
+			p.revive()
+			if sid == my_sid:
+				combat.show_death(false)
+				_show_toast("💔 Faiblesse : −25 % de dégâts pendant 2 minutes.")
+				if braise != null:
+					braise.say("Braise : « Te revoilà ! Sœur Clémence dit de faire attention. »")
+		"aura":
+			p.play("sort")
+		"potion":
+			_float(sid, "🧪", UI.MOSS)
+		_:
+			p.play(anim)
+
+
+func _on_death(sid: int, killer: int, flags: int) -> void:
+	if not pawns.has(sid):
+		return
+	var p: Pawn = pawns[sid]
+	p.die()
+	if sid == target_sid and p.kind != "":
+		_set_target(0)
+	if flags & 32 and (killer == my_sid or _near(sid, 12)):
+		_slowmo = 0.6
+		_shake = 0.3
+	if sid == my_sid:
+		combat.show_death(true)
+		_hunt = 0
+		if braise != null:
+			braise.say("Braise : « Non ! Je reste avec toi jusqu'au temple. »")
+	elif p.kind == "":
+		_add_chat_line("", "%s est tombé au combat." % p.hero_name, true)
+
+
+func _on_level(sid: int, lv: int) -> void:
+	if not pawns.has(sid):
+		return
+	pawns[sid].level = lv
+	pawns[sid]._refresh_name()
+	_float(sid, "Niveau %d !" % lv, UI.LUMEN, true)
+	if sid == my_sid:
+		_show_toast("✨ Niveau %d ! Tu te sens plus fort." % lv)
+		if braise != null:
+			braise.say("Braise fait un looping : « NIVEAU %d ! »" % lv)
+	else:
+		_add_chat_line("", "%s passe au niveau %d !" % [pawns[sid].hero_name, lv], true)
+
+
+func _on_loot(d: Dictionary) -> void:
+	var line := "+%d XP · +%d or" % [int(d.xp), int(d.get("or", 0))]
+	_add_chat_line("", line, true)
+	var tro := str(d.get("tr", ""))
+	if tro != "":
+		_show_toast("🏆 Trophée : %s !" % tro)
+		_add_chat_line("", "🏆 Tu ramasses : %s." % tro, true)
+		if braise != null:
+			braise.say("Braise : « Oh, un %s ! On l'accroche où ? »" % tro.to_lower())
+	if pawns.has(int(d.m)):
+		_float(int(d.m), "+%d or" % int(d.get("or", 0)), UI.LUMEN)
