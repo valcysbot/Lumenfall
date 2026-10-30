@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1.1 « Bousculade » (29 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
+**Version actuelle :** V0.1.2 « Habits neufs » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
 
 ---
 
@@ -60,13 +60,12 @@
 - ✓ **Le Conseil du Monde vivant** : 25 questions, toutes répondues le 29 octobre 2026 ([archive](docs/conseil-du-monde-vivant.html)).
 - ✓ **Le Grimoire d'Erydor** : la bible du monde, 31 pages validées par Elowan ([bible](docs/bible-du-monde.md), [version interactive](docs/grimoire-d-erydor.html)).
 
-### ✱ Quêtes en cours
-
-- ✱ **La fabrique des dessins** : choisir comment produire les sprites, car l'IA d'images n'est pas accessible depuis l'environnement de Claude.
+- ✓ **La fabrique des dessins** : l'IA d'images n'est pas accessible depuis l'environnement de Claude ; Elowan a choisi le pixel art dessiné par code.
+- ✓ **La forge des héros** (`tools/sprites/forge_heros.py`) : un mannequin 3D photographié dans la vraie vue du jeu, pièce par pièce. 10 pièces (corps, pantalon, bottes, tunique en 12 couleurs, gants, cape, cheveux courts ou longs en 6 couleurs, casque, épée), 8 directions, 4 animations (repos, marche, course, salut).
+- ✓ **Habits neufs (V0.1.2)** : le pion est remplacé par le héros en couches, avec la course, le salut et le zoom.
 
 ### ○ Quêtes à venir (V0.2)
 
-- ○ Le héros humain en couches, 8 directions : corps, tête, cheveux, torse, jambes, bottes, arme, casque, gants, cape. Marche, course, repos, salut.
 - ○ Le Val de Glennmor (≈ 200 × 200 cases) et Bourg-Lanterne : auberge La Chope Pleine + 2 maisons où l'on entre.
 - ○ Jour / nuit de 2 h (80 min de jour, 40 de nuit), nuits très sombres avec torche ; pluie, brouillard, orage partagés par région.
 - ○ Une dizaine de PNJ avec leurs habitudes, accueil par Maître Mabon, bulles + boîte de dialogue, Braise qui suit le héros.
@@ -74,7 +73,9 @@
 ### ⚠️ Points d'attention
 
 - **Nuits très sombres (choix d'Elowan)** : la torche s'allume toute seule la nuit, et un réglage de luminosité protège la lisibilité sur téléphone.
-- **Casque, gants et cape visibles (choix d'Elowan)** : presque deux fois plus de dessins par direction et par animation.
+- **Casque, gants et cape visibles (choix d'Elowan)** : presque deux fois plus de dessins par direction et par animation. Avec la forge par code, ça ne coûte que du temps de calcul (3 minutes pour tout redessiner).
+- **Cheveux tirés du nom** : en attendant la personnalisation de l'Acte IV, la coupe et la couleur des cheveux sont choisies à partir du nom du héros.
+- **Pixel art et écrans** : sur un écran qui n'est pas un multiple de 1280 × 720, les pixels du héros peuvent être de tailles un peu inégales. Le zoom le règle en partie ; un vrai réglage « pixels nets » viendra avec la V0.2.
 
 ---
 
@@ -105,7 +106,8 @@
 | 29/10/2026 | Testeurs de l'Acte I | **Elowan + 2 ou 3 amis dès les premières versions** (choix d'Elowan) |
 | 29/10/2026 | Notes de mise à jour | Une petite note chaque jour de travail ⭐ |
 | 29/10/2026 | Journal de suivi | Ce fichier, dans le dépôt ⭐ |
-| 29/10/2026 | Fabrication des dessins | IA + nettoyage en pixel art ⭐ (mais l'IA d'images est inaccessible : nouveau choix en cours) |
+| 29/10/2026 | Fabrication des dessins | IA + nettoyage en pixel art ⭐, impossible faute d'accès à une IA d'images |
+| 29/10/2026 | Fabrication des dessins (bis) | Pixel art dessiné par code ⭐ |
 | 29/10/2026 | Palette | Vive et colorée, façon Aion ⭐ |
 | 29/10/2026 | Contour des sprites | Fin contour sombre ⭐ |
 | 29/10/2026 | Effets HD-2D | Lumière dynamique + ombres + léger flou de profondeur ⭐ |
@@ -138,6 +140,18 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.1.2 · « Habits neufs » (30 octobre 2026)
+
+- 🆕 Adieu le pion : ton héros est un vrai aventurier humain en pixel art, dessiné pièce par pièce (tunique, pantalon, bottes, gants, cape, épée, cheveux) et vu sous 8 angles.
+- 🆕 La tunique prend la couleur choisie à la création ; les cheveux (courts ou longs, 6 couleurs) viennent du nom.
+- 🆕 Courir : maintiens **Maj** sur PC, ou touche le bouton 🏃 **Courir** sur téléphone. 6,5 cases par seconde au lieu de 4.
+- 🆕 Saluer : bouton 👋 ou touche **H**. Tout le monde autour voit ton salut.
+- 🆕 Zoom : molette sur PC, pincement ou boutons ＋ / － sur téléphone.
+- ✨ L'écran de création montre ton héros qui tourne sur lui-même et change de tenue en direct.
+- 🐛 Corrigé : le nom de la carte s'affichait parfois lettre par lettre, en colonne.
+
+Captures : [avant / après](docs/captures/v0.1.2/avant-apres.png) · [la Clairière](docs/captures/v0.1.2/clairiere.png) · [création](docs/captures/v0.1.2/creation.png) · [planche du héros](docs/captures/v0.1.2/planche-heros.png)
 
 ### V0.1.1 · « Bousculade » (29 octobre 2026, serveur seulement)
 

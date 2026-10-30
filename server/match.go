@@ -30,16 +30,21 @@ const (
 
 // Codes des messages échangés pendant la partie.
 const (
-	opMoveDir  = 1  // client → serveur : {"d":[dx,dy]}
-	opMoveTo   = 2  // client → serveur : {"t":[x,y]}
+	opMoveDir  = 1  // client → serveur : {"d":[dx,dy],"r":course}
+	opMoveTo   = 2  // client → serveur : {"t":[x,y],"r":course}
 	opChat     = 3  // client → serveur : {"m":"Bonjour !"}
+	opEmote    = 4  // client → serveur : {"e":"salut"}
 	opSnapshot = 10 // serveur → client : état complet à l'arrivée
 	opDelta    = 11 // serveur → client : héros qui ont bougé
 	opJoin     = 12 // serveur → client : un héros arrive
 	opLeave    = 13 // serveur → client : un héros part
 	opChatOut  = 14 // serveur → client : message de chat
 	opNotice   = 15 // serveur → client : message système
+	opEmoteOut = 16 // serveur → client : {"s":sid,"e":"salut"}
 )
+
+// Les émotes connues ; les autres sont ignorées.
+var emotes = map[string]bool{"salut": true}
 
 var worldMaps = []string{defaultMap}
 var worldMapsByID = map[string]*world.Map{}
@@ -71,12 +76,13 @@ func (r *worldRegistry) get(mapID string) (string, bool) {
 }
 
 type player struct {
-	sid      int
-	presence runtime.Presence
-	hero     Hero
-	body     world.Body
-	lastChat int64
-	lastPath int64
+	sid       int
+	presence  runtime.Presence
+	hero      Hero
+	body      world.Body
+	lastChat  int64
+	lastPath  int64
+	lastEmote int64
 }
 
 type worldState struct {
@@ -248,13 +254,16 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 	case opMoveDir:
 		var in struct {
 			D [2]float64 `json:"d"`
+			R bool       `json:"r"`
 		}
 		if json.Unmarshal(data, &in) == nil {
 			pl.body.SetInput(in.D[0], in.D[1])
+			pl.body.Run = in.R
 		}
 	case opMoveTo:
 		var in struct {
 			T [2]float64 `json:"t"`
+			R bool       `json:"r"`
 		}
 		if json.Unmarshal(data, &in) != nil || tick-pl.lastPath < pathCooldown {
 			return
@@ -266,6 +275,7 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		}
 		if p := s.m.FindPath(pl.body.X, pl.body.Y, tx, ty, pathMaxNodes); p != nil {
 			pl.body.SetPath(p)
+			pl.body.Run = in.R
 		}
 	case opChat:
 		var in struct {
@@ -280,6 +290,15 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		}
 		pl.lastChat = tick
 		_ = d.BroadcastMessage(opChatOut, mustJSON(map[string]interface{}{"s": pl.sid, "n": pl.hero.Name, "m": text}), nil, nil, true)
+	case opEmote:
+		var in struct {
+			E string `json:"e"`
+		}
+		if json.Unmarshal(data, &in) != nil || !emotes[in.E] || tick-pl.lastEmote < chatCooldown {
+			return
+		}
+		pl.lastEmote = tick
+		_ = d.BroadcastMessage(opEmoteOut, mustJSON(map[string]interface{}{"s": pl.sid, "e": in.E}), nil, nil, true)
 	}
 }
 

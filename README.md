@@ -15,7 +15,7 @@ MMORPG 2D pour PC et téléphone, à vivre entre amis dans le monde d'Erydor.
 | `server/` | Le module serveur en Go, chargé par Nakama : connexion Discord, héros, simulation du monde |
 | `server/world/` | La simulation pure (cartes, collisions, trajets, noms), testée sans Nakama |
 | `deploy/` | Recette Docker pour le serveur de test et le vrai serveur (Nakama, PostgreSQL, Caddy) |
-| `tools/` | Générateur de la Clairière, serveur local, faux joueurs pour le test de charge |
+| `tools/` | Générateur de la Clairière, forge des héros en pixel art (`tools/sprites/`), serveur local, faux joueurs |
 | `docs/` | Bible du monde, captures et archives des questionnaires |
 
 ## Lancer en local
@@ -36,6 +36,15 @@ Captures automatiques du client (Linux, sans écran) :
 
 ```sh
 xvfb-run godot --path client --rendering-driver opengl3 -- --capture=world --out=clairiere.png
+```
+
+## Redessiner les héros
+
+Les planches du héros sont dessinées par un programme, pas à la main :
+
+```sh
+pip install numpy pillow
+python3 tools/sprites/forge_heros.py --apercu   # environ 3 minutes
 ```
 
 ## Secrets

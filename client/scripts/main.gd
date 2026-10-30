@@ -85,6 +85,7 @@ func _capture() -> void:
 			current.name_edit.text = "D'Arvel"
 			current.form_color = 0
 			current._mark_swatch()
+			current._dress_preview()
 		await _shoot(out)
 		return
 	var list := await Net.hero_list()
@@ -96,6 +97,8 @@ func _capture() -> void:
 		hero = heroes[0]
 	enter_world(hero)
 	await get_tree().create_timer(float(args.get("wait", "4"))).timeout
+	if args.has("salut"):
+		current._wave()
 	if args.has("chat"):
 		Net.send(Net.OP_CHAT, {"m": args.chat})
 		await get_tree().create_timer(1.0).timeout

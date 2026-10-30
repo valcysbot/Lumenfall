@@ -8,9 +8,11 @@ extends Node2D
 signal quit_world
 
 const INTERP_DELAY := 0.11  # secondes de retard volontaire pour un mouvement fluide
+const RUN_SEEN := 5.2       # au-dessus de cette vitesse (cases/s), on montre la course
+const ZOOM_MIN := 0.8
+const ZOOM_MAX := 2.2
 
 var hero := {}
-var colors: Array = []
 
 var iso_map: IsoMap
 var entities: Node2D
@@ -25,9 +27,12 @@ var info: Label
 var chat_log: VBoxContainer
 var chat_edit: LineEdit
 var joystick: TouchStick
+var run_btn: Button
 var toast: Label
 
 var _last_dir := Vector2.ZERO
+var _last_run := false
+var _run_toggle := false
 var _last_dir_sent := 0.0
 var _clock := 0.0
 var _marker_t := 0.0
@@ -50,8 +55,6 @@ func _ready() -> void:
 	camera.make_current()
 	_build_hud()
 
-	var list := await Net.hero_list()
-	colors = list.get("colors", [])
 	if not iso_map.load_map(hero.get("map", "clairiere")):
 		_show_toast("Cette carte manque dans ton jeu. Mets-le à jour !")
 		return
@@ -90,6 +93,10 @@ func _build_hud() -> void:
 	buttons.add_theme_constant_override("separation", 8)
 	buttons.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 14)
 	buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	var wave_btn := UI.button("👋 Saluer")
+	wave_btn.tooltip_text = "Touche H"
+	wave_btn.pressed.connect(_wave)
+	buttons.add_child(wave_btn)
 	var chat_btn := UI.button("💬 Parler")
 	chat_btn.pressed.connect(_open_chat)
 	buttons.add_child(chat_btn)
@@ -123,9 +130,26 @@ func _build_hud() -> void:
 		joystick.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 24)
 		joystick.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		root.add_child(joystick)
+		var side := VBoxContainer.new()
+		side.add_theme_constant_override("separation", 10)
+		side.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+		side.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		side.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		for z in [["＋", 1.25], ["－", 0.8]]:
+			var zb := UI.button(z[0])
+			zb.custom_minimum_size = Vector2(64, 56)
+			zb.pressed.connect(_zoom_by.bind(z[1]))
+			side.add_child(zb)
+		run_btn = UI.button("🏃 Courir")
+		run_btn.toggle_mode = true
+		run_btn.custom_minimum_size = Vector2(120, 72)
+		run_btn.toggled.connect(func(on): _run_toggle = on)
+		side.add_child(run_btn)
+		root.add_child(side)
 
 	toast = UI.label("", 20, UI.LUMEN)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.autowrap_mode = TextServer.AUTOWRAP_OFF
 	toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 70)
 	toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	toast.add_theme_color_override("font_outline_color", UI.NIGHT)
@@ -218,6 +242,10 @@ func _on_state(op: int, d: Dictionary) -> void:
 		Net.OP_NOTICE:
 			_add_chat_line("", d.m, true)
 			_show_toast(d.m)
+		Net.OP_EMOTE_OUT:
+			var sid := int(d.s)
+			if pawns.has(sid):
+				pawns[sid].sprite.play_once(d.e)
 
 
 func _add_pawn(p: Dictionary) -> void:
@@ -225,8 +253,7 @@ func _add_pawn(p: Dictionary) -> void:
 	if pawns.has(sid):
 		return
 	var pawn := Pawn.new()
-	var ci := int(p.c)
-	pawn.color = Color(colors[ci]) if ci < colors.size() else Color.WHITE
+	pawn.look = HeroSprite.look_for(p.n, int(p.c))
 	pawn.hero_name = p.n
 	pawn.dir = int(p.d)
 	pawn.is_me = sid == my_sid
@@ -272,6 +299,8 @@ func _interpolate() -> void:
 			var k := clampf((t - a[0]) / maxf(0.001, b[0] - a[0]), 0.0, 1.0)
 			pos = a[1].lerp(b[1], k)
 			moving = a[1].distance_to(b[1]) > 0.001
+			if moving:
+				pawn.running = a[1].distance_to(b[1]) / maxf(0.05, b[0] - a[0]) > RUN_SEEN
 			pawn.dir = b[2]
 		elif buf.size() == 1:
 			pos = a[1]
@@ -291,10 +320,26 @@ func _read_direction() -> void:
 		d = joystick.value
 	var w := Iso.screen_dir_to_world(d.normalized() if d.length() > 1 else d)
 	w = (w * 20).round() / 20
-	if w != _last_dir and (_clock - _last_dir_sent > 0.05 or w == Vector2.ZERO):
+	var run := _running()
+	if (w != _last_dir or (run != _last_run and w != Vector2.ZERO)) and (_clock - _last_dir_sent > 0.05 or w == Vector2.ZERO):
 		_last_dir = w
+		_last_run = run
 		_last_dir_sent = _clock
-		Net.send(Net.OP_MOVE_DIR, {"d": [w.x, w.y]})
+		Net.send(Net.OP_MOVE_DIR, {"d": [w.x, w.y], "r": run})
+
+
+## Maj sur PC, ou le bouton « Courir » sur téléphone.
+func _running() -> bool:
+	return _run_toggle or (not chat_edit.has_focus() and Input.is_key_pressed(KEY_SHIFT))
+
+
+func _wave() -> void:
+	Net.send(Net.OP_EMOTE, {"e": "salut"})
+
+
+func _zoom_by(k: float) -> void:
+	var z := clampf(camera.zoom.x * k, ZOOM_MIN, ZOOM_MAX)
+	camera.zoom = Vector2(z, z)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -306,13 +351,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_ESCAPE and chat_edit.visible:
 			chat_edit.visible = false
 			chat_edit.release_focus()
+		elif event.physical_keycode == KEY_H and not chat_edit.has_focus():
+			_wave()
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_by(1.1)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_by(1 / 1.1)
+	if event is InputEventMagnifyGesture:
+		_zoom_by(event.factor)
 	var target = null
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
 	if target != null:
 		var wp := Iso.to_world(target)
 		if iso_map.walkable(wp):
-			Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)]})
+			Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)], "r": _running()})
 			marker.position = target
 			marker.visible = true
 			_marker_t = 0.0
