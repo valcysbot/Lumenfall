@@ -63,7 +63,6 @@ func TestLeBestiaireEstEnPlace(t *testing.T) {
 	}
 }
 
-
 // combat fait durer le combat n secondes.
 func combat(a *Arena, secondes float64) {
 	for i := 0; i < int(secondes*10+0.5); i++ {
