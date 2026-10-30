@@ -41,6 +41,7 @@ const (
 	opChatOut  = 14 // serveur → client : message de chat
 	opNotice   = 15 // serveur → client : message système
 	opEmoteOut = 16 // serveur → client : {"s":sid,"e":"salut"}
+	opWeather  = 17 // serveur → client : {"w":"pluie"}
 )
 
 // Les émotes connues ; les autres sont ignorées.
@@ -90,6 +91,7 @@ type worldState struct {
 	players map[string]*player // par identifiant de session
 	pending map[string]Hero    // héros validés en attente d'arrivée
 	nextSID int
+	weather *world.Weather
 	// Mesure de charge.
 	loopTime time.Duration
 	loops    int
@@ -106,7 +108,9 @@ func (w *worldMatch) MatchInit(ctx context.Context, logger runtime.Logger, db *s
 	mapID, _ := params["map"].(string)
 	m := worldMapsByID[mapID]
 	label, _ := json.Marshal(map[string]string{"kind": "world", "map": mapID})
-	return &worldState{m: m, players: map[string]*player{}, pending: map[string]Hero{}, nextSID: 1}, tickRate, string(label)
+	now := time.Now()
+	return &worldState{m: m, players: map[string]*player{}, pending: map[string]Hero{}, nextSID: 1,
+		weather: world.NewWeather(now, now.UnixNano())}, tickRate, string(label)
 }
 
 func (w *worldMatch) MatchJoinAttempt(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, p runtime.Presence, meta map[string]string) (interface{}, bool, string) {
@@ -150,7 +154,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 			everyone = append(everyone, describe(o))
 		}
 		_ = d.BroadcastMessage(opSnapshot, mustJSON(map[string]interface{}{
-			"you": pl.sid, "map": s.m.ID, "tick_rate": tickRate, "players": everyone,
+			"you": pl.sid, "map": s.m.ID, "tick_rate": tickRate, "players": everyone, "sky": s.sky(),
 		}), []runtime.Presence{p}, nil, true)
 		// Attention : une liste vide voudrait dire « tout le monde » pour Nakama.
 		if others := s.others(p.GetSessionId()); len(others) > 0 {
@@ -227,6 +231,11 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 		_ = d.BroadcastMessage(opDelta, mustJSON(map[string]interface{}{"t": tick, "p": moved}), nil, nil, false)
 	}
 
+	// La météo de la région change de temps en temps, pour tout le monde à la fois.
+	if tick%tickRate == 0 && s.weather.Update(time.Now()) {
+		_ = d.BroadcastMessage(opWeather, mustJSON(map[string]string{"w": s.weather.Kind}), nil, nil, true)
+	}
+
 	if tick%saveEvery == 0 && len(s.players) > 0 {
 		ps := make([]heroPos, 0, len(s.players))
 		for _, pl := range s.players {
@@ -247,6 +256,17 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 		s.loopTime, s.loops, s.peak = 0, 0, len(s.players)
 	}
 	return s
+}
+
+// sky décrit le ciel pour un client qui arrive : l'heure du serveur (pour caler
+// sa propre horloge), la durée d'une journée et la météo de la région.
+func (s *worldState) sky() map[string]interface{} {
+	return map[string]interface{}{
+		"now":  time.Now().UnixMilli(),
+		"day":  world.DayLength.Milliseconds(),
+		"jour": world.DaylightLength.Milliseconds(),
+		"w":    s.weather.Kind,
+	}
 }
 
 func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player, tick, op int64, data []byte) {

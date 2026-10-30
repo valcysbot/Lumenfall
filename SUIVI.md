@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1.2 « Habits neufs » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
+**Version actuelle :** V0.1.3 « Le ciel d'Erydor » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
 
 ---
 
@@ -63,16 +63,16 @@
 - ✓ **La fabrique des dessins** : l'IA d'images n'est pas accessible depuis l'environnement de Claude ; Elowan a choisi le pixel art dessiné par code.
 - ✓ **La forge des héros** (`tools/sprites/forge_heros.py`) : un mannequin 3D photographié dans la vraie vue du jeu, pièce par pièce. 10 pièces (corps, pantalon, bottes, tunique en 12 couleurs, gants, cape, cheveux courts ou longs en 6 couleurs, casque, épée), 8 directions, 4 animations (repos, marche, course, salut).
 - ✓ **Habits neufs (V0.1.2)** : le pion est remplacé par le héros en couches, avec la course, le salut et le zoom.
+- ✓ **Le ciel d'Erydor (V0.1.3)** : jour et nuit sur 2 heures, la même heure pour tout le monde ; pluie, brouillard et orage décidés par le serveur pour chaque région ; torches automatiques la nuit ; réglage de luminosité de la nuit.
 
 ### ○ Quêtes à venir (V0.2)
 
 - ○ Le Val de Glennmor (≈ 200 × 200 cases) et Bourg-Lanterne : auberge La Chope Pleine + 2 maisons où l'on entre.
-- ○ Jour / nuit de 2 h (80 min de jour, 40 de nuit), nuits très sombres avec torche ; pluie, brouillard, orage partagés par région.
 - ○ Une dizaine de PNJ avec leurs habitudes, accueil par Maître Mabon, bulles + boîte de dialogue, Braise qui suit le héros.
 
 ### ⚠️ Points d'attention
 
-- **Nuits très sombres (choix d'Elowan)** : la torche s'allume toute seule la nuit, et un réglage de luminosité protège la lisibilité sur téléphone.
+- **Nuits très sombres (choix d'Elowan)** : la torche s'allume toute seule la nuit, et un réglage de luminosité protège la lisibilité sur téléphone. Pour ménager les téléphones, seuls les 10 héros les plus proches portent une torche allumée.
 - **Casque, gants et cape visibles (choix d'Elowan)** : presque deux fois plus de dessins par direction et par animation. Avec la forge par code, ça ne coûte que du temps de calcul (3 minutes pour tout redessiner).
 - **Cheveux tirés du nom** : en attendant la personnalisation de l'Acte IV, la coupe et la couleur des cheveux sont choisies à partir du nom du héros.
 - **Pixel art et écrans** : sur un écran qui n'est pas un multiple de 1280 × 720, les pixels du héros peuvent être de tailles un peu inégales. Le zoom le règle en partie ; un vrai réglage « pixels nets » viendra avec la V0.2.
@@ -140,6 +140,15 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.1.3 · « Le ciel d'Erydor » (30 octobre 2026)
+
+- 🆕 Le jour se lève et se couche : une journée d'Erydor dure 2 heures (80 minutes de jour, 40 de nuit), et l'heure est la même pour tout le monde. Elle s'affiche en haut à gauche (☀️ 14 h, 🌙 1 h…).
+- 🆕 Des nuits très noires, comme demandé : chaque héros allume sa torche tout seul à la tombée de la nuit.
+- 🆕 La météo : pluie 🌧️, brouillard 🌫️ et orage ⛈️ avec éclairs. Elle est décidée par le serveur, région par région : quand il pleut chez toi, il pleut chez tes amis.
+- 🆕 ⚙ Réglages : la luminosité de la nuit, pour garder la nuit jouable sur téléphone.
+
+Captures : [le ciel en 6 images](docs/captures/v0.1.3/ciel.png) · [la nuit](docs/captures/v0.1.3/nuit.png) · [l'orage](docs/captures/v0.1.3/orage.png)
 
 ### V0.1.2 · « Habits neufs » (30 octobre 2026)
 

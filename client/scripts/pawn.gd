@@ -11,6 +11,7 @@ var walking := false
 var running := false
 
 var sprite: HeroSprite
+var torch: PointLight2D   # allumée par le ciel quand il fait nuit
 var _name_label: Label
 var _bubble: PanelContainer
 var _bubble_label: Label
