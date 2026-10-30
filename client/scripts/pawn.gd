@@ -1,7 +1,8 @@
 class_name Pawn
 extends Node2D
 ## Un héros dans le monde : son allure en couches (HeroSprite), son ombre,
-## son nom et ses bulles de chat.
+## son nom et ses bulles de chat. Les habitants (PNJ) sont aussi des Pawn,
+## avec un identifiant `npc`.
 
 var look := {}
 var hero_name := ""
@@ -9,6 +10,8 @@ var dir := 2
 var is_me := false
 var walking := false
 var running := false
+var npc := ""        # identifiant d'habitant, vide pour un joueur
+var stature := 1.0   # les enfants sont plus petits
 
 var sprite: HeroSprite
 var torch: PointLight2D   # allumée par le ciel quand il fait nuit
@@ -23,17 +26,18 @@ func _ready() -> void:
 	add_child(sprite)
 	sprite.dress(look)
 	sprite.dir = dir
+	sprite.scale = Vector2(stature, stature)
 
 	_name_label = Label.new()
 	_name_label.text = hero_name
 	_name_label.add_theme_font_size_override("font_size", 15)
-	_name_label.add_theme_color_override("font_color", UI.LUMEN if is_me else UI.PARCH)
+	_name_label.add_theme_color_override("font_color", UI.LUMEN if is_me else (UI.MOSS if npc != "" else UI.PARCH))
 	_name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	_name_label.add_theme_constant_override("outline_size", 5)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_name_label)
 	_name_label.reset_size()
-	_name_label.position = Vector2(-_name_label.size.x / 2, -74)
+	_name_label.position = Vector2(-_name_label.size.x / 2, -74 * stature)
 
 	_bubble = PanelContainer.new()
 	_bubble.add_theme_stylebox_override("panel", UI.box(Color(UI.PARCH, 0.95), Color(UI.NIGHT, 0.4), 10, 1, 6))
@@ -74,7 +78,7 @@ func _process(delta: float) -> void:
 	sprite.set_motion(walking, running)
 	if _bubble.visible:
 		_bubble_time -= delta
-		_bubble.position = Vector2(-_bubble.size.x / 2, -84 - _bubble.size.y)
+		_bubble.position = Vector2(-_bubble.size.x / 2, -84 * stature - _bubble.size.y)
 		if _bubble_time < 1.0:
 			_bubble.modulate.a = max(0.0, _bubble_time)
 		if _bubble_time <= 0:

@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1.4 « Bourg-Lanterne » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
+**Version actuelle :** V0.2 « Les habitants » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
 
 ---
 
@@ -67,9 +67,11 @@
 - ✓ **La fabrique des cartes** : `forge_tuiles.py` (sol), `forge_decors.py` (36 décors), `gen_glennmor.py` (premier jet), puis `construire_carte.gd` en fait une scène Godot qu'on retouche à la souris, et `exporter_carte.gd` en tire les cases bloquées et les portes pour le serveur.
 - ✓ **Le ciel d'Erydor (V0.1.3)** : jour et nuit sur 2 heures, la même heure pour tout le monde ; pluie, brouillard et orage décidés par le serveur pour chaque région ; torches automatiques la nuit ; réglage de luminosité de la nuit.
 
-### ○ Quêtes à venir (V0.2)
+- ✓ **Les habitants (V0.2)** : 11 habitants de la bible vivent à Bourg-Lanterne, avec leurs horaires (le serveur les fait travailler le jour, rentrer dormir la nuit ; Corbin fait l'inverse). Bulles quand on passe, boîte de dialogue avec portrait et choix, Maître Mabon et son sanglier qui grandit. Braise vole derrière le héros et commente ce qu'il voit.
 
-- ○ Une dizaine de PNJ avec leurs habitudes, accueil par Maître Mabon, bulles + boîte de dialogue, Braise qui suit le héros.
+### ○ Quêtes à venir
+
+- ○ Clôture de l'Acte II : V0.2 sur le serveur de test, puis ton avis avant l'Acte III.
 
 ### ⚠️ Points d'attention
 
@@ -78,6 +80,8 @@
 - **Beaucoup de décors** : le val compte près de 7 000 décors (surtout des arbres). Godot n'affiche que ceux à l'écran, mais il faudra vérifier la fluidité sur ton téléphone ; si ça rame, on regroupera les forêts lointaines.
 - **Héros de la Clairière** : la Clairière est fermée. Les héros qui y étaient réapparaissent sur la place de Bourg-Lanterne.
 - **Cheveux tirés du nom** : en attendant la personnalisation de l'Acte IV, la coupe et la couleur des cheveux sont choisies à partir du nom du héros.
+- **Habitants et maisons** : les habitants ne passent pas encore par les portes. Le soir, ils rentrent devant chez eux et disparaissent ; seul Maître Mabon vit à l'intérieur de son auberge.
+- **Passer derrière une maison** : un héros (ou un habitant) caché derrière un toit n'est pas encore montré en silhouette. À prévoir.
 - **Pixel art et écrans** : sur un écran qui n'est pas un multiple de 1280 × 720, les pixels du héros peuvent être de tailles un peu inégales. Le zoom le règle en partie ; un vrai réglage « pixels nets » viendra avec la V0.2.
 
 ---
@@ -143,6 +147,19 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.2 · « Les habitants » (30 octobre 2026)
+
+- 🆕 **11 habitants** à Bourg-Lanterne : Maître Mabon, Fiacre, Corbin, Aëlis, Doran, Nessa, Sœur Clémence, le Capitaine Bréval, Gwenn, et les jumeaux Tam et Tilda qui courent partout.
+- 🆕 Ils ont **leurs habitudes** : au travail le jour, chez eux la nuit. Corbin, l'allumeur de lanternes, ne sort que la nuit.
+- 🆕 **Clique sur un habitant pour lui parler** : ton héros marche jusqu'à lui, puis une boîte s'ouvre avec son portrait et des choix (touches 1 à 4, Échap pour partir).
+- 🆕 Quand tu passes près d'eux, les habitants te lancent **une bulle**.
+- 🆕 **Braise te suit** en volant et commente ce qu'il voit (la nuit, la pluie, l'auberge…). Tu peux le renvoyer dans ⚙.
+- 🆕 Maître Mabon raconte l'histoire du sanglier… qui grandit à chaque fois.
+- ✨ Nouvelles tenues dessinées par code : robe, tablier, barbe, chapeau de paille ou de feutre, trois couleurs de peau.
+- 🐛 corrigé : un bouleau poussait dans la barrière du pré de Gwenn, et un chêne au milieu des moutons.
+
+Captures : [la place animée](docs/captures/v0.2/la-place-animee.png) · [Maître Mabon](docs/captures/v0.2/maitre-mabon.png) · [le Capitaine Bréval](docs/captures/v0.2/capitaine-breval.png) · [les habitants et Braise](docs/captures/v0.2/les-habitants.png). Avant : [la place vide en V0.1.4](docs/captures/v0.1.4/bourg-lanterne.png).
 
 ### V0.1.4 · « Bourg-Lanterne » (30 octobre 2026)
 

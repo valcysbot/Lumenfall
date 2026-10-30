@@ -164,6 +164,9 @@ for y in range(P0Y + 1, P0Y + PH):
 for i in range(7):
     pose("mouton", P0X + 2 + (i * 5) % 10, P0Y + 2 + (i * 3) % 7)
 pose("maison_1", 84, 152)                              # la ferme de Gwenn
+# Le pré et sa barrière restent dégagés : pas d'arbre qui pousse au milieu.
+pris[P0Y + 1:P0Y + PH, P0X + 1:P0X + PW - 1] = True
+pris[P0Y + PH:P0Y + PH + 2, P0X + 6] = True
 
 # --- La nature : forêts, bosquets, rochers ------------------------------------------
 

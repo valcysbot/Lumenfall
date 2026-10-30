@@ -2,11 +2,12 @@ class_name HeroSprite
 extends Node2D
 ## Le héros en couches : une pile de planches dessinées par
 ## tools/sprites/forge_heros.py (corps, pantalon, bottes, tunique, gants, cape,
-## cheveux, casque, épée). Toutes les planches ont la même grille : une ligne
+## cheveux, casque, épée, et pour les habitants robe, tablier, barbe, chapeau). Toutes les planches ont la même grille : une ligne
 ## par direction, une colonne par image d'animation.
 
 const DIR := "res://assets/heros/humain/"
-const ORDRE := ["corps", "pantalon", "bottes", "tunique", "gants", "cape", "cheveux", "casque", "epee"]
+const ORDRE := ["corps", "pantalon", "bottes", "robe", "tunique", "tablier", "gants", "cape", "barbe",
+		"cheveux", "chapeau", "casque", "epee"]
 const STYLES_CHEVEUX := ["court", "long"]
 const COULEURS_CHEVEUX := ["noir", "brun", "chatain", "blond", "roux", "blanc"]
 

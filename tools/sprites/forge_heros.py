@@ -48,7 +48,11 @@ CHEVEUX = {"noir": "#2e2433", "brun": "#5a3825", "chatain": "#8a5a35",
            "blond": "#e3b75c", "roux": "#c0532a", "blanc": "#ddd8d0"}
 FIXES = {"peau": "#f0bf98", "yeux": "#2a2238", "pantalon": "#6e4c35", "bottes": "#4a3328",
          "gants": "#8a5a3a", "cape": "#2f6f8a", "casque": "#a4adc0", "lame": "#d5deea",
-         "garde": "#d0a548", "poignee": "#4a3328", "ceinture": "#5a3a24", "boucle": "#e3c060"}
+         "garde": "#d0a548", "poignee": "#4a3328", "ceinture": "#5a3a24", "boucle": "#e3c060",
+         "tablier": "#e6dfcc"}
+# Pour les habitants : d'autres peaux, et des chapeaux.
+PEAUX = {"": "#f0bf98", "mat": "#cf9670", "brun": "#8e5d40"}
+CHAPEAUX = {"paille": "#dcb862", "feutre": "#4a3d52"}
 
 
 def rampe(hexa):
@@ -347,6 +351,43 @@ def cheveux_long(p):
     return out
 
 
+# --- Les pièces des habitants -----------------------------------------------
+
+def robe(p):
+    """Une robe longue (Sœur Clémence, Aëlis…) : le haut de la tunique, et une
+    jupe en cloche jusqu'aux chevilles."""
+    F, R, Z = p.F, p.R, p.Z
+    out = tunique(p)[:1] + tunique(p)[2:]
+    jupe = coupe(ellipsoide(p.L(0, 0, 13.0 + p.rebond * 0.5), [F, R, Z], [8.2, 9.4, 14.5]), p.L(0, 0, 2.2), -Z)
+    jupe = coupe(jupe, p.L(0, 0, 27.0 + p.rebond), Z)
+    out.append((jupe, "tissu"))
+    return out
+
+
+def tablier(p):
+    F, R, Z = p.F, p.R, p.Z
+    pan = boite(p.buste(5.6, 0, 19.5), [F, R, Z], [0.7, 5.4, 7.0], 0.4)
+    bavette = boite(p.buste(5.4, 0, 31.5), [F, R, Z], [0.6, 3.8, 5.0], 0.4)
+    return [(pan, "tablier"), (bavette, "tablier")]
+
+
+def barbe(p):
+    R = p.R
+    tF, tZ = p.tF, p.tZ
+    menton = ellipsoide(p.tete + tF * 4.6 - tZ * 4.4, [tF, R, tZ], [3.4, 5.4, 4.4])
+    moustache = ellipsoide(p.tete + tF * 6.6 - tZ * 2.6, [tF, R, tZ], [1.2, 3.4, 1.0])
+    return [(menton, "cheveux"), (moustache, "cheveux")]
+
+
+def chapeau(p):
+    R = p.R
+    tF, tZ = p.tF, p.tZ
+    bord = ellipsoide(p.tete + tZ * 4.8, [tF, R, tZ], [10.6, 10.6, 1.0])
+    calotte = coupe(ellipsoide(p.tete + tZ * 4.2, [tF, R, tZ], [7.2, 7.0, 7.6]), p.tete + tZ * 4.2, -tZ)
+    ruban = coupe(coupe(ellipsoide(p.tete + tZ * 4.2, [tF, R, tZ], [7.4, 7.2, 7.8]), p.tete + tZ * 5.2, -tZ), p.tete + tZ * 6.6, tZ)
+    return [(bord, "chapeau"), (calotte, "chapeau"), (ruban, "ceinture")]
+
+
 def epee(p):
     e, co, m, k = p.bras[1]       # main droite
     F, R, Z = p.F, p.R, p.Z
@@ -378,6 +419,10 @@ PIECES = {
     "cheveux_long":  {"f": cheveux_long,  "enveloppe": 0.6},
     "casque":        {"f": casque,        "enveloppe": 0.0},
     "epee":          {"f": epee,          "enveloppe": 1.0},
+    "robe":          {"f": robe,          "enveloppe": 0.0},
+    "tablier":       {"f": tablier,       "enveloppe": 1.4},
+    "barbe":         {"f": barbe,         "enveloppe": 0.0},
+    "chapeau":       {"f": chapeau,       "enveloppe": 0.0},
 }
 
 # --- Le rendu ----------------------------------------------------------------
@@ -486,14 +531,16 @@ def palettes_de(nom):
     """Variantes de couleur d'une pièce : nom de variante -> {matériau: rampe}."""
     f = {k: rampe(v) for k, v in FIXES.items()}
     if nom == "corps":
-        return {"": {"peau": f["peau"], "yeux": f["yeux"], "pantalon": f["pantalon"]}}
-    if nom == "tunique":
+        return {k: {"peau": rampe(c), "yeux": f["yeux"], "pantalon": f["pantalon"]} for k, c in PEAUX.items()}
+    if nom in ("tunique", "robe"):
         return {str(i): {"tissu": rampe(c), "ceinture": f["ceinture"], "boucle": f["boucle"]}
                 for i, c in enumerate(COULEURS_HEROS)}
-    if nom.startswith("cheveux"):
+    if nom.startswith("cheveux") or nom == "barbe":
         return {k: {"cheveux": rampe(c)} for k, c in CHEVEUX.items()}
     if nom == "epee":
         return {"": {"lame": f["lame"], "garde": f["garde"], "poignee": f["poignee"]}}
+    if nom == "chapeau":
+        return {k: {"chapeau": rampe(c), "ceinture": f["ceinture"]} for k, c in CHAPEAUX.items()}
     if nom == "casque":
         return {"": {"casque": f["casque"], "garde": f["garde"]}}
     return {"": {nom: f[nom]}}
@@ -507,6 +554,11 @@ def forge(apercu=False, seulement=None):
     for nom, n, fps, boucle in ANIMS:
         meta["anims"][nom] = {"debut": col, "images": n, "fps": fps, "boucle": boucle}
         col += n
+    chemin_meta = os.path.join(SORTIE, "humain.json")
+    if seulement and os.path.exists(chemin_meta):
+        # On ne refait que quelques pièces : on garde la liste des autres.
+        with open(chemin_meta) as fh:
+            meta["pieces"] = json.load(fh)["pieces"]
     for nom in PIECES:
         if seulement and nom not in seulement:
             continue
@@ -529,9 +581,9 @@ def forge(apercu=False, seulement=None):
             Image.fromarray(pl).save(os.path.join(SORTIE, fn), optimize=True)
             fichiers.append(v)
         meta["pieces"][nom] = fichiers
-    if not seulement:
-        with open(os.path.join(SORTIE, "humain.json"), "w") as fh:
-            json.dump(meta, fh, ensure_ascii=False, indent=1)
+    meta["pieces"] = {k: meta["pieces"][k] for k in PIECES if k in meta["pieces"]}
+    with open(chemin_meta, "w") as fh:
+        json.dump(meta, fh, ensure_ascii=False, indent=1)
     if apercu:
         apercu_planche(meta)
 

@@ -45,7 +45,14 @@ Les planches du héros sont dessinées par un programme, pas à la main :
 ```sh
 pip install numpy pillow
 python3 tools/sprites/forge_heros.py --apercu   # environ 3 minutes
+python3 tools/sprites/forge_heros.py --pieces robe chapeau   # seulement quelques pièces
+python3 tools/sprites/forge_braise.py           # Braise, le petit dragon
 ```
+
+## Les habitants
+
+- Où ils travaillent, où ils dorment, s'ils sortent la nuit : `server/world/maps/glennmor.pnj.json` (le serveur vérifie au démarrage que ces lieux sont praticables et reliés).
+- Leur tenue, leurs bulles et leurs dialogues : `client/data/pnj/glennmor.json`. Un dialogue est une suite de nœuds `{texte, choix: [{texte, vers}]}` qui commence à `debut` ; `vers` vide termine la conversation. `{nom}` est remplacé par le nom du héros.
 
 ## Retoucher une carte
 
