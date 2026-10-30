@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/heroiclabs/nakama-common/runtime"
@@ -163,10 +164,16 @@ func rpcWorldJoin(ctx context.Context, logger runtime.Logger, db *sql.DB, nk run
 		return "", err
 	}
 	var in struct {
-		HeroID string `json:"hero_id"`
+		HeroID  string `json:"hero_id"`
+		Version string `json:"v"`
 	}
 	if err := json.Unmarshal([]byte(payload), &in); err != nil || in.HeroID == "" {
 		return "", runtime.NewError("Demande illisible.", codeInvalidArgument)
+	}
+	// Un jeu trop ancien ne connaît pas les régions actuelles : mieux vaut le
+	// dire que d'afficher un monde vide.
+	if !versionAtLeast(in.Version, minClientVersion) {
+		return "", runtime.NewError("Ton jeu est trop ancien : télécharge la dernière version pour continuer l'aventure !", codeFailedPrecond)
 	}
 	h, err := loadHero(ctx, db, uid, in.HeroID)
 	if err != nil {
@@ -210,4 +217,30 @@ WHERE h.id = v.id`, mapID, string(idsJSON), string(xsJSON), string(ysJSON))
 type heroPos struct {
 	id   string
 	x, y float64
+}
+
+// minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
+// À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
+// afficher (une nouvelle région, par exemple).
+const minClientVersion = "0.2.0"
+
+// versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
+// illisible compte comme trop ancienne.
+func versionAtLeast(v, min string) bool {
+	a, b := strings.Split(v, "."), strings.Split(min, ".")
+	for i := range b {
+		var x, y int
+		if i < len(a) {
+			n, err := strconv.Atoi(a[i])
+			if err != nil {
+				return false
+			}
+			x = n
+		}
+		y, _ = strconv.Atoi(b[i])
+		if x != y {
+			return x > y
+		}
+	}
+	return v != ""
 }

@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.2 « Les habitants » (30 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
+**Version actuelle :** V0.2.1 « Les habitants » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
 
 ---
 
@@ -11,8 +11,8 @@
 | Acte | Nom | État |
 |---|---|---|
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
-| II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✱ en cours |
-| III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ○ |
+| II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
+| III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✱ en cours |
 | IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ○ |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
@@ -69,9 +69,7 @@
 
 - ✓ **Les habitants (V0.2)** : 11 habitants de la bible vivent à Bourg-Lanterne, avec leurs horaires (le serveur les fait travailler le jour, rentrer dormir la nuit ; Corbin fait l'inverse). Bulles quand on passe, boîte de dialogue avec portrait et choix, Maître Mabon et son sanglier qui grandit. Braise vole derrière le héros et commente ce qu'il voit.
 
-### ○ Quêtes à venir
-
-- ○ Clôture de l'Acte II : V0.2 sur le serveur de test, puis ton avis avant l'Acte III.
+- ✓ **Clôture** : V0.2 sur le serveur de test et publiée (v0.2.0), validée par Elowan le 30 octobre 2026.
 
 ### ⚠️ Points d'attention
 
@@ -147,6 +145,11 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.2.1 · « Les habitants » (30 octobre 2026)
+
+- 🐛 corrigé : un jeu trop ancien (comme la v0.1.0) affichait un écran vert dans le Val de Glennmor. Il affiche maintenant « Ton jeu est trop ancien : télécharge la dernière version ».
+- ✨ Le jeu dit sa version au serveur en entrant dans le monde. Pense à prendre la v0.2.1 : les versions précédentes ne savent pas le faire.
 
 ### V0.2 · « Les habitants » (30 octobre 2026)
 

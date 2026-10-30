@@ -131,3 +131,15 @@ func TestChatNettoye(t *testing.T) {
 		t.Fatalf("longueur %d", len([]rune(got)))
 	}
 }
+
+func TestVersionDuJeu(t *testing.T) {
+	cas := map[string]bool{
+		"0.2.0": true, "0.2.1": true, "0.10.0": true, "1.0": true,
+		"0.1.4": false, "0.1.0": false, "": false, "abc": false,
+	}
+	for v, ok := range cas {
+		if versionAtLeast(v, "0.2.0") != ok {
+			t.Errorf("version %q : attendu %v", v, ok)
+		}
+	}
+}

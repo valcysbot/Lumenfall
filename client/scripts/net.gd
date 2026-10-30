@@ -155,7 +155,7 @@ func hero_create(slot: int, hero_name: String, color: int) -> Dictionary:
 # --- Monde -----------------------------------------------------------------
 
 func join_world(hero_id: String) -> String:
-	var r := await _rpc("world_join", {"hero_id": hero_id})
+	var r := await _rpc("world_join", {"hero_id": hero_id, "v": ProjectSettings.get_setting("application/config/version")})
 	if r.has("error"):
 		return r.error
 	if socket == null or not socket.is_connected_to_host():
