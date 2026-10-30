@@ -1,0 +1,16 @@
+{
+ "_note": "Les habitants du Val de Glennmor (bible du monde). Positions en cases. Les noms, les tenues et les dialogues sont côté client (client/data/pnj/glennmor.json).",
+ "pnj": [
+  {"id": "mabon",    "name": "Maître Mabon",      "work": [13.5, 230.5],  "home": [22.5, 231.5],  "wander": 1},
+  {"id": "fiacre",   "name": "Fiacre",            "work": [106.5, 102.5], "home": [106.5, 84.5],  "wander": 3},
+  {"id": "corbin",   "name": "Corbin",            "work": [95.5, 101.5],  "home": [76.5, 88.5],   "wander": 12, "nocturne": true},
+  {"id": "aelis",    "name": "Aelis",             "work": [89.5, 106.5],  "home": [84.5, 117.5],  "wander": 2},
+  {"id": "doran",    "name": "Doran",             "work": [76.5, 98.5],   "home": [66.5, 108.5],  "wander": 2},
+  {"id": "nessa",    "name": "Nessa",             "work": [100.5, 70.5],  "home": [113.5, 91.5],  "wander": 8},
+  {"id": "clemence", "name": "Sœur Clémence",     "work": [111.5, 98.5],  "home": [110.5, 97.5],  "wander": 2},
+  {"id": "breval",   "name": "Capitaine Bréval",  "work": [108.5, 100.5], "home": [109.5, 111.5], "wander": 10},
+  {"id": "gwenn",    "name": "Gwenn",             "work": [109.5, 155.5], "home": [85.5, 156.5],  "wander": 4},
+  {"id": "tam",      "name": "Tam",               "work": [95.5, 103.5],  "home": [84.5, 117.5],  "wander": 9, "run": true},
+  {"id": "tilda",    "name": "Tilda",             "work": [96.5, 103.5],  "home": [84.5, 117.5],  "wander": 9, "run": true}
+ ]
+}

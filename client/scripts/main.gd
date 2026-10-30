@@ -3,6 +3,7 @@ extends Node
 ##
 ## Mode capture (captures d'écran automatiques, sans joueur) :
 ##   godot --path client -- --capture=world --out=/chemin/capture.png
+##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier)
 
 const LoginScreen := preload("res://scripts/login_screen.gd")
 const HeroScreen := preload("res://scripts/hero_screen.gd")
@@ -103,6 +104,15 @@ func _capture() -> void:
 		await get_tree().create_timer(float(args.get("marche", "6"))).timeout
 	if args.has("salut"):
 		current._wave()
+	if args.has("parler"):
+		# Clique sur un habitant présent, comme un joueur : on marche jusqu'à lui.
+		for sid in current.pawns:
+			var pawn: Pawn = current.pawns[sid]
+			if pawn.npc == args.parler:
+				current._click_npc(pawn.position + Vector2(0, -28))
+		await get_tree().create_timer(float(args.get("marche", "6"))).timeout
+		if args.has("choix"):
+			current.dialogue._show(args.choix)
 	if args.has("chat"):
 		Net.send(Net.OP_CHAT, {"m": args.chat})
 		await get_tree().create_timer(1.0).timeout

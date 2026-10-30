@@ -1,6 +1,6 @@
 extends Node2D
 ## Le monde : la carte, les héros (le tien et ceux des autres), les
-## commandes (clic, ZQSD, joystick) et le chat.
+## habitants, Braise, les commandes (clic, ZQSD, joystick) et le chat.
 ##
 ## Le client n'envoie que des intentions. Le serveur calcule les positions
 ## et les renvoie 10 fois par seconde ; on les adoucit à l'écran.
@@ -11,6 +11,9 @@ const INTERP_DELAY := 0.11  # secondes de retard volontaire pour un mouvement fl
 const RUN_SEEN := 5.2       # au-dessus de cette vitesse (cases/s), on montre la course
 const ZOOM_MIN := 0.8
 const ZOOM_MAX := 2.2
+const TALK_REACH := 2.2     # cases : assez près pour parler à un habitant
+const BUBBLE_REACH := 4.5   # cases : un habitant te lance une bulle en passant
+const BUBBLE_EVERY := 25.0  # secondes entre deux bulles d'un même habitant
 
 var hero := {}
 
@@ -22,6 +25,15 @@ var marker: Node2D
 var pawns := {}       # sid -> Pawn
 var buffers := {}     # sid -> Array de [temps, position monde]
 var my_sid := -1
+var map_id := ""
+
+var dialogue: DialogueBox
+var braise: Braise
+var _talk_to := -1          # habitant vers qui on marche pour lui parler
+var _bubble_at := {}        # sid -> heure de la dernière bulle
+var _near_t := 0.0
+var _chase_t := 0.0         # dernier trajet demandé vers l'habitant
+var _talk_at := Vector2.ZERO  # où l'on était en commençant à parler
 
 var hud: CanvasLayer
 var info: Label
@@ -117,6 +129,14 @@ func _build_hud() -> void:
 	root.add_child(buttons)
 	_build_settings(root)
 
+	dialogue = DialogueBox.new()
+	dialogue.hero_name = hero.get("name", "")
+	dialogue.visible = false
+	dialogue.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 24)
+	dialogue.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	dialogue.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	root.add_child(dialogue)
+
 	var touch := DisplayServer.is_touchscreen_available()
 	chat_log = VBoxContainer.new()
 	chat_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -195,6 +215,11 @@ func _build_settings(root: Control) -> void:
 	var hint := UI.label("Plus à gauche : nuits noires, la torche devient précieuse.", 14, UI.MUTED)
 	hint.custom_minimum_size = Vector2(240, 0)
 	col.add_child(hint)
+	var follow := CheckButton.new()
+	follow.text = "Braise me suit"
+	follow.button_pressed = _braise_wanted()
+	follow.toggled.connect(_set_braise)
+	col.add_child(follow)
 	root.add_child(settings)
 
 
@@ -203,6 +228,7 @@ func _build_settings(root: Control) -> void:
 func _load_map(id: String) -> bool:
 	if not iso_map.load_map(id):
 		return false
+	map_id = id
 	var path := "res://cartes/%s.tscn" % id
 	if ResourceLoader.exists(path):
 		var scene: Node2D = load(path).instantiate()
@@ -223,7 +249,11 @@ func _map_name() -> String:
 
 
 func _update_info() -> void:
-	info.text = "%s · %s · %s · %d %s" % [hero.get("name", ""), _map_name(), sky.describe(), pawns.size(), "aventurier en ligne" if pawns.size() <= 1 else "aventuriers en ligne"]
+	var n := 0
+	for sid in pawns:
+		if pawns[sid].npc == "":
+			n += 1
+	info.text = "%s · %s · %s · %d %s" % [hero.get("name", ""), _map_name(), sky.describe(), n, "aventurier en ligne" if n <= 1 else "aventuriers en ligne"]
 
 
 func _show_toast(text: String) -> void:
@@ -285,6 +315,8 @@ func _on_state(op: int, d: Dictionary) -> void:
 				sky.set_sky(d.sky)
 			for p in d.players:
 				_add_pawn(p)
+			if pawns.has(my_sid) and _braise_wanted():
+				_set_braise(true)
 			var where := _map_name()
 			for art in ["Le ", "La ", "Les "]:
 				if where.begins_with(art):
@@ -293,11 +325,15 @@ func _on_state(op: int, d: Dictionary) -> void:
 			_show_toast(_map_name())
 		Net.OP_JOIN:
 			_add_pawn(d)
-			_add_chat_line("", "%s arrive dans la région." % d.n, true)
+			if not d.has("npc"):
+				_add_chat_line("", "%s arrive dans la région." % d.n, true)
 		Net.OP_LEAVE:
 			var sid := int(d.s)
 			if pawns.has(sid):
-				_add_chat_line("", "%s est parti." % pawns[sid].hero_name, true)
+				if pawns[sid].npc == "":
+					_add_chat_line("", "%s est parti." % pawns[sid].hero_name, true)
+				elif dialogue.npc == pawns[sid].npc:
+					dialogue.close()
 				pawns[sid].queue_free()
 				pawns.erase(sid)
 				buffers.erase(sid)
@@ -314,6 +350,8 @@ func _on_state(op: int, d: Dictionary) -> void:
 						buf.append([_clock - 1.0, p, int(e[3])])
 						if sid == my_sid:
 							_through_door()
+							if braise != null:
+								braise.snap(p)
 					else:
 						buf.append([_clock, p, int(e[3])])
 		Net.OP_CHAT_OUT:
@@ -340,6 +378,11 @@ func _add_pawn(p: Dictionary) -> void:
 		return
 	var pawn := Pawn.new()
 	pawn.look = HeroSprite.look_for(p.n, int(p.c))
+	if p.has("npc"):
+		var who := DialogueBox.info(map_id, p.npc)
+		pawn.npc = p.npc
+		pawn.look = who.get("look", pawn.look)
+		pawn.stature = float(who.get("taille", 1.0))
 	pawn.hero_name = p.n
 	pawn.dir = int(p.d)
 	pawn.is_me = sid == my_sid
@@ -363,12 +406,15 @@ func _process(delta: float) -> void:
 	if pawns.has(my_sid):
 		sky.indoors = Iso.to_world(pawns[my_sid].position).y >= float(iso_map.data.get("indoors_from", 1e9))
 	sky.update_torches(pawns, my_sid)
+	_update_npcs(delta)
 	_info_t += delta
 	if _info_t > 1.0:
 		_info_t = 0.0
 		_update_info()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
+	# Pendant un dialogue, on remonte la vue pour que la boîte ne cache pas la scène.
+	camera.offset = camera.offset.lerp(Vector2(0, 120) if dialogue.visible else Vector2.ZERO, minf(1.0, delta * 6))
 	if marker.visible:
 		_marker_t += delta
 		marker.modulate.a = clampf(1.2 - _marker_t, 0, 1)
@@ -469,7 +515,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	var target = null
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
+	if target != null and _click_npc(target):
+		return
 	if target != null:
+		_talk_to = -1
 		var wp := Iso.to_world(target)
 		if iso_map.walkable(wp):
 			Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)], "r": _running()})
@@ -485,3 +534,115 @@ func _draw_marker() -> void:
 	marker.draw_set_transform(Vector2.ZERO, 0, Vector2(1, 0.5))
 	marker.draw_arc(Vector2.ZERO, r, 0, TAU, 32, UI.LUMEN, 2.5, true)
 	marker.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+
+# --- Les habitants et Braise ---------------------------------------------------
+
+## Un clic sur un habitant : on lui parle, en allant d'abord vers lui s'il est loin.
+func _click_npc(at: Vector2) -> bool:
+	var best := -1
+	var best_d := 30.0
+	for sid in pawns:
+		var pawn: Pawn = pawns[sid]
+		if pawn.npc == "":
+			continue
+		# On vise le corps, pas les pieds.
+		var d := at.distance_to(pawn.position + Vector2(0, -28 * pawn.stature))
+		if d < best_d:
+			best_d = d
+			best = sid
+	if best == -1:
+		return false
+	_talk_to = best
+	_chase_t = -1e9
+	get_viewport().set_input_as_handled()
+	return true
+
+
+func _near(sid: int, reach: float) -> bool:
+	if not pawns.has(my_sid) or not pawns.has(sid):
+		return false
+	return Iso.to_world(pawns[my_sid].position).distance_to(Iso.to_world(pawns[sid].position)) <= reach
+
+
+func _update_npcs(delta: float) -> void:
+	if _talk_to != -1:
+		if not pawns.has(_talk_to):
+			_talk_to = -1
+		elif _near(_talk_to, TALK_REACH):
+			var pawn: Pawn = pawns[_talk_to]
+			_talk_to = -1
+			Net.send(Net.OP_MOVE_DIR, {"d": [0, 0], "r": false})
+			_talk_at = Iso.to_world(pawns[my_sid].position)
+			dialogue.open(map_id, pawn.npc, pawn.hero_name)
+		elif _clock - _chase_t > 1.0:
+			# L'habitant bouge : on recalcule le trajet de temps en temps.
+			_chase_t = _clock
+			var wp := Iso.to_world(pawns[_talk_to].position)
+			Net.send(Net.OP_MOVE_TO, {"t": [snappedf(wp.x, 0.01), snappedf(wp.y, 0.01)], "r": _running()})
+	# Le dialogue se ferme si tu t'éloignes (l'habitant, lui, peut flâner un peu).
+	if dialogue.visible and (not pawns.has(my_sid) or Iso.to_world(pawns[my_sid].position).distance_to(_talk_at) > 3.0):
+		dialogue.close()
+	if pawns.has(my_sid) and braise != null:
+		braise.follow(Iso.to_world(pawns[my_sid].position), pawns[my_sid].dir, delta)
+		if braise.wants_to_talk(delta):
+			braise.say(_braise_remark())
+	_near_t += delta
+	if _near_t < 0.5:
+		return
+	_near_t = 0.0
+	# Les habitants te lancent une bulle quand tu passes près d'eux.
+	for sid in pawns:
+		var pawn: Pawn = pawns[sid]
+		if pawn.npc == "" or dialogue.npc == pawn.npc or not _near(sid, BUBBLE_REACH):
+			continue
+		if _clock - float(_bubble_at.get(sid, -1e9)) < BUBBLE_EVERY:
+			continue
+		var lines: Array = DialogueBox.info(map_id, pawn.npc).get("bulles", [])
+		if not lines.is_empty():
+			_bubble_at[sid] = _clock
+			pawn.say(lines.pick_random())
+
+
+## Ce que Braise trouve à dire, selon l'endroit et le moment.
+func _braise_remark() -> String:
+	var lines: Dictionary = DialogueBox.data(map_id).get("braise", {})
+	var me := Iso.to_world(pawns[my_sid].position)
+	var kind := "village"
+	if sky.indoors:
+		kind = "interieur"
+	elif sky.weather in ["pluie", "orage"]:
+		kind = "pluie"
+	elif sky.is_night():
+		kind = "nuit"
+	elif me.x > iso_map.data.get("width", 200) * 0.8:
+		kind = "lisiere"
+	else:
+		for sid in pawns:
+			if pawns[sid].npc != "" and _near(sid, 5.0):
+				kind = "pnj"
+		if kind == "village" and me.distance_to(Vector2(95, 100)) > 30:
+			kind = "foret"
+	var pick: Array = lines.get(kind, lines.get("village", ["Braise bâille."]))
+	return pick.pick_random()
+
+
+func _braise_wanted() -> bool:
+	var cfg := ConfigFile.new()
+	cfg.load(WorldSky.SETTINGS)
+	return bool(cfg.get_value("jeu", "braise", true))
+
+
+func _set_braise(on: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(WorldSky.SETTINGS)
+	cfg.set_value("jeu", "braise", on)
+	cfg.save(WorldSky.SETTINGS)
+	if on and braise == null and pawns.has(my_sid):
+		braise = Braise.new()
+		entities.add_child(braise)
+		braise.snap(Iso.to_world(pawns[my_sid].position))
+		braise.say("Braise : « Me revoilà ! »" if _clock > 5 else "Braise : « En route, %s ! »" % hero.get("name", ""))
+	elif not on and braise != null:
+		braise.queue_free()
+		braise = null

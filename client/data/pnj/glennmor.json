@@ -1,0 +1,170 @@
+{
+ "_note": "Les habitants du Val de Glennmor côté client : tenue, bulles quand on passe près d'eux, et dialogue quand on leur parle. {nom} = le nom du héros, {sanglier} = la taille du sanglier de Mabon (elle grandit à chaque fois). Les positions et les horaires sont côté serveur (server/world/maps/glennmor.pnj.json).",
+ "pnj": {
+  "mabon": {
+   "titre": "l'aubergiste de La Chope Pleine",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "1", "tablier": "", "barbe": "brun", "cheveux": "court_brun"},
+   "bulles": ["Entrez, entrez, il fait meilleur dedans !", "Une soupe ? Une chope ? Les deux ?", "Ai-je déjà raconté l'histoire du sanglier ?"],
+   "dialogue": {
+    "debut": {"texte": "Ah ! {nom} ! Bienvenue à La Chope Pleine, la meilleure auberge du Val. Bon, la seule, mais quand même. Que puis-je pour toi ?",
+     "choix": [{"texte": "Quoi de neuf au village ?", "vers": "ragots"}, {"texte": "Raconte-moi une histoire.", "vers": "sanglier"}, {"texte": "Pourquoi tant de lanternes ?", "vers": "lanternes"}, {"texte": "À plus tard, Mabon !", "vers": ""}]},
+    "ragots": {"texte": "Fiacre a encore râlé contre ses cartes, Nessa cherche de la menthe d'argent, et les jumeaux ont caché les sabots de Gwenn. Une semaine normale, quoi.",
+     "choix": [{"texte": "Et la Lisière Grise ?", "vers": "lisiere"}, {"texte": "Merci !", "vers": "debut"}]},
+    "lisiere": {"texte": "Chut… On n'en parle pas trop fort ici. Les arbres y perdent leurs couleurs, et parfois les gens leurs souvenirs. Demande au Capitaine Bréval, il patrouille par là.",
+     "choix": [{"texte": "Je garde ça en tête.", "vers": "debut"}]},
+    "sanglier": {"texte": "Un jour, dans la forêt, je tombe nez à nez avec un sanglier… {sanglier} ! Je lui ai jeté ma louche et il s'est enfui. Véridique !",
+     "choix": [{"texte": "Il n'était pas plus petit, la dernière fois ?", "vers": "sanglier_2"}, {"texte": "Incroyable !", "vers": "debut"}]},
+    "sanglier_2": {"texte": "Plus petit ? Mais non ! Tu as dû mal entendre. Reviens demain, je te la raconterai encore, tu verras.",
+     "choix": [{"texte": "J'ai hâte.", "vers": "debut"}]},
+    "lanternes": {"texte": "La règle d'or de Bourg-Lanterne : ne jamais laisser une lanterne s'éteindre. Les nuits sont noires, ici, et les vieux disent que les Effacés n'aiment pas la lumière. Garde ta torche allumée, {nom}.",
+     "choix": [{"texte": "Promis.", "vers": "debut"}]}
+   }
+  },
+  "fiacre": {
+   "titre": "le cartographe",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "10", "barbe": "blanc", "cheveux": "court_blanc", "cape": ""},
+   "bulles": ["Hmpf. Encore un qui marche sur mes croquis.", "Cette rivière n'était pas là hier. J'en suis sûr.", "Ne touche pas à ma plume."],
+   "dialogue": {
+    "debut": {"texte": "Quoi ? Tu vois bien que je travaille. Bon. Tu as deux minutes, pas plus.",
+     "choix": [{"texte": "Que dessinez-vous ?", "vers": "cartes"}, {"texte": "Vous avez une carte pour moi ?", "vers": "carte"}, {"texte": "Je vous laisse.", "vers": ""}]},
+    "cartes": {"texte": "Des cartes du Val. Et le plus étrange : elles s'emboîtent parfaitement avec celles des autres villages, comme les pièces d'un même grand dessin. Je ne sais pas pourquoi. Ça m'agace.",
+     "choix": [{"texte": "Un grand dessin de quoi ?", "vers": "dessin"}, {"texte": "Intrigant…", "vers": "debut"}]},
+    "dessin": {"texte": "Si je le savais, je ne serais pas bougon. Enfin, moins bougon. Reviens quand tu auras vu du pays.",
+     "choix": [{"texte": "D'accord.", "vers": ""}]},
+    "carte": {"texte": "Pas encore. Une carte, ça se mérite. Explore d'abord, et on en reparlera.",
+     "choix": [{"texte": "Hmpf.", "vers": "debut"}]}
+   }
+  },
+  "corbin": {
+   "titre": "l'allumeur de lanternes",
+   "look": {"corps": "mat", "pantalon": "", "bottes": "", "tunique": "11", "cape": "", "chapeau": "feutre", "cheveux": "long_noir", "gants": ""},
+   "bulles": ["Une lanterne de plus. Plus que trois cents.", "La nuit est belle quand elle est éclairée.", "Bonsoir, voyageur. Reste dans la lumière."],
+   "dialogue": {
+    "debut": {"texte": "Bonsoir, {nom}. Je suis Corbin. Je dors le jour, je veille la nuit, et pas une lanterne ne s'éteint tant que je suis là.",
+     "choix": [{"texte": "Qu'y a-t-il dans le noir ?", "vers": "noir"}, {"texte": "Je peux vous aider ?", "vers": "aide"}, {"texte": "Bonne nuit, Corbin.", "vers": ""}]},
+    "noir": {"texte": "Rien, j'espère. Mais certaines nuits, du côté de la Lisière, j'entends comme des pas qui ne laissent pas de traces.",
+     "choix": [{"texte": "Brrr.", "vers": "debut"}]},
+    "aide": {"texte": "Un jour, peut-être. Pour l'instant, garde simplement ta torche allumée. C'est déjà une lanterne de plus.",
+     "choix": [{"texte": "Compris.", "vers": "debut"}]}
+   }
+  },
+  "aelis": {
+   "titre": "la marchande",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "8", "cheveux": "long_blond"},
+   "bulles": ["Des pommes, des rubans, des bottes presque neuves !", "Approchez, approchez !", "Tout se négocie. Sauf mes prix."],
+   "dialogue": {
+    "debut": {"texte": "Bienvenue à mon étal, {nom} ! Ici on trouve de tout, ou presque. Surtout presque.",
+     "choix": [{"texte": "Je peux acheter quelque chose ?", "vers": "acheter"}, {"texte": "Les affaires marchent ?", "vers": "affaires"}, {"texte": "Juste un coup d'œil.", "vers": ""}]},
+    "acheter": {"texte": "Bientôt ! J'attends ma livraison de Talvanor. Reviens avec quelques pièces et tu ne seras pas déçu.",
+     "choix": [{"texte": "Je reviendrai.", "vers": "debut"}]},
+    "affaires": {"texte": "Ça irait mieux si les caravanes de l'est passaient encore. Depuis que la forêt grisaille, plus personne ne veut prendre cette route.",
+     "choix": [{"texte": "Je comprends.", "vers": "debut"}]}
+   }
+  },
+  "doran": {
+   "titre": "le forgeron",
+   "look": {"corps": "brun", "pantalon": "", "bottes": "", "tunique": "11", "tablier": "", "gants": "", "barbe": "noir", "cheveux": "court_noir"},
+   "bulles": ["*Tang* *Tang* *Tang*", "Le fer chaud n'attend pas.", "Belle épée. Elle mériterait un coup d'affûtage."],
+   "dialogue": {
+    "debut": {"texte": "*Tang*. Oh, pardon. Doran, forgeron. Si c'est en métal et que c'est cassé, je le répare. Si ce n'est pas cassé, je le répare quand même.",
+     "choix": [{"texte": "Vous pouvez améliorer mon épée ?", "vers": "epee"}, {"texte": "D'où vient votre fer ?", "vers": "fer"}, {"texte": "Bon courage !", "vers": ""}]},
+    "epee": {"texte": "Bientôt, l'ami. Ramène-moi du minerai et on parlera lame qui brille.",
+     "choix": [{"texte": "Marché conclu.", "vers": "debut"}]},
+    "fer": {"texte": "Des collines du nord. Mais le dernier lot avait un drôle de reflet gris. Je ne l'aime pas, ce reflet.",
+     "choix": [{"texte": "Étrange…", "vers": "debut"}]}
+   }
+  },
+  "nessa": {
+   "titre": "l'herboriste",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "3", "cheveux": "long_roux", "chapeau": "paille"},
+   "bulles": ["Menthe, sauge, ortie… et où est passée la menthe d'argent ?", "Ne marche pas sur les camomilles !", "Les plantes parlent, si on sait écouter."],
+   "dialogue": {
+    "debut": {"texte": "Bonjour, {nom} ! Attention où tu mets les pieds, ce trèfle-là soigne les maux de tête.",
+     "choix": [{"texte": "Vous soignez les gens ?", "vers": "soins"}, {"texte": "Vous cherchez quelque chose ?", "vers": "menthe"}, {"texte": "Au revoir, Nessa.", "vers": ""}]},
+    "soins": {"texte": "Les gens, les moutons, et une fois un dragon de la taille d'un chat. Tiens, il te ressemblait un peu, celui qui te suit…",
+     "choix": [{"texte": "Braise ? Impossible.", "vers": "debut"}]},
+    "menthe": {"texte": "De la menthe d'argent. Elle ne pousse plus depuis que la forêt grisaille. Si tu en vois, pense à moi.",
+     "choix": [{"texte": "Je garderai l'œil ouvert.", "vers": "debut"}]}
+   }
+  },
+  "clemence": {
+   "titre": "prêtresse de Solenn",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "9", "cape": "", "cheveux": "long_chatain"},
+   "bulles": ["Que la lumière de Solenn veille sur toi.", "Le temple est toujours ouvert.", "Chaque flamme est une prière."],
+   "dialogue": {
+    "debut": {"texte": "Paix sur toi, {nom}. Je suis Sœur Clémence. Solenn veille sur ceux qui portent la lumière.",
+     "choix": [{"texte": "Qui est Solenn ?", "vers": "solenn"}, {"texte": "Pouvez-vous me bénir ?", "vers": "benir"}, {"texte": "Merci, ma sœur.", "vers": ""}]},
+    "solenn": {"texte": "La déesse de la Lumière. Avec ses frères et sœurs, elle a scellé le Veilleur du Soir il y a très longtemps. Le sceau tient encore. Il doit tenir.",
+     "choix": [{"texte": "Et s'il cédait ?", "vers": "sceau"}, {"texte": "Je vois.", "vers": "debut"}]},
+    "sceau": {"texte": "Alors il faudrait des héros. Des gens comme toi, peut-être. Mais prions pour ne pas en arriver là.",
+     "choix": [{"texte": "Prions.", "vers": "debut"}]},
+    "benir": {"texte": "Que ta torche ne s'éteigne jamais et que ton chemin reste clair. Voilà. Tu es béni, ou presque : Solenn signe ses bénédictions plus tard.",
+     "choix": [{"texte": "Merci !", "vers": "debut"}]}
+   }
+  },
+  "breval": {
+   "titre": "chef de la garde",
+   "look": {"corps": "mat", "pantalon": "", "bottes": "", "tunique": "6", "gants": "", "cape": "", "casque": "", "epee": "", "barbe": "chatain", "cheveux": "court_chatain"},
+   "bulles": ["Tout est calme. Trop calme.", "Garde ton épée propre, recrue.", "Personne ne passe la Lisière sans mon accord."],
+   "dialogue": {
+    "debut": {"texte": "Halte ! Ah, un nouveau visage. Capitaine Bréval, de la garde de Bourg-Lanterne. Tu cherches des ennuis, {nom} ?",
+     "choix": [{"texte": "Non, des aventures.", "vers": "aventures"}, {"texte": "Que se passe-t-il à la Lisière Grise ?", "vers": "lisiere"}, {"texte": "Repos, Capitaine.", "vers": ""}]},
+    "aventures": {"texte": "C'est souvent la même chose. Entraîne-toi, écoute les anciens, et ne va pas à l'est seul. Pas encore.",
+     "choix": [{"texte": "Bien reçu.", "vers": "debut"}]},
+    "lisiere": {"texte": "Les arbres y perdent leurs couleurs. Mes hommes en reviennent fatigués, comme vidés. L'un d'eux a oublié le nom de sa propre fille. Reste loin de là pour l'instant.",
+     "choix": [{"texte": "C'est inquiétant.", "vers": "debut"}]}
+   }
+  },
+  "gwenn": {
+   "titre": "la bergère",
+   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "4", "cheveux": "long_blond", "chapeau": "paille"},
+   "bulles": ["Une, deux, trois… il en manque une !", "Bêêê ! Oh pardon, l'habitude.", "Tam ! Tilda ! Rendez-moi mes sabots !"],
+   "dialogue": {
+    "debut": {"texte": "Bonjour, {nom} ! Tu n'aurais pas vu un mouton tout seul, par hasard ? Il s'appelle Biscuit.",
+     "choix": [{"texte": "Pas encore, mais je chercherai.", "vers": "biscuit"}, {"texte": "Vos moutons vont bien ?", "vers": "moutons"}, {"texte": "Bonne journée !", "vers": ""}]},
+    "biscuit": {"texte": "Merci ! Il a une tache en forme de cœur sur le dos. Et il adore les pommes d'Aëlis.",
+     "choix": [{"texte": "C'est noté.", "vers": "debut"}]},
+    "moutons": {"texte": "Ils vont bien… sauf qu'ils refusent d'aller brouter vers l'est. Même Biscuit, qui n'a peur de rien.",
+     "choix": [{"texte": "Les bêtes sentent les choses.", "vers": "debut"}]}
+   }
+  },
+  "tam": {
+   "titre": "un jumeau",
+   "taille": 0.75,
+   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "5", "cheveux": "court_roux"},
+   "bulles": ["Attrape-moi si tu peux !", "Tilda, c'est toi le loup !", "Hé ! C'est un vrai dragon, ça ?"],
+   "dialogue": {
+    "debut": {"texte": "Moi c'est Tam ! Et elle, c'est Tilda ! On est jumeaux, mais moi je suis le plus vieux. De quatre minutes.",
+     "choix": [{"texte": "Vous jouez à quoi ?", "vers": "jeu"}, {"texte": "Il est à moi, ce dragon.", "vers": "braise"}, {"texte": "Filez, garnements !", "vers": ""}]},
+    "jeu": {"texte": "Au loup ! Et à cacher les sabots de Gwenn. Mais ça, c'est un secret. Chuuut !",
+     "choix": [{"texte": "Je ne dirai rien.", "vers": "debut"}]},
+    "braise": {"texte": "Waouh ! Il crache du feu ? Il peut faire griller des châtaignes ? On peut le caresser ?",
+     "choix": [{"texte": "Doucement, il est timide.", "vers": "debut"}]}
+   }
+  },
+  "tilda": {
+   "titre": "une jumelle",
+   "taille": 0.75,
+   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "0", "cheveux": "long_roux"},
+   "bulles": ["Tam triche toujours !", "On fait la course ?", "Je serai cheffe de la garde, un jour !"],
+   "dialogue": {
+    "debut": {"texte": "Ne crois pas Tam, c'est moi la plus maligne. Tu veux savoir un secret ?",
+     "choix": [{"texte": "Oui !", "vers": "secret"}, {"texte": "Tu veux devenir garde ?", "vers": "garde"}, {"texte": "Une autre fois.", "vers": ""}]},
+    "secret": {"texte": "Corbin parle à ses lanternes quand il croit que personne ne l'écoute. Il leur donne des noms ! Celle de la place s'appelle Hortense.",
+     "choix": [{"texte": "Hortense ?!", "vers": "debut"}]},
+    "garde": {"texte": "Oui ! Comme le Capitaine Bréval. Sauf que moi, j'aurai un casque avec une plume.",
+     "choix": [{"texte": "Ça t'ira très bien.", "vers": "debut"}]}
+   }
+  }
+ },
+ "sanglier": ["gros comme un veau", "gros comme une vache", "gros comme une charrette de foin", "gros comme la forge de Doran", "gros comme l'auberge tout entière", "si gros qu'il cachait la lune"],
+ "braise": {
+  "village": ["Braise renifle : ça sent la soupe de Mabon par ici !", "Braise : « Tant de lanternes… On est bien, ici. »"],
+  "nuit": ["Braise se blottit contre ta torche.", "Braise : « La nuit tombe. Reste près des lanternes, d'accord ? »"],
+  "pluie": ["Braise : « Pfff, la pluie… mes flammes détestent ça. »"],
+  "interieur": ["Braise s'installe près de la cheminée.", "Braise : « Enfin au chaud ! »"],
+  "pnj": ["Braise : « Va lui parler, je suis sûr qu'il a des choses à raconter ! »"],
+  "foret": ["Braise : « Les arbres sont grands par ici… On ne se perd pas, hein ? »"],
+  "lisiere": ["Braise frissonne : « Je n'aime pas cette couleur grise… »"]
+ }
+}

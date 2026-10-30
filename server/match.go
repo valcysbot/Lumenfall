@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"math"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ const (
 	chatCooldown = 1 * tickRate  // un message par seconde
 	pathCooldown = 2             // un calcul de trajet tous les 2 ticks
 	pathMaxNodes = 2500
+	npcSIDBase   = 100000 // les habitants ont des numéros à part
 )
 
 // Codes des messages échangés pendant la partie.
@@ -54,6 +56,9 @@ func init() {
 	for _, id := range worldMaps {
 		m, err := world.LoadMap(id)
 		if err != nil {
+			panic(err)
+		}
+		if _, err := world.LoadNPCs(m); err != nil {
 			panic(err)
 		}
 		worldMapsByID[id] = m
@@ -92,6 +97,8 @@ type worldState struct {
 	pending map[string]Hero    // héros validés en attente d'arrivée
 	nextSID int
 	weather *world.Weather
+	npcs    []*world.NPC // habitants ; le n° i a pour numéro npcSIDBase+i
+	rng     *rand.Rand
 	// Mesure de charge.
 	loopTime time.Duration
 	loops    int
@@ -109,8 +116,13 @@ func (w *worldMatch) MatchInit(ctx context.Context, logger runtime.Logger, db *s
 	m := worldMapsByID[mapID]
 	label, _ := json.Marshal(map[string]string{"kind": "world", "map": mapID})
 	now := time.Now()
+	npcs, _ := world.LoadNPCs(m) // déjà vérifiés au démarrage
+	for _, n := range npcs {
+		n.Start(now)
+	}
 	return &worldState{m: m, players: map[string]*player{}, pending: map[string]Hero{}, nextSID: 1,
-		weather: world.NewWeather(now, now.UnixNano())}, tickRate, string(label)
+			weather: world.NewWeather(now, now.UnixNano()), npcs: npcs, rng: rand.New(rand.NewSource(now.UnixNano()))},
+		tickRate, string(label)
 }
 
 func (w *worldMatch) MatchJoinAttempt(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, p runtime.Presence, meta map[string]string) (interface{}, bool, string) {
@@ -152,6 +164,11 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		everyone := make([]map[string]interface{}, 0, len(s.players))
 		for _, o := range s.players {
 			everyone = append(everyone, describe(o))
+		}
+		for i, n := range s.npcs {
+			if n.Visible {
+				everyone = append(everyone, describeNPC(i, n))
+			}
 		}
 		_ = d.BroadcastMessage(opSnapshot, mustJSON(map[string]interface{}{
 			"you": pl.sid, "map": s.m.ID, "tick_rate": tickRate, "players": everyone, "sky": s.sky(),
@@ -230,6 +247,23 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	moved := make([][4]int, 0, len(changed))
 	for pl := range changed {
 		moved = append(moved, [4]int{pl.sid, cent(pl.body.X), cent(pl.body.Y), pl.body.Dir})
+	}
+	// Les habitants vivent leur vie ; on ne bouscule pas les joueurs pour eux.
+	for i, n := range s.npcs {
+		if n.Visible && n.Body.Moving() && n.Body.Step(s.m, dt) {
+			moved = append(moved, [4]int{npcSIDBase + i, cent(n.Body.X), cent(n.Body.Y), n.Body.Dir})
+		}
+	}
+	if tick%tickRate == 0 {
+		now := time.Now()
+		for i, n := range s.npcs {
+			switch n.Think(s.m, now, s.rng) {
+			case world.NPCAppear:
+				_ = d.BroadcastMessage(opJoin, mustJSON(describeNPC(i, n)), nil, nil, true)
+			case world.NPCVanish:
+				_ = d.BroadcastMessage(opLeave, mustJSON(map[string]int{"s": npcSIDBase + i}), nil, nil, true)
+			}
+		}
 	}
 	if len(moved) > 0 {
 		_ = d.BroadcastMessage(opDelta, mustJSON(map[string]interface{}{"t": tick, "p": moved}), nil, nil, false)
@@ -376,6 +410,15 @@ func describe(pl *player) map[string]interface{} {
 	return map[string]interface{}{
 		"s": pl.sid, "n": pl.hero.Name, "c": pl.hero.Color,
 		"x": cent(pl.body.X), "y": cent(pl.body.Y), "d": pl.body.Dir,
+	}
+}
+
+// describeNPC présente un habitant comme un héros, avec son identifiant
+// ("npc") pour que le client lui donne sa tenue et ses dialogues.
+func describeNPC(i int, n *world.NPC) map[string]interface{} {
+	return map[string]interface{}{
+		"s": npcSIDBase + i, "n": n.Name, "c": -1, "npc": n.ID,
+		"x": cent(n.Body.X), "y": cent(n.Body.Y), "d": n.Body.Dir,
 	}
 }
 

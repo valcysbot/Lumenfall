@@ -41,5 +41,40 @@ func _ready() -> void:
 				if not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
 					printerr("Planche manquante : ", file)
 					failed += 1
+	failed += _check_npcs()
+	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
+		printerr("Braise n'a pas de planche")
+		failed += 1
 	print("Vérification du client : %s" % ("OK" if failed == 0 else "%d erreur(s)" % failed))
 	get_tree().quit(1 if failed > 0 else 0)
+
+
+## Chaque habitant du serveur a sa tenue et ses dialogues côté client, et
+## chaque choix mène à un nœud qui existe.
+func _check_npcs() -> int:
+	var failed := 0
+	var server_path := ProjectSettings.globalize_path("res://").path_join("../server/world/maps/glennmor.pnj.json")
+	var server: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(server_path))
+	var data := DialogueBox.data("glennmor")
+	for n in server.pnj:
+		var who: Dictionary = data.get("pnj", {}).get(n.id, {})
+		if who.is_empty():
+			printerr("Habitant sans dialogues : ", n.id)
+			failed += 1
+			continue
+		for piece in who.look:
+			var v: String = who.look[piece]
+			var file: String = ("cheveux_" + v) if piece == "cheveux" else (piece + ("_" + v if v != "" else ""))
+			if not piece in HeroSprite.ORDRE or not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
+				printerr("Tenue de %s : planche manquante %s" % [n.id, file])
+				failed += 1
+		var tree: Dictionary = who.dialogue
+		if not tree.has("debut") or who.get("bulles", []).is_empty():
+			printerr("%s n'a pas de début de dialogue ou de bulles" % n.id)
+			failed += 1
+		for key in tree:
+			for ch in tree[key].get("choix", []):
+				if ch.vers != "" and not tree.has(ch.vers):
+					printerr("Dialogue de %s : « %s » mène nulle part (%s)" % [n.id, ch.texte, ch.vers])
+					failed += 1
+	return failed
