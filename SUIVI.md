@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.3 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
+**Version actuelle :** V0.3.1 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
 
 ---
 
@@ -96,6 +96,7 @@
 - ✓ **Le Grand Sanglier de Mabon** (`server/world/boss.go`), niveau 10, dans la Bauge au sud de la Lisière : charge et piétinement annoncés par des zones rouges ; sous la moitié de sa vie, la Flétrissure le dévore (phase 2 : il devient un Effacé, plus rapide, et des éclats gris tombent sur chaque héros).
 - ✓ **XP et niveaux** : sans niveau maximum, la vie et les dégâts montent à chaque niveau ; or et trophées. Tout est sauvegardé en base avec la position.
 - ✓ **La forge des bêtes** (`tools/sprites/forge_betes.py`) et 7 nouvelles animations du Paladin (attaque, coup de bouclier, garde, incantation, sort, roulade, chute) avec son écu.
+- ✓ **Le tutoriel de combat** (V0.3.1, `client/scripts/combat_tutorial.gd`) : au premier monstre croisé, Braise apprend les gestes un par un (viser, frapper, bouclier, roulade, potion, autres sorts) en faisant briller le bon bouton. On peut le passer, et le revoir dans les réglages ⚙.
 - ✓ **Le combat à l'écran** : cadre du héros (vie, Ferveur, XP, effets), cadre de la cible, barre de compétences (1 à 5, R, Espace), éventail pour le pouce sur téléphone, chiffres qui sautent, critiques dorés qui font trembler l'écran, ralenti sur le coup fatal d'un élite, zones rouges qui se remplissent, écran « Tu es tombé ».
 
 ### ○ Quêtes à venir
@@ -110,7 +111,7 @@
 - **Le Grand Sanglier se joue à plusieurs** : seul au niveau 10, il faut absolument sortir des zones rouges (dans les combats simulés sans esquive, le héros seul perd 10 fois sur 10). À deux ou trois, ça passe. Il revient 5 minutes après sa chute.
 - **L'équilibrage simulé** (`server/world/equilibre_test.go`) : 10 combats automatiques par camp vérifient qu'un Paladin du bon niveau gagne contre sangliers, loups, loups et corbeaux effacés. Le soin a reçu 6 s de recharge : sans elle, le Paladin était immortel.
 - **Planches plus larges** : le héros est maintenant dessiné sur des images de 64 pixels de large (pour la chute), et chaque planche fait 3 712 pixels de large. C'est sous la limite de 4 096 des téléphones, mais il faudra découper les planches quand les animations des 17 classes arriveront.
-- **Jeu trop ancien** : le serveur demande maintenant la v0.3.0. Les v0.2 affichent « Ton jeu est trop ancien » tant que la v0.3.0 n'est pas publiée.
+- **Jeu trop ancien** : le serveur demande au moins la v0.3.0. La v0.3.1 n'ajoute que le tutoriel : une v0.3.0 peut toujours jouer.
 - **Le ralenti** n'existe que sur ton écran (le monde est partagé) : il ne dure qu'une demi-seconde, sur le coup fatal d'un élite ou d'un boss.
 
 ---
@@ -195,12 +196,22 @@
 | 30/10/2026 | Butin | Or + trophées rares ⭐ |
 | 30/10/2026 | PvP | Duels sur invitation juste après le boss ⭐ |
 | 30/10/2026 | Mode hardcore | À l'Acte IV, avec la création du héros ⭐ |
+| 30/10/2026 | Combat jugé « un peu compliqué » : ce qui manque | « On ne comprend pas quoi faire » → tutoriel de Braise au premier monstre ⭐ |
+| 30/10/2026 | Publication des versions | Claude lance lui-même la publication (onglet Actions) après chaque fusion |
 
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.3.1 · « Premier sang » (30 octobre 2026)
+
+- 🆕 **Braise t'apprend à te battre.** Au premier monstre que tu croises, une petite carte s'ouvre sous ta vie et te montre les gestes un par un : viser, frapper, lever ton bouclier, rouler, boire une potion, puis tes autres sorts. Le bouton à presser brille, et la carte passe à l'étape suivante dès que tu as fait le geste.
+- ✨ Tu peux passer le tutoriel, et le revoir quand tu veux depuis les réglages ⚙.
+- 🐛 corrigé : le test de fumée du serveur de test annonçait encore la version 0.2.1 et se faisait refouler.
+
+Captures : [sur PC](docs/captures/v0.3.1/tutoriel-pc.png) · [sur téléphone](docs/captures/v0.3.1/tutoriel-telephone.png) · [avant / après](docs/captures/v0.3.1/avant-apres.png).
 
 ### V0.3 · « Premier sang » (30 octobre 2026)
 

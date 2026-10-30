@@ -48,6 +48,8 @@ var _shake := 0.0
 var _slowmo := 0.0
 var _blocking := false
 var _fight_t := -1e9       # dernier coup donné ou reçu
+var tutorial: CombatTutorial
+const TUTO_REACH := 10.0    # cases : le tutoriel commence quand un monstre est à cette distance
 var info: Label
 var chat_log: VBoxContainer
 var chat_edit: LineEdit
@@ -163,7 +165,7 @@ func _build_hud() -> void:
 	combat.touch = touch
 	root.add_child(combat)
 	combat.skill.connect(_use_skill)
-	combat.potion.connect(func(): Net.send(Net.OP_POTION, {}))
+	combat.potion.connect(_potion)
 	combat.roll.connect(_roll)
 	combat.next_target.connect(_next_target)
 	combat.block.connect(_set_block)
@@ -219,6 +221,12 @@ func _build_hud() -> void:
 	toast.add_theme_color_override("font_outline_color", UI.NIGHT)
 	toast.add_theme_constant_override("outline_size", 6)
 	root.add_child(toast)
+
+	tutorial = CombatTutorial.new()
+	tutorial.touch = touch
+	tutorial.glow.connect(_glow)
+	tutorial.finished.connect(func(): _set_tuto_done(true))
+	root.add_child(tutorial)
 	_update_info()
 
 
@@ -252,6 +260,12 @@ func _build_settings(root: Control) -> void:
 	follow.button_pressed = _braise_wanted()
 	follow.toggled.connect(_set_braise)
 	col.add_child(follow)
+	var tuto := UI.button("🐉 Revoir le tutoriel de combat")
+	tuto.focus_mode = Control.FOCUS_NONE
+	tuto.pressed.connect(func():
+		settings.visible = false
+		_start_tutorial())
+	col.add_child(tuto)
 	root.add_child(settings)
 
 
@@ -491,6 +505,7 @@ func _process(delta: float) -> void:
 	if _info_t > 1.0:
 		_info_t = 0.0
 		_update_info()
+		_maybe_tutorial()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
 	# Un coup critique fait trembler l'écran ; le coup fatal d'un élite ralentit le temps (sur ton écran seulement).
@@ -748,6 +763,45 @@ func _set_braise(on: bool) -> void:
 
 # --- Le combat ------------------------------------------------------------------
 
+## Le tutoriel de combat : une seule fois, au premier monstre qui approche.
+func _maybe_tutorial() -> void:
+	if tutorial.running() or _tuto_done() or not pawns.has(my_sid) or dialogue.visible:
+		return
+	for sid in pawns:
+		var p: Pawn = pawns[sid]
+		if p.kind != "" and not p.dead and _near(sid, TUTO_REACH):
+			_start_tutorial()
+			return
+
+
+func _start_tutorial() -> void:
+	tutorial.start(pawns.has(target_sid) and pawns[target_sid].kind != "")
+	if braise != null:
+		braise.say("Braise : « Attention, un monstre ! Je t'explique, fais comme moi. »")
+
+
+func _tuto(id: String) -> void:
+	if tutorial != null and tutorial.did(id) and braise != null and tutorial.step == CombatTutorial.STEPS.size() - 1:
+		braise.say("Braise fait un looping : « Tu sais te battre ! »")
+
+
+func _glow(id) -> void:
+	for b in combat.buttons:
+		combat.buttons[b].glow = id != null and str(b) == str(id)
+
+
+func _tuto_done() -> bool:
+	var cfg := ConfigFile.new()
+	cfg.load(WorldSky.SETTINGS)
+	return bool(cfg.get_value("jeu", "tuto_combat", false))
+
+
+func _set_tuto_done(on: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(WorldSky.SETTINGS)
+	cfg.set_value("jeu", "tuto_combat", on)
+	cfg.save(WorldSky.SETTINGS)
+
 ## Les touches de combat : 1 à 5, R (potion), Espace (roulade), Tab, Échap.
 func _combat_key(event: InputEventKey) -> bool:
 	if dialogue.visible:
@@ -758,7 +812,7 @@ func _combat_key(event: InputEventKey) -> bool:
 	elif k >= KEY_KP_1 and k <= KEY_KP_5:
 		_use_skill(k - KEY_KP_1 + 1)
 	elif k == KEY_R:
-		Net.send(Net.OP_POTION, {})
+		_potion()
 	elif k == KEY_SPACE:
 		_roll()
 	elif k == KEY_TAB:
@@ -773,6 +827,8 @@ func _combat_key(event: InputEventKey) -> bool:
 func _use_skill(k: int) -> void:
 	if pawns.has(my_sid) and pawns[my_sid].dead:
 		return
+	if k == 1:
+		_tuto("frappe")
 	# Frappe sacrée ou coup de bouclier sur un monstre trop loin : on y va d'abord.
 	if (k == 1 or k == 2) and pawns.has(target_sid) and pawns[target_sid].kind != "" and not _in_reach(target_sid):
 		_hunt = target_sid
@@ -782,6 +838,7 @@ func _use_skill(k: int) -> void:
 
 func _roll() -> void:
 	_hunt = 0
+	_tuto("roulade")
 	Net.send(Net.OP_ROLL, {"d": [_last_dir.x, _last_dir.y]})
 
 
@@ -790,6 +847,13 @@ func _set_block(on: bool) -> void:
 		return
 	_blocking = on
 	Net.send(Net.OP_BLOCK, {"b": on})
+	if on:
+		_tuto("garde")
+
+
+func _potion() -> void:
+	_tuto("potion")
+	Net.send(Net.OP_POTION, {})
 
 
 func _set_target(sid: int) -> void:
@@ -799,6 +863,8 @@ func _set_target(sid: int) -> void:
 	if pawns.has(sid):
 		pawns[sid].targeted = true
 		combat.target = pawns[sid]
+		if pawns[sid].kind != "":
+			_tuto("cible")
 	else:
 		target_sid = 0
 		combat.target = null
