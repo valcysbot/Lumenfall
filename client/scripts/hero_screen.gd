@@ -130,7 +130,7 @@ func _slot_card(slot: int, hero: Dictionary) -> PanelContainer:
 		var l := UI.label(hero.name, 26, UI.LUMEN)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		col.add_child(l)
-		var where := UI.label("La Clairière", 16, UI.MUTED)
+		var where := UI.label("Le Val de Glennmor", 16, UI.MUTED)
 		where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		col.add_child(where)
 		var b := UI.button("Jouer", true)

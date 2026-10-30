@@ -47,6 +47,15 @@ pip install numpy pillow
 python3 tools/sprites/forge_heros.py --apercu   # environ 3 minutes
 ```
 
+## Retoucher une carte
+
+1. Premier jet (une seule fois) : `python3 tools/maps/gen_glennmor.py`, puis
+   `godot --headless --path client --script res://outils/construire_carte.gd -- glennmor`.
+2. Ouvrir `client/cartes/glennmor.tscn` dans Godot : peindre les terrains (chemin, pavés, eau, herbe grise) avec l'outil Terrains, glisser des décors depuis `client/cartes/decors/`.
+3. Exporter pour le serveur : `godot --headless --path client --script res://outils/exporter_carte.gd -- glennmor`.
+
+Attention : relancer l'étape 1 écrase les retouches faites à la main.
+
 ## Secrets
 
 Les clés et mots de passe vivent dans un fichier `.env` sur le serveur, jamais dans ce dépôt. Modèle : `deploy/.env.example`.

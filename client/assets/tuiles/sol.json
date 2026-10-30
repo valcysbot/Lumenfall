@@ -1,0 +1,858 @@
+{
+ "taille": [
+  64,
+  32
+ ],
+ "colonnes": 16,
+ "cotes": {
+  "ne": [
+   0,
+   -1
+  ],
+  "se": [
+   1,
+   0
+  ],
+  "so": [
+   0,
+   1
+  ],
+  "no": [
+   -1,
+   0
+  ]
+ },
+ "tuiles": {
+  "herbe_0": {
+   "atlas": [
+    0,
+    0
+   ]
+  },
+  "herbe_1": {
+   "atlas": [
+    1,
+    0
+   ]
+  },
+  "herbe_2": {
+   "atlas": [
+    2,
+    0
+   ]
+  },
+  "herbe_3": {
+   "atlas": [
+    3,
+    0
+   ]
+  },
+  "herbe_fleurie_0": {
+   "atlas": [
+    4,
+    0
+   ]
+  },
+  "herbe_fleurie_1": {
+   "atlas": [
+    5,
+    0
+   ]
+  },
+  "sous_bois_0": {
+   "atlas": [
+    6,
+    0
+   ]
+  },
+  "sous_bois_1": {
+   "atlas": [
+    7,
+    0
+   ]
+  },
+  "plancher_0": {
+   "atlas": [
+    8,
+    0
+   ]
+  },
+  "plancher_1": {
+   "atlas": [
+    9,
+    0
+   ]
+  },
+  "vide": {
+   "atlas": [
+    10,
+    0
+   ],
+   "bloque": true
+  },
+  "chemin_0": {
+   "atlas": [
+    11,
+    0
+   ],
+   "terrain": "chemin",
+   "relie": [],
+   "bloque": false
+  },
+  "chemin_1": {
+   "atlas": [
+    12,
+    0
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne"
+   ],
+   "bloque": false
+  },
+  "chemin_2": {
+   "atlas": [
+    13,
+    0
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "se"
+   ],
+   "bloque": false
+  },
+  "chemin_3": {
+   "atlas": [
+    14,
+    0
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "se"
+   ],
+   "bloque": false
+  },
+  "chemin_4": {
+   "atlas": [
+    15,
+    0
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "so"
+   ],
+   "bloque": false
+  },
+  "chemin_5": {
+   "atlas": [
+    0,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "so"
+   ],
+   "bloque": false
+  },
+  "chemin_6": {
+   "atlas": [
+    1,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "chemin_7": {
+   "atlas": [
+    2,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "chemin_8": {
+   "atlas": [
+    3,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_9": {
+   "atlas": [
+    4,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_10": {
+   "atlas": [
+    5,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_11": {
+   "atlas": [
+    6,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_12": {
+   "atlas": [
+    7,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_13": {
+   "atlas": [
+    8,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_14": {
+   "atlas": [
+    9,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "chemin_15": {
+   "atlas": [
+    10,
+    1
+   ],
+   "terrain": "chemin",
+   "relie": [
+    "ne",
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_0": {
+   "atlas": [
+    11,
+    1
+   ],
+   "terrain": "paves",
+   "relie": [],
+   "bloque": false
+  },
+  "paves_1": {
+   "atlas": [
+    12,
+    1
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne"
+   ],
+   "bloque": false
+  },
+  "paves_2": {
+   "atlas": [
+    13,
+    1
+   ],
+   "terrain": "paves",
+   "relie": [
+    "se"
+   ],
+   "bloque": false
+  },
+  "paves_3": {
+   "atlas": [
+    14,
+    1
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "se"
+   ],
+   "bloque": false
+  },
+  "paves_4": {
+   "atlas": [
+    15,
+    1
+   ],
+   "terrain": "paves",
+   "relie": [
+    "so"
+   ],
+   "bloque": false
+  },
+  "paves_5": {
+   "atlas": [
+    0,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "so"
+   ],
+   "bloque": false
+  },
+  "paves_6": {
+   "atlas": [
+    1,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "paves_7": {
+   "atlas": [
+    2,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "paves_8": {
+   "atlas": [
+    3,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_9": {
+   "atlas": [
+    4,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_10": {
+   "atlas": [
+    5,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_11": {
+   "atlas": [
+    6,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_12": {
+   "atlas": [
+    7,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_13": {
+   "atlas": [
+    8,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_14": {
+   "atlas": [
+    9,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "paves_15": {
+   "atlas": [
+    10,
+    2
+   ],
+   "terrain": "paves",
+   "relie": [
+    "ne",
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "eau_0": {
+   "atlas": [
+    11,
+    2
+   ],
+   "terrain": "eau",
+   "relie": [],
+   "bloque": true
+  },
+  "eau_1": {
+   "atlas": [
+    12,
+    2
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne"
+   ],
+   "bloque": true
+  },
+  "eau_2": {
+   "atlas": [
+    13,
+    2
+   ],
+   "terrain": "eau",
+   "relie": [
+    "se"
+   ],
+   "bloque": true
+  },
+  "eau_3": {
+   "atlas": [
+    14,
+    2
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "se"
+   ],
+   "bloque": true
+  },
+  "eau_4": {
+   "atlas": [
+    15,
+    2
+   ],
+   "terrain": "eau",
+   "relie": [
+    "so"
+   ],
+   "bloque": true
+  },
+  "eau_5": {
+   "atlas": [
+    0,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "so"
+   ],
+   "bloque": true
+  },
+  "eau_6": {
+   "atlas": [
+    1,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "se",
+    "so"
+   ],
+   "bloque": true
+  },
+  "eau_7": {
+   "atlas": [
+    2,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "se",
+    "so"
+   ],
+   "bloque": true
+  },
+  "eau_8": {
+   "atlas": [
+    3,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_9": {
+   "atlas": [
+    4,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_10": {
+   "atlas": [
+    5,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "se",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_11": {
+   "atlas": [
+    6,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "se",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_12": {
+   "atlas": [
+    7,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "so",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_13": {
+   "atlas": [
+    8,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "so",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_14": {
+   "atlas": [
+    9,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": true
+  },
+  "eau_15": {
+   "atlas": [
+    10,
+    3
+   ],
+   "terrain": "eau",
+   "relie": [
+    "ne",
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": true
+  },
+  "gris_0": {
+   "atlas": [
+    11,
+    3
+   ],
+   "terrain": "gris",
+   "relie": [],
+   "bloque": false
+  },
+  "gris_1": {
+   "atlas": [
+    12,
+    3
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne"
+   ],
+   "bloque": false
+  },
+  "gris_2": {
+   "atlas": [
+    13,
+    3
+   ],
+   "terrain": "gris",
+   "relie": [
+    "se"
+   ],
+   "bloque": false
+  },
+  "gris_3": {
+   "atlas": [
+    14,
+    3
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "se"
+   ],
+   "bloque": false
+  },
+  "gris_4": {
+   "atlas": [
+    15,
+    3
+   ],
+   "terrain": "gris",
+   "relie": [
+    "so"
+   ],
+   "bloque": false
+  },
+  "gris_5": {
+   "atlas": [
+    0,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "so"
+   ],
+   "bloque": false
+  },
+  "gris_6": {
+   "atlas": [
+    1,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "gris_7": {
+   "atlas": [
+    2,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "se",
+    "so"
+   ],
+   "bloque": false
+  },
+  "gris_8": {
+   "atlas": [
+    3,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_9": {
+   "atlas": [
+    4,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_10": {
+   "atlas": [
+    5,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_11": {
+   "atlas": [
+    6,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "se",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_12": {
+   "atlas": [
+    7,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_13": {
+   "atlas": [
+    8,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_14": {
+   "atlas": [
+    9,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  },
+  "gris_15": {
+   "atlas": [
+    10,
+    4
+   ],
+   "terrain": "gris",
+   "relie": [
+    "ne",
+    "se",
+    "so",
+    "no"
+   ],
+   "bloque": false
+  }
+ }
+}

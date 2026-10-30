@@ -8,6 +8,11 @@ var width := 0
 var height := 0
 var rows: Array = []
 var blocking := ""
+## Faux quand la carte a sa propre scène (tuiles et décors dessinés).
+var ground_visible := true:
+	set(v):
+		ground_visible = v
+		queue_redraw()
 
 
 func load_map(id: String) -> bool:
@@ -40,6 +45,8 @@ func _hash(x: int, y: int) -> float:
 
 
 func _draw() -> void:
+	if not ground_visible:
+		return
 	# La forêt continue au-delà des bords de la carte.
 	var big := PackedVector2Array([Iso.to_screen(Vector2(-60, -60)), Iso.to_screen(Vector2(width + 60, -60)),
 		Iso.to_screen(Vector2(width + 60, height + 60)), Iso.to_screen(Vector2(-60, height + 60))])

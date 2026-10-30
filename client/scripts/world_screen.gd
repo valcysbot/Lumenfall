@@ -67,14 +67,9 @@ func _ready() -> void:
 	add_child(sky)
 	_build_hud()
 
-	if not iso_map.load_map(hero.get("map", "clairiere")):
-		_show_toast("Cette carte manque dans ton jeu. Mets-le à jour !")
-		return
-	iso_map.spawn_props(entities)
 	camera.position = Iso.to_screen(Vector2(hero.x, hero.y))
-
 	Net.match_state.connect(_on_state)
-	_show_toast("Entrée dans la Clairière…")
+	_show_toast("En route pour Erydor…")
 	var err := await Net.join_world(hero.id)
 	if err != "":
 		_show_toast(err)
@@ -203,8 +198,32 @@ func _build_settings(root: Control) -> void:
 	root.add_child(settings)
 
 
+## Charge la carte annoncée par le serveur : la scène Godot (sol, décors) si
+## elle existe, et toujours les cases praticables pour les clics.
+func _load_map(id: String) -> bool:
+	if not iso_map.load_map(id):
+		return false
+	var path := "res://cartes/%s.tscn" % id
+	if ResourceLoader.exists(path):
+		var scene: Node2D = load(path).instantiate()
+		iso_map.add_child(scene)
+		iso_map.ground_visible = false
+		# Les décors rejoignent les héros dans le calque trié en profondeur,
+		# pour qu'on puisse passer derrière une maison ou devant un arbre.
+		for d in scene.get_node("Decors").get_children():
+			d.reparent(entities, false)
+		sky.lamps = get_tree().get_nodes_in_group("lumieres")
+	else:
+		iso_map.spawn_props(entities)
+	return true
+
+
+func _map_name() -> String:
+	return iso_map.data.get("name", "Erydor")
+
+
 func _update_info() -> void:
-	info.text = "%s · La Clairière · %s · %d %s" % [hero.get("name", ""), sky.describe(), pawns.size(), "aventurier en ligne" if pawns.size() <= 1 else "aventuriers en ligne"]
+	info.text = "%s · %s · %s · %d %s" % [hero.get("name", ""), _map_name(), sky.describe(), pawns.size(), "aventurier en ligne" if pawns.size() <= 1 else "aventuriers en ligne"]
 
 
 func _show_toast(text: String) -> void:
@@ -259,15 +278,22 @@ func _on_state(op: int, d: Dictionary) -> void:
 	match op:
 		Net.OP_SNAPSHOT:
 			my_sid = int(d.you)
+			if not _load_map(d.get("map", "glennmor")):
+				_show_toast("Cette région manque dans ton jeu. Mets-le à jour !")
+				return
 			if d.has("sky"):
 				sky.set_sky(d.sky)
 			for p in d.players:
 				_add_pawn(p)
-			_add_chat_line("", "Bienvenue dans la Clairière ! Braise te souhaite une belle balade.", true)
-			_show_toast("La Clairière")
+			var where := _map_name()
+			for art in ["Le ", "La ", "Les "]:
+				if where.begins_with(art):
+					where = art.to_lower() + where.substr(art.length())
+			_add_chat_line("", "Bienvenue dans %s ! Braise te souhaite une belle balade." % where, true)
+			_show_toast(_map_name())
 		Net.OP_JOIN:
 			_add_pawn(d)
-			_add_chat_line("", "%s arrive dans la Clairière." % d.n, true)
+			_add_chat_line("", "%s arrive dans la région." % d.n, true)
 		Net.OP_LEAVE:
 			var sid := int(d.s)
 			if pawns.has(sid):
@@ -280,7 +306,16 @@ func _on_state(op: int, d: Dictionary) -> void:
 			for e in d.p:
 				var sid := int(e[0])
 				if buffers.has(sid):
-					buffers[sid].append([_clock, Vector2(e[1], e[2]) / 100.0, int(e[3])])
+					var p := Vector2(e[1], e[2]) / 100.0
+					var buf: Array = buffers[sid]
+					if buf[-1][1].distance_to(p) > 3.0:
+						# Une porte : on saute directement de l'autre côté.
+						buf.clear()
+						buf.append([_clock - 1.0, p, int(e[3])])
+						if sid == my_sid:
+							_through_door()
+					else:
+						buf.append([_clock, p, int(e[3])])
 		Net.OP_CHAT_OUT:
 			var sid := int(d.s)
 			_add_chat_line(d.n, d.m)
@@ -325,6 +360,8 @@ func _process(delta: float) -> void:
 	_clock += delta
 	_interpolate()
 	_read_direction()
+	if pawns.has(my_sid):
+		sky.indoors = Iso.to_world(pawns[my_sid].position).y >= float(iso_map.data.get("indoors_from", 1e9))
 	sky.update_torches(pawns, my_sid)
 	_info_t += delta
 	if _info_t > 1.0:
@@ -385,6 +422,19 @@ func _read_direction() -> void:
 
 
 ## Maj sur PC, ou le bouton « Courir » sur téléphone.
+## Petit fondu au noir quand on passe une porte.
+func _through_door() -> void:
+	var fade := ColorRect.new()
+	fade.color = Color(0, 0, 0, 1)
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(fade)
+	var tw := fade.create_tween()
+	tw.tween_property(fade, "color:a", 0.0, 0.45)
+	tw.tween_callback(fade.queue_free)
+	camera.reset_smoothing.call_deferred()
+
+
 func _running() -> bool:
 	return _run_toggle or (not chat_edit.has_focus() and Input.is_key_pressed(KEY_SHIFT))
 

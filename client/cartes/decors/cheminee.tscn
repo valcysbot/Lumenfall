@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/cheminee.png" id="1_3574o"]
+
+[node name="Cheminee" type="Sprite2D" unique_id=1101963113]
+texture_filter = 1
+texture = ExtResource("1_3574o")
+centered = false
+offset = Vector2(-31, -85)
+metadata/decor = "cheminee"
+metadata/emprise = Vector2i(2, 1)
+
+[node name="Lumiere" type="PointLight2D" parent="." unique_id=940379472 groups=["lumieres"]]
+position = Vector2(-14.1, -5.1)
+enabled = false

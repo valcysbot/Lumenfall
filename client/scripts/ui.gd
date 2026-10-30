@@ -17,7 +17,7 @@ const TIPS := [
 	"Braise dit : sur PC, clique pour marcher, ou utilise ZQSD.",
 	"Braise dit : appuie sur Entrée pour parler aux autres aventuriers.",
 	"Braise dit : un nom d'Erydor, ça sonne bien avec une apostrophe. D'Arvel, par exemple.",
-	"Braise dit : l'étang de la Clairière est très profond. Enfin, je crois. Je n'ai jamais osé y aller.",
+	"Braise dit : à Bourg-Lanterne, on ne laisse jamais une lanterne s'éteindre. Moi, j'en allume parfois une en éternuant.",
 	"Braise dit : je ne crache du feu que sur les bugs. Promis.",
 	"Braise dit : sur téléphone, le joystick est en bas à gauche, et un toucher sur la carte t'y emmène.",
 ]

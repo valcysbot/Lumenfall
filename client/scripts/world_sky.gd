@@ -37,6 +37,13 @@ var _flash: ColorRect
 var _flash_wait := 8.0
 var _torch_texture: Texture2D
 var _night := 0.0                # 0 en plein jour, 1 en pleine nuit
+var lamps: Array = []            # lumières des décors (lanternes, forge…)
+## À l'intérieur d'une maison : lumière chaude, ni pluie ni brouillard.
+var indoors := false:
+	set(v):
+		if v != indoors:
+			indoors = v
+			set_weather(weather)
 
 
 func _ready() -> void:
@@ -85,6 +92,8 @@ func set_sky(d: Dictionary) -> void:
 
 func set_weather(kind: String) -> void:
 	weather = kind
+	if indoors:
+		kind = "clair"
 	_rain.emitting = kind == "pluie" or kind == "orage"
 	_rain.amount = 520 if kind == "orage" else 300
 	_fog.visible = kind == "brouillard"
@@ -135,6 +144,8 @@ func _load_settings() -> void:
 
 
 func light_color() -> Color:
+	if indoors:
+		return Color(1.0, 0.92, 0.8)
 	var p := phase()
 	var c := Color.WHITE
 	for i in KEYS.size() - 1:
@@ -158,7 +169,8 @@ func _process(delta: float) -> void:
 	_modulate.color = c
 	# Les torches s'allument d'elles-mêmes quand il fait sombre.
 	_night = clampf((0.8 - c.v) / 0.45, 0.0, 1.0)
-	if weather == "orage":
+	update_lamps()
+	if weather == "orage" and not indoors:
 		_flash_wait -= delta
 		if _flash_wait <= 0:
 			_flash_wait = randf_range(6.0, 15.0)
@@ -167,6 +179,20 @@ func _process(delta: float) -> void:
 			tw.tween_property(_flash, "color:a", 0.0, 0.12)
 			tw.tween_property(_flash, "color:a", 0.35, 0.05)
 			tw.tween_property(_flash, "color:a", 0.0, 0.4)
+
+
+## Les lanternes du village s'allument à la tombée de la nuit.
+func update_lamps() -> void:
+	var on := _night > 0.01
+	for l in lamps:
+		if not is_instance_valid(l):
+			continue
+		if l.texture == null:
+			l.texture = _torch_texture
+			l.color = Color(1.0, 0.7, 0.38)
+			l.texture_scale = 1.3
+		l.enabled = on
+		l.energy = 1.1 * _night
 
 
 ## Allume ou éteint les torches : seulement les héros les plus proches du tien.

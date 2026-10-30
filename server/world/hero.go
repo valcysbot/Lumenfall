@@ -87,6 +87,12 @@ func (b *Body) StepAmong(m *Map, crowd *Crowd, dt float64) bool {
 	return b.X != ox || b.Y != oy || b.Dir != od
 }
 
+// Teleport place le héros ailleurs (porte) et oublie son trajet.
+func (b *Body) Teleport(x, y float64) {
+	b.X, b.Y = x, y
+	b.path = nil
+}
+
 // Speed renvoie la vitesse actuelle du héros.
 func (b *Body) Speed() float64 {
 	if b.Run {

@@ -17,7 +17,7 @@ import (
 
 const (
 	worldModule  = "world"
-	defaultMap   = "clairiere"
+	defaultMap   = "glennmor"
 	tickRate     = 10            // le monde « respire » 10 fois par seconde
 	saveEvery    = 30 * tickRate // sauvegarde des positions toutes les 30 s
 	statsEvery   = 60 * tickRate // statistiques de charge toutes les 60 s
@@ -217,6 +217,10 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	for _, pl := range all {
 		if pl.body.Moving() && pl.body.StepAmong(s.m, crowd, dt) {
 			changed[pl] = true
+			// Une porte : le héros passe de l'autre côté.
+			if door := s.m.DoorAt(pl.body.X, pl.body.Y); door != nil {
+				pl.body.Teleport(door.To[0], door.To[1])
+			}
 		}
 	}
 	// Les héros se bousculent mais ne se traversent pas.

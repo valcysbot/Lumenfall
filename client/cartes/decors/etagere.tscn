@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/etagere.png" id="1_22ouo"]
+
+[node name="Etagere" type="Sprite2D" unique_id=1007528220]
+texture_filter = 1
+texture = ExtResource("1_22ouo")
+centered = false
+offset = Vector2(-24, -81)
+metadata/decor = "etagere"
+metadata/emprise = Vector2i(1, 1)

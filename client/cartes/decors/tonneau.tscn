@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/tonneau.png" id="1_gmlsj"]
+
+[node name="Tonneau" type="Sprite2D" unique_id=895001787]
+texture_filter = 1
+texture = ExtResource("1_gmlsj")
+centered = false
+offset = Vector2(-13, -30)
+metadata/decor = "tonneau"
+metadata/emprise = Vector2i(1, 1)

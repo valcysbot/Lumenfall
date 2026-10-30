@@ -148,6 +148,12 @@ func loadHero(ctx context.Context, db *sql.DB, uid, heroID string) (Hero, error)
 	if errors.Is(err, sql.ErrNoRows) {
 		return h, errHeroNotFound
 	}
+	// Un héros resté dans une région fermée (la Clairière de l'Acte I)
+	// revient au point d'apparition de la région principale.
+	if err == nil && worldMapsByID[h.Map] == nil {
+		m := worldMapsByID[defaultMap]
+		h.Map, h.X, h.Y = m.ID, m.Spawn[0], m.Spawn[1]
+	}
 	return h, err
 }
 

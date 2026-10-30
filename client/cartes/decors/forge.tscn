@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/forge.png" id="1_u5qg5"]
+
+[node name="Forge" type="Sprite2D" unique_id=156533338]
+texture_filter = 1
+texture = ExtResource("1_u5qg5")
+centered = false
+offset = Vector2(-116, -165)
+metadata/decor = "forge"
+metadata/emprise = Vector2i(4, 3)
+
+[node name="Lumiere" type="PointLight2D" parent="." unique_id=1763146196 groups=["lumieres"]]
+position = Vector2(-72, 4.6)
+enabled = false

@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decors/cloture_0.png" id="1_d3l2c"]
+
+[node name="Cloture0" type="Sprite2D" unique_id=609855547]
+texture_filter = 1
+texture = ExtResource("1_d3l2c")
+centered = false
+offset = Vector2(-18, -29)
+metadata/decor = "cloture_0"
+metadata/emprise = Vector2i(1, 1)
