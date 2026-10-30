@@ -113,7 +113,7 @@ func runBot(i int, stop time.Time) error {
 	var wj struct {
 		MatchID string `json:"match_id"`
 	}
-	if err := rpc(token, "world_join", map[string]string{"hero_id": heroID}, &wj); err != nil {
+	if err := rpc(token, "world_join", map[string]string{"hero_id": heroID, "v": "0.2.1"}, &wj); err != nil {
 		return fmt.Errorf("entrée dans le monde : %w", err)
 	}
 
@@ -133,7 +133,7 @@ func runBot(i int, stop time.Time) error {
 		atomic.AddInt64(&msgsOut, 1)
 		return conn.WriteJSON(v)
 	}
-	if err := send(map[string]interface{}{"cid": "1", "match_join": map[string]interface{}{"match_id": wj.MatchID, "metadata": map[string]string{"hero_id": heroID}}}); err != nil {
+	if err := send(map[string]interface{}{"cid": "1", "match_join": map[string]interface{}{"match_id": wj.MatchID, "metadata": map[string]string{"hero_id": heroID, "v": "0.2.1"}}}); err != nil {
 		return err
 	}
 
