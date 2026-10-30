@@ -100,6 +100,7 @@ jobs:
             https://discord.com/oauth2/authorize*) echo "✅ La porte Discord redirige bien vers Discord" ;;
             *) echo "::warning::La connexion Discord n'est pas encore configurée (LF_DISCORD_CLIENT_ID / LF_DISCORD_CLIENT_SECRET)" ;;
           esac
+          VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' client/project.godot)
           cd tools/loadbots
-          go run . -n 5 -duree 20s -prefixe fumee -serveur "https://${HOST}" -cle "${SERVER_KEY}" | tee /tmp/fumee.txt
+          go run . -version "$VERSION" -n 5 -duree 20s -prefixe fumee -serveur "https://${HOST}" -cle "${SERVER_KEY}" | tee /tmp/fumee.txt
           grep -q "Bots entrés dans le monde : 5 / 5" /tmp/fumee.txt
