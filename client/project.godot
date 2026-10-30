@@ -6,7 +6,7 @@ config_version=5
 
 config/name="Lumenfall"
 config/description="Lumenfall, les Chroniques d'Erydor"
-config/version="0.3.0"
+config/version="0.3.1"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 boot_splash/bg_color=Color(0.0823529, 0.0745098, 0.113725, 1)

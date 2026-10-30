@@ -16,6 +16,7 @@ var cd_total := 1.0
 var dim := false        # pas assez de Ferveur, plus de potions…
 var count := -1         # petit nombre en coin (potions), -1 : rien
 var pips := -1.0        # roulades disponibles (0 à 2), -1 : rien
+var glow := false       # le tutoriel montre ce bouton
 var _down := false
 var _press_t := 0.0
 var _icon_label: Label
@@ -86,6 +87,13 @@ func _draw() -> void:
 	var border := tint if not dim else UI.LINE
 	if _down or _press_t > 0:
 		bg = Color(tint, 0.35)
+	if glow:
+		# Un halo qui respire autour du bouton à presser.
+		var a := 0.45 + 0.4 * sin(now() * 6.0)
+		if round_shape:
+			draw_arc(c, rad + 5, 0, TAU, 48, Color(UI.EMBER, a), 4.0, true)
+		else:
+			draw_style_box(UI.box(Color(0, 0, 0, 0), Color(UI.EMBER, a), 13, 4, 0), r.grow(5))
 	if round_shape:
 		draw_circle(c, rad, bg)
 		draw_arc(c, rad - 1, 0, TAU, 48, Color(border, 0.9), 2.0, true)
