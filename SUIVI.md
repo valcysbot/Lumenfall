@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.1 « Le premier pas » (29 octobre 2026) · **Acte en cours :** Acte I, les fondations
+**Version actuelle :** V0.1.1 « Bousculade » (29 octobre 2026) · **Acte en cours :** Acte II, le monde vivant
 
 ---
 
@@ -10,8 +10,8 @@
 
 | Acte | Nom | État |
 |---|---|---|
-| I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✱ en cours |
-| II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ○ |
+| I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
+| II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✱ en cours |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ○ |
 | IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ○ |
 | V | Objets, métiers et économie | ○ |
@@ -41,9 +41,8 @@
 - ✓ **Le serveur de test** : VPS Hostinger KVM 1 acheté par Elowan, installé par `deploy/bootstrap-vps.sh`, mis à jour automatiquement à chaque changement du serveur, avec un test de fumée (5 faux joueurs + porte Discord) après chaque déploiement.
 - ✓ **Application Discord « Lumenfall »** créée par Elowan.
 
-### ✱ Quêtes en cours
-
-- ✱ **V0.1 entre amis** : Elowan + 2 ou 3 amis dans la Clairière, sur PC et Android.
+- ✓ **V0.1 entre amis** : Elowan + 2 ou 3 amis dans la Clairière, sur PC et Android.
+- ✓ **Bousculade (V0.1.1)** : les héros ne se traversent plus.
 
 ### ⚠️ Points d'attention
 
@@ -51,6 +50,31 @@
 - Ton propre héros suit le serveur avec environ 0,1 s de retard voulu, pour un mouvement fluide. Une « prédiction » locale (le héros réagit instantanément) est prévue pour V0.2.
 - Le serveur de test utilise une adresse gratuite en `sslip.io` avec HTTPS par Caddy. Un vrai nom de domaine viendra avant l'alpha.
 - L'APK Android est signé avec une clé de test : pour le Play Store, il faudra une vraie clé de signature (Acte X).
+
+---
+
+## 🌗 Acte II, le monde vivant
+
+### ✓ Quêtes accomplies
+
+- ✓ **Le Conseil du Monde vivant** : 25 questions, toutes répondues le 29 octobre 2026 ([archive](docs/conseil-du-monde-vivant.html)).
+- ✓ **Le Grimoire d'Erydor** : la bible du monde, 31 pages validées par Elowan ([bible](docs/bible-du-monde.md), [version interactive](docs/grimoire-d-erydor.html)).
+
+### ✱ Quêtes en cours
+
+- ✱ **La fabrique des dessins** : choisir comment produire les sprites, car l'IA d'images n'est pas accessible depuis l'environnement de Claude.
+
+### ○ Quêtes à venir (V0.2)
+
+- ○ Le héros humain en couches, 8 directions : corps, tête, cheveux, torse, jambes, bottes, arme, casque, gants, cape. Marche, course, repos, salut.
+- ○ Le Val de Glennmor (≈ 200 × 200 cases) et Bourg-Lanterne : auberge La Chope Pleine + 2 maisons où l'on entre.
+- ○ Jour / nuit de 2 h (80 min de jour, 40 de nuit), nuits très sombres avec torche ; pluie, brouillard, orage partagés par région.
+- ○ Une dizaine de PNJ avec leurs habitudes, accueil par Maître Mabon, bulles + boîte de dialogue, Braise qui suit le héros.
+
+### ⚠️ Points d'attention
+
+- **Nuits très sombres (choix d'Elowan)** : la torche s'allume toute seule la nuit, et un réglage de luminosité protège la lisibilité sur téléphone.
+- **Casque, gants et cape visibles (choix d'Elowan)** : presque deux fois plus de dessins par direction et par animation.
 
 ---
 
@@ -81,6 +105,33 @@
 | 29/10/2026 | Testeurs de l'Acte I | **Elowan + 2 ou 3 amis dès les premières versions** (choix d'Elowan) |
 | 29/10/2026 | Notes de mise à jour | Une petite note chaque jour de travail ⭐ |
 | 29/10/2026 | Journal de suivi | Ce fichier, dans le dépôt ⭐ |
+| 29/10/2026 | Fabrication des dessins | IA + nettoyage en pixel art ⭐ (mais l'IA d'images est inaccessible : nouveau choix en cours) |
+| 29/10/2026 | Palette | Vive et colorée, façon Aion ⭐ |
+| 29/10/2026 | Contour des sprites | Fin contour sombre ⭐ |
+| 29/10/2026 | Effets HD-2D | Lumière dynamique + ombres + léger flou de profondeur ⭐ |
+| 29/10/2026 | Zoom | Réglable dans une petite plage ⭐ |
+| 29/10/2026 | Races dessinées à l'Acte II | Humain seulement ⭐ |
+| 29/10/2026 | Pièces visibles | **Corps, tête, cheveux, torse, jambes, bottes, arme + casque, gants, cape** (choix d'Elowan) |
+| 29/10/2026 | Animations | Marche, course, repos, salut ⭐ |
+| 29/10/2026 | Course | Marche par défaut, touche ou bouton pour courir ⭐ |
+| 29/10/2026 | Pion de l'Acte I | Remplacé pour de bon ⭐ |
+| 29/10/2026 | Paysage de départ | Forêts et prairies ⭐ |
+| 29/10/2026 | Taille de la première région | Environ 200 × 200 cases ⭐ |
+| 29/10/2026 | Cœur de la région | Un village d'accueil ⭐ |
+| 29/10/2026 | Bâtiments où l'on entre | L'auberge et 2 maisons ⭐ |
+| 29/10/2026 | Construction des cartes | Éditeur de tuiles de Godot ⭐ |
+| 29/10/2026 | Durée d'une journée | 2 h réelles (80 min de jour, 40 de nuit) ⭐ |
+| 29/10/2026 | La nuit | **Très sombre, il faut une torche** (choix d'Elowan) |
+| 29/10/2026 | Météo de l'Acte II | Pluie, brouillard, orage ⭐ |
+| 29/10/2026 | Saisons | Plus tard, à l'Acte VIII ⭐ |
+| 29/10/2026 | Météo partagée | Oui, par région, décidée par le serveur ⭐ |
+| 29/10/2026 | Nombre de PNJ | Une dizaine, avec leurs habitudes ⭐ |
+| 29/10/2026 | PNJ d'accueil | **Un aubergiste bavard** (choix d'Elowan) : Maître Mabon |
+| 29/10/2026 | Dialogues | **Bulles en passant + boîte quand on parle** (choix d'Elowan) |
+| 29/10/2026 | Vie des PNJ | Ils dorment la nuit et ouvrent boutique le jour ⭐ |
+| 29/10/2026 | Braise dans le jeu | Il suit le héros et commente, désactivable ⭐ |
+| 29/10/2026 | Bible du monde | Les 31 pages du Grimoire d'Erydor validées ⭐ |
+| 29/10/2026 | 15ᵉ race | **Les Lumins**, êtres de cristal nés du Lumenfall (choix d'Elowan) |
 
 ⭐ = recommandation de Claude suivie.
 

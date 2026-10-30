@@ -1,0 +1,453 @@
+<title>Le Grimoire d'Erydor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une forge nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.lore-txt { background: linear-gradient(135deg, #2c2416, var(--stone-2)); border-left: 3px solid var(--lumen); border-radius: 8px; padding: 12px 14px; font-size: 16px; }
+.lore-txt p { margin: 0 0 8px; } .lore-txt p:last-child { margin-bottom: 0; }
+.lore-txt ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.lore-txt b { color: var(--lumen); }
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Lecteur curieux<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/31</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · La bible du monde</div>
+    <h1>Le Grimoire d'Erydor</h1>
+    <p class="lead">Voici la bible du monde : l'histoire, les dieux, Xal'Morath, les continents, les factions, les 15 peuples, la première région, et quelques secrets que seuls toi et moi connaîtrons. Chaque page attend ton sceau : tu valides, tu retouches, ou tu demandes une autre idée. Rien n'entre dans le jeu sans ton accord. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>✅ Je valide : la page est gravée</span>
+      <span>✏️ Je retouche, 🔁 Autre idée : écris ce que tu veux</span>
+      <span>⭐ ma reco, 🤷 « À toi de voir » et 📝 « Précision » marchent partout</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Chut, on est dans la bibliothèque ! Voici le Grimoire d'Erydor. Lis, valide, retouche : je tiens la chandelle. Promis, je ne crache du feu que sur les bugs.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const E = [["✅ Je valide", "Gravé tel quel dans le grimoire."], ["✏️ Je retouche", "Dis-moi quoi changer dans la case qui s'ouvre."], ["🔁 Autre idée", "Je te propose une tout autre version."]];
+const CHAPTERS = [
+  { id: "ages", icon: "📅", title: "Les Âges d'Erydor", sub: "La grande chronologie, de la Nuit sans fond à aujourd'hui.",
+    chest: { title: "Sceau du Temps", lore: "Braise affirme se souvenir de l'an 0. Braise a, au mieux, quarante ans. Il prétend que « les dragons, ça compte autrement »." },
+    qs: [
+      { id: "calendrier", t: "Le calendrier", lore: `<p>On compte les années <b>après le Lumenfall</b>, abrégé <b>A.L.</b> Le jeu commence en <b>1247 A.L.</b></p><p>Une année compte 12 lunes, et chaque lune porte le nom d'un dieu. Le premier jour de l'an, on fête la <b>Nuit des Éclats</b> : chacun pose une lanterne sur sa fenêtre.</p>` },
+      { id: "chrono", t: "La chronologie", lore: `<ul>
+<li><b>Avant tout</b> · <i>La Nuit sans fond.</i> Pas de ciel, pas de sol, pas de nom.</li>
+<li><b>An 0</b> · <i>Le Lumenfall.</i> Une pluie de lumière tombe. Chaque éclat devient une source, un dieu ou une étoile.</li>
+<li><b>0 à 400</b> · <i>L'Âge des Éclats.</i> Les dieux marchent parmi les vivants. Les 15 peuples naissent près des éclats.</li>
+<li><b>412</b> · <i>La Guerre du Silence.</i> Xal'Morath se retourne contre les autres dieux et commence à effacer le monde.</li>
+<li><b>420</b> · <i>Le Grand Scellement.</i> Xal'Morath est enfermé sous les Terres Grises. Trois dieux disparaissent dans l'effort.</li>
+<li><b>600</b> · <i>Le Serment.</i> Les peuples fondent Médiolane au centre du monde et jurent de ne jamais l'assiéger.</li>
+<li><b>600 à 1200</b> · <i>L'Âge des Couronnes.</i> Chaque peuple bâtit sa capitale. Les trois factions se forment.</li>
+<li><b>1031</b> · <i>Le Serment rompu.</i> Médiolane est assiégée pour la première fois. Les guerres entre factions ne se sont jamais vraiment arrêtées depuis.</li>
+<li><b>1240</b> · <i>Les fleurs grises.</i> Morvane, la lune rouge, se montre plus souvent. Des fleurs perdent leur couleur sans raison.</li>
+<li><b>1247</b> · <i>Aujourd'hui.</i> La Flétrissure s'éveille. Tu arrives à Bourg-Lanterne, un aventurier parmi d'autres.</li></ul>` },
+    ] },
+  { id: "dieux", icon: "✨", title: "Les dieux", sub: "Six dieux actifs que le joueur peut servir, et trois dieux disparus.",
+    chest: { title: "Sceau des Six Flammes", lore: "Braise prie les six dieux à la fois, « pour être sûr ». Il dit que Fergal lui répond parfois, sous forme de hoquet." },
+    qs: [
+      { id: "solenn", t: "☀️ Solenn, la Lumière", lore: `<p>Déesse du soleil, de la justice et de la protection. Elle soigne ceux qui défendent les autres. C'est la patronne des <b>Paladins</b>, qui portent son soleil sur le bouclier.</p><p><i>« Tiens debout, et les autres tiendront derrière toi. »</i></p>` },
+      { id: "maelis", t: "🌊 Maelis, l'Eau", lore: `<p>Déesse des mers, des rivières et de la guérison. Les marins lui offrent leur première prise ; les prêtres soigneurs puisent dans ses sources.</p><p><i>« Ce qui coule ne se brise pas. »</i></p>` },
+      { id: "brannoc", t: "⛰️ Brannoc, la Terre", lore: `<p>Dieu des montagnes, de la forge et des serments tenus. Les nains disent qu'il a forgé les montagnes une à une, et qu'il en a raté trois (on les appelle les Collines).</p><p><i>« Une promesse est une pierre. On ne la reprend pas. »</i></p>` },
+      { id: "caelia", t: "🌬️ Caelia, l'Air", lore: `<p>Déesse du ciel, des voyageurs et de la musique. Les bardes l'appellent « la Chanteuse » ; elle souffle les vents qui portent les bateaux et les rumeurs.</p><p><i>« Rien ne reste, tout passe, et c'est très bien. »</i></p>` },
+      { id: "fergal", t: "🔥 Fergal, le Feu", lore: `<p>Dieu du courage, de la passion et de la colère. Bruyant, généreux, impossible à faire taire. Les berserkers et les forgerons l'adorent, les bibliothécaires beaucoup moins.</p><p><i>« Brûle vif, ou ne brûle pas. »</i></p>` },
+      { id: "seren", t: "🌘 Seren, l'Ombre", lore: `<p>Déesse de la nuit, des rêves et des secrets. Elle protège les voleurs, les rêveurs et ceux qui ont peur du noir. C'est la plus discrète des six, et la plus aimée des enfants.</p><p><i>« Ce qu'on ne voit pas n'en est pas moins vrai. »</i></p>` },
+      { id: "silencieux", t: "🕯️ Les Silencieux, les dieux disparus", lore: `<p>Trois dieux ont disparu pendant le Grand Scellement de 420 :</p><ul><li><b>Aurel, le Premier Éclat</b> : le plus ancien, celui qui tomba le premier. Le Mont Aurel, la montagne des dieux, porte son nom.</li><li><b>Sélis, la Blanche</b> : elle s'est changée en lune pour veiller sur le sceau. C'est la lune blanche du ciel d'Erydor.</li><li><b>Cernos, le Cornu</b> : dieu des bêtes et des forêts. Les druides et les hommes-bêtes attendent son retour.</li></ul><p>Certains prêtent encore serment à un Silencieux. On dit qu'ils n'entendent jamais de réponse, sauf une fois dans leur vie.</p>` },
+    ] },
+  { id: "xal", icon: "🌑", title: "Xal'Morath et la Flétrissure", sub: "Le grand mal, ce qu'il veut, et comment il agit.",
+    chest: { title: "Sceau du Veilleur", lore: "Braise refuse de prononcer le nom de Xal'Morath. Il dit « Celui-qui-a-oublié-de-dire-bonne-nuit ». C'est plus long, mais il y tient." },
+    qs: [
+      { id: "xalmorath", t: "Xal'Morath, l'Effaceur", lore: `<p>Il était autrefois le <b>Veilleur du Soir</b>, le dieu des fins paisibles : il faisait finir les chansons, les journées et les vies en douceur.</p><p>Les vivants ont eu peur des fins. Ils n'ont plus prié que la lumière, et l'ont oublié. Oublié de tous, il a voulu que le monde entier oublie à son tour.</p><p>Xal'Morath ne détruit rien : <b>il efface</b>. D'abord les couleurs, puis les noms, puis l'existence.</p>` },
+      { id: "fletrissure", t: "La Flétrissure", lore: `<p>Sa corruption se voit en trois étapes :</p><ul><li><b>Grisaille</b> : les couleurs pâlissent. Les fleurs restent belles, mais grises.</li><li><b>Oubli</b> : les gens oublient le nom des lieux, puis le leur.</li><li><b>Effacement</b> : il ne reste qu'un vide blanc, silencieux, qui avance.</li></ul><p>Dans le jeu, les zones flétries sont désaturées, la musique s'y éteint, et les PNJ oublient ton nom.</p>` },
+      { id: "lunes", t: "Les deux lunes", lore: `<p><b>Sélis</b>, la lune blanche, se lève chaque nuit. C'est la déesse disparue qui veille sur le sceau.</p><p><b>Morvane</b>, la lune rouge, ne se montrait qu'une nuit sur dix. Depuis 1240, on la voit de plus en plus. Les savants pensent que c'est une fissure dans la prison de Xal'Morath.</p><p>Dans le jeu, les nuits de Morvane sont plus dangereuses, et leur butin plus rare.</p>` },
+      { id: "effaces", t: "Les Effacés", lore: `<p>Les créatures touchées par la Flétrissure deviennent des <b>Effacés</b> : gris, silencieux, avec des contours qui tremblent. Un loup effacé ne sait plus qu'il est un loup, alors il attaque tout ce qui a encore des couleurs.</p><p>Bonne nouvelle : la lumière les fait reculer. C'est pour ça qu'à Bourg-Lanterne, on ne laisse jamais une lanterne s'éteindre.</p>` },
+    ] },
+  { id: "monde", icon: "🗺️", title: "Le monde", sub: "Les continents, le cœur du monde, et ce qui viendra plus tard.",
+    chest: { title: "Sceau des Cartes", lore: "Braise a essayé de dessiner une carte d'Erydor. On y voit surtout un dragon, très bien dessiné, au milieu de l'océan." },
+    qs: [
+      { id: "talvanor", t: "Talvanor, le continent du lancement", lore: `<p>Le premier continent, celui de la sortie du jeu. Environ <b>20 régions</b> autour d'un grand centre, avec forêts, plaines, marais, montagnes enneigées, désert, jungle, volcan, ruines et souterrains.</p><p>Les terres de chaque faction l'entourent ; au milieu, Médiolane. Au nord, les Terres Grises, d'où vient la Flétrissure.</p>` },
+      { id: "mediolane", t: "Médiolane, la Cité du Serment", lore: `<p>La capitale géante au centre de Talvanor, où tout le monde se retrouve, quelle que soit sa faction : marché, banque, hôtel des guildes, arène.</p><p>Les trois factions ont juré de ne jamais l'assiéger. Elles ont toutes juré. Aucune n'a tenu parole. Les murs portent encore les marques des trois sièges, et chaque quartier a été reconstruit au moins une fois.</p>` },
+      { id: "montaurel", t: "Le Mont Aurel, la montagne des dieux", lore: `<p>La plus haute montagne d'Erydor, façon Olympe. Les six dieux y ont leurs temples, de plus en plus haut, et le sommet est toujours caché dans les nuages.</p><p>Les joueurs y montent à haut niveau. Personne n'a jamais vu le sommet ; la rumeur dit qu'Aurel y dort.</p>` },
+      { id: "futurs", t: "Les terres des grosses mises à jour", lore: `<ul><li><b>L'Archipel d'Ys</b> : océan, îles, et la cité engloutie d'Ys, une Atlantide où vivent encore des gardiens.</li><li><b>Caelvarre, la Cité suspendue</b> : des îles flottantes reliées par des ponts et des jardins, façon Babylone.</li><li><b>Les Terres Grises</b> : le continent effacé, où dort Xal'Morath. Le dernier chapitre de l'histoire.</li></ul>` },
+    ] },
+  { id: "factions", icon: "⚔️", title: "Les trois factions", sub: "Chacune a ses raisons. Aucune n'est « les méchants ».",
+    chest: { title: "Sceau des Bannières", lore: "Braise a demandé à rejoindre les trois factions. Les trois ont dit oui. Il a eu trois goûters de bienvenue." },
+    qs: [
+      { id: "concorde", t: "🛡️ La Concorde d'Argent", lore: `<p><b>Humains, Nains, Halfelins, Gnomes, Golems.</b> Les bâtisseurs. Ils croient aux lois, aux routes pavées et aux serments écrits. Leur force : l'ordre et l'ingéniosité. Leur défaut : ils pensent souvent savoir mieux que tout le monde.</p><p>Couleurs : argent et bleu. Dieux les plus priés : Solenn et Brannoc.</p>` },
+      { id: "pacte", t: "🌿 Le Pacte Sylvestre", lore: `<p><b>Elfes, Fées, Félins, Hommes-bêtes, Sirènes et tritons.</b> Les gardiens. Ils protègent les forêts, les mers et les créatures, et se méfient des villes qui grandissent trop vite. Leur force : la magie ancienne. Leur défaut : ils pardonnent très difficilement.</p><p>Couleurs : vert et or. Dieux les plus priés : Maelis et Cernos, le disparu.</p>` },
+      { id: "ligue", t: "🔥 La Ligue des Cendres", lore: `<p><b>Orques, Drakéides, Revenants, Elfes noirs, et la race inventée.</b> Les survivants. Chacun de ces peuples a été chassé, brûlé ou oublié un jour ; ensemble, ils ont juré que plus personne ne déciderait à leur place. Leur force : la volonté. Leur défaut : ils voient des ennemis partout.</p><p>Couleurs : rouge et noir. Dieux les plus priés : Fergal et Seren.</p>` },
+    ] },
+  { id: "peuples", icon: "🧝", title: "Les 15 peuples", sub: "Chaque peuple a sa capitale et un petit bonus. La race reste surtout une question d'allure.",
+    chest: { title: "Sceau des Peuples", lore: "Braise a un cousin chez les Drakéides. Ou alors c'était une statue. Il n'a jamais vraiment su, mais il lui écrit quand même." },
+    qs: [
+      { id: "peuples_concorde", t: "Les peuples de la Concorde", lore: `<ul><li><b>Humains</b> · Valmoran, la ville aux cent cloches · +5 % de réputation gagnée.</li><li><b>Nains</b> · Dun Brannoc, creusée dans la montagne · un peu de résistance à la terre.</li><li><b>Halfelins</b> · Mielbourg, entre les collines · +1 de Chance.</li><li><b>Gnomes</b> · Rouagemont, ville d'horloges · fabrication un peu plus rapide.</li><li><b>Golems</b> · la Forge-Mère, où ils s'éveillent · +1 d'Endurance.</li></ul>` },
+      { id: "peuples_pacte", t: "Les peuples du Pacte", lore: `<ul><li><b>Elfes</b> · Elarin, bâtie dans les arbres géants · +1 de Précision.</li><li><b>Fées</b> · Tír Glas, sous les collines fleuries · +1 de Vitesse.</li><li><b>Félins</b> · Pardalis, la cité des toits · +1 d'Esquive.</li><li><b>Hommes-bêtes</b> · Tor Cernos, autour du grand cerf de pierre · +1 de Vitalité.</li><li><b>Sirènes et tritons</b> · Port-Morwen, moitié sur l'eau, moitié dessous · respirent plus longtemps sous l'eau.</li></ul>` },
+      { id: "peuples_ligue", t: "Les peuples de la Ligue", lore: `<ul><li><b>Orques</b> · Craig-Dorn, la forteresse de roche · +1 de Force.</li><li><b>Drakéides</b> · Ignisval, au pied du volcan · un peu de résistance au feu.</li><li><b>Revenants</b> (morts-vivants) · Vesperine, la ville des cloches muettes · un peu de résistance au poison. Familial : des esprits revenus, pas des zombies effrayants.</li><li><b>Elfes noirs</b> · Umbrevel, sous la forêt · +1 d'Intelligence.</li><li><b>La race inventée</b> · voir la question suivante.</li></ul>` },
+      { id: "race_inventee", t: "Quelle est la 15ᵉ race, celle qu'on invente ?", why: "Elle rejoint la Ligue des Cendres. C'est la seule race qui n'existe dans aucun autre jeu : elle peut devenir le visage de Lumenfall.", rec: 0, o: [
+        ["Les Ombrelins", "Des gens faits d'ombre vivante, nés là où la Flétrissure a reculé. Ils la combattent pour prouver qu'ombre ne veut pas dire mal. Capitale : Penumbra."],
+        ["Les Lumins", "De petits êtres de cristal, nés des éclats du Lumenfall. Leur corps change de couleur avec leur humeur. Capitale : Clairéclat."],
+        ["Les Racinés", "Des gens-arbres, lents et sages, qui portent des fleurs selon la saison. Capitale : Vieille-Souche."] ] },
+    ] },
+  { id: "glennmor", icon: "🏮", title: "Le Val de Glennmor", sub: "La première région, niveaux 1 à 10, que tu verras dans la V0.2.",
+    chest: { title: "Sceau de la Lanterne", lore: "Braise a demandé à Corbin s'il pouvait allumer les lanternes. Corbin a dit non. Braise les allume quand même, en éternuant." },
+    qs: [
+      { id: "val", t: "Le Val de Glennmor", lore: `<p>Une vallée de forêts et de prairies au sud de Talvanor, environ 200 × 200 cases. Une rivière la traverse, des moulins tournent, des moutons s'égarent.</p><p>Tous les nouveaux héros y commencent, quelle que soit leur race. À l'est, la forêt devient étrangement grise : on l'appelle la <b>Lisière Grise</b>.</p>` },
+      { id: "bourg", t: "Bourg-Lanterne, le village d'accueil", lore: `<p>Un village de pierre et de bois, avec une place, un marché, un temple de Solenn, et l'auberge <b>La Chope Pleine</b>.</p><p>Sa règle d'or : <b>ne jamais laisser une lanterne s'éteindre</b>. Les nuits de Glennmor sont très noires, et les vieux disent que les Effacés n'aiment pas la lumière. Chaque héros reçoit sa première torche ici.</p>` },
+      { id: "pnj_liste", t: "Les habitants", lore: `<ul><li><b>Maître Mabon</b>, l'aubergiste bavard de La Chope Pleine. Il accueille chaque nouveau héros, connaît tous les ragots, et raconte toujours la même histoire de sanglier (qui grandit à chaque fois).</li><li><b>Fiacre</b>, le vieux cartographe bougon. Il dessine des cartes qui s'emboîtent avec celles des autres villages, sans savoir pourquoi.</li><li><b>Corbin</b>, l'allumeur de lanternes. Il dort le jour et veille la nuit.</li><li><b>Aelis</b>, la marchande. <b>Doran</b>, le forgeron. <b>Nessa</b>, l'herboriste.</li><li><b>Sœur Clémence</b>, prêtresse de Solenn. <b>Capitaine Bréval</b>, chef de la garde.</li><li><b>Gwenn</b>, la bergère, et les jumeaux <b>Tam et Tilda</b>, qui courent partout.</li></ul>` },
+    ] },
+  { id: "secrets", icon: "🔒", title: "Les secrets du créateur", sub: "Les joueurs ne le savent pas. Toi, si.",
+    chest: { title: "Sceau du Silence", lore: "Braise a juré de ne rien dire. Il a juré sur Brannoc. Il a aussitôt demandé si Brannoc écoutait vraiment." },
+    qs: [
+      { id: "traitre", t: "🗡️ La traîtresse", lore: `<p><b>Seren</b>, la déesse de l'Ombre, était la sœur du Veilleur du Soir. Depuis des siècles, elle affaiblit le sceau en secret.</p><p>Elle n'est pas méchante : elle croit pouvoir ramener son frère tel qu'il était avant. Les joueurs qui la servent le découvriront au milieu de l'histoire, et devront choisir de la suivre ou de la quitter.</p>` },
+      { id: "heraut", t: "👤 Le méchant au vrai visage", lore: `<p><b>Cassian Vorn, le Héraut Pâle</b>. Un général charismatique de Médiolane qui promet la paix entre les factions : « Oublions les guerres, oublions les vieilles haines. »</p><p>Le peuple l'adore. Mais chaque fois qu'il parle d'oublier, la Flétrissure avance un peu.</p>` },
+      { id: "retournement", t: "🌀 Le grand retournement", lore: `<p>Cassian Vorn est le héros qui a scellé Xal'Morath en 420. Le sceau l'a gardé en vie pendant plus de 800 ans, et l'a effacé peu à peu, jusqu'à ce qu'il ne reste de lui qu'un serviteur de ce qu'il avait combattu.</p><p>Les joueurs trouvent sa statue de héros à Médiolane dès le début, sans le reconnaître.</p>` },
+      { id: "fins", t: "⚖️ Les fins", lore: `<p>À la fin de l'histoire, les joueurs choisissent :</p><ul><li><b>Resceller</b> Xal'Morath : le monde est sauvé, mais un dieu actif doit disparaître pour tenir le sceau.</li><li><b>Le réveiller</b> en Veilleur du Soir : rendre leur douceur aux fins. Le plus difficile.</li><li><b>Le détruire</b> : plus de Flétrissure, mais plus de nuit non plus, et plus jamais de sommeil paisible.</li></ul><p>Le choix majoritaire du serveur change le monde pour la saison suivante.</p>` },
+    ] },
+];
+for (const c of CHAPTERS) for (const q of c.qs) if (!q.o) { q.o = E; q.rec = 0; q.entry = true; }
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const LEVELS = ["Lecteur curieux", "Copiste", "Archiviste", "Chroniqueur", "Loremaître", "Gardien du Grimoire"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, certifié sans bug (pour l'instant).", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou.", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté."],
+  chest: ["Un sceau de plus sur le grimoire ! Lis l'anecdote, elle est vraie (presque).", "Chapitre scellé ! J'ai glissé un petit mot en bas de la page."],
+  grave: ["Gravé à l'encre d'or ! ✅", "Une page de plus dans l'histoire d'Erydor.", "Validé. Je souffle doucement pour faire sécher l'encre."],
+  retouche: ["Je sors ma plume : écris-moi ce qu'il faut changer.", "Une retouche ? Parfait, dis-moi tout dans la case.", "On réécrit ! Une idée, un nom, un détail : la case est à toi."],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Grimoire est scellé ! Dis « c'est fait » dans le fil du projet, et je range tout ça dans le dépôt.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / 50) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? 50 : x % 50;
+  document.getElementById("xpfill").style.width = (inLevel / 50 * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum : le grimoire est à toi" : `${50 - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      ${q.lore ? `<div class="lore-txt">${q.lore}</div>` : ""}${q.why ? `<p class="why">${q.why}</p>` : ""}
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">${c.icon}</div><div><h4>Chapitre scellé · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Sceau ${c.icon} posé sur le grimoire, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Sceau à poser</h4><p>Donne ton avis sur les ${c.qs.length} pages du chapitre pour poser son sceau. Braise y cache une anecdote.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Grimoire est scellé !</h3><p>Les ${TOTAL} pages ont reçu ton avis. Écris « c'est fait » dans le fil du projet : je reprends tes retouches, je range la bible dans le dépôt, et j'attaque la V0.2.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (q.entry && (choix === 1 || choix === 2)) answers[id]._open = true;
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (q.entry) say(pick(choix === 0 ? BRAISE.grave : BRAISE.retouche));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (q.entry && (choix === 1 || choix === 2)) { const t = document.getElementById("ta-" + id); if (t) t.focus({ preventScroll: true }); }
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🔏 Sceau posé !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-grimoire", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-grimoire") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>

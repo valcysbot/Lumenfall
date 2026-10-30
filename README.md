@@ -5,6 +5,7 @@ MMORPG 2D pour PC et téléphone, à vivre entre amis dans le monde d'Erydor.
 ![La Clairière, V0.1](docs/captures/v0.1/clairiere.png)
 
 - 📜 **Suivi du projet, décisions et notes de version :** [SUIVI.md](SUIVI.md)
+- 📖 **La bible du monde :** [docs/bible-du-monde.md](docs/bible-du-monde.md)
 
 ## Organisation du dépôt
 
@@ -15,7 +16,7 @@ MMORPG 2D pour PC et téléphone, à vivre entre amis dans le monde d'Erydor.
 | `server/world/` | La simulation pure (cartes, collisions, trajets, noms), testée sans Nakama |
 | `deploy/` | Recette Docker pour le serveur de test et le vrai serveur (Nakama, PostgreSQL, Caddy) |
 | `tools/` | Générateur de la Clairière, serveur local, faux joueurs pour le test de charge |
-| `docs/` | Captures et archives des questionnaires |
+| `docs/` | Bible du monde, captures et archives des questionnaires |
 
 ## Lancer en local
 
