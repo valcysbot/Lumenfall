@@ -198,7 +198,7 @@ func update_lamps() -> void:
 ## Allume ou éteint les torches : seulement les héros les plus proches du tien.
 func update_torches(pawns: Dictionary, me: int) -> void:
 	var center: Vector2 = pawns[me].position if pawns.has(me) else Vector2.ZERO
-	var list := pawns.values()
+	var list := pawns.values().filter(func(p): return p.kind == "")
 	list.sort_custom(func(a, b): return a.position.distance_squared_to(center) < b.position.distance_squared_to(center))
 	for i in list.size():
 		var pawn: Pawn = list[i]

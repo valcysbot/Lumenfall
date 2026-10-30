@@ -1,0 +1,482 @@
+<title>Le Conseil des Armes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une salle d'armes nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Recrue de la garde<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/25</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte III, le combat</div>
+    <h1>Le Conseil des Armes</h1>
+    <p class="lead">Bourg-Lanterne vit, ses lanternes brillent… et à l'est, la Lisière Grise s'agite. Il est temps de prendre l'épée. Braise et moi avons 25 questions pour toi, en 5 chapitres : le premier coup, le Paladin d'essai, les effets et les éléments, les Effacés, puis la mort et la gloire. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Salut, héros ! J'ai aiguisé mes griffes pour l'occasion. Réponds, je commente. Si un Effacé passe par là, je le préviens que tu arrives.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "coup", icon: "🎯", title: "Le premier coup", sub: "Viser, frapper, esquiver : la sensation de combat sur PC et téléphone.",
+    chest: { title: "Fragment XI : la première lame", lore: "À Bourg-Lanterne, on raconte que Doran a forgé sa première épée avec le fer d'une lanterne tombée. Elle n'a jamais tranché grand-chose, mais elle brille encore dans le noir." },
+    qs: [
+      { id: "ciblage", t: "Comment choisit-on sa cible ?", why: "Le script dit « temps réel avec ciblage, comme WoW ». Le ciblage décide toute la suite (sorts, menace, soins).", rec: 0, o: [
+        ["Clic sur le monstre, ou Tab pour la cible suivante", "Comme WoW. Sur téléphone : toucher le monstre, ou un bouton 🎯 « cible suivante »."],
+        ["Le plus proche est ciblé tout seul", "Très simple, mais on tape parfois le mauvais monstre."],
+        ["Visée libre à la souris, sans cible", "Plus nerveux, mais dur sur téléphone et pour les soins."] ] },
+      { id: "auto", t: "Le héros frappe-t-il tout seul une fois la cible choisie ?", why: "Pas de combat automatique (script), mais une attaque de base qui tourne toute seule est classique dans WoW.", rec: 0, o: [
+        ["Oui, l'attaque de base tourne toute seule ; les compétences sont à toi", "Le geste reste dans les compétences, le pouce se repose sur téléphone."],
+        ["Non, chaque coup est un appui", "Plus physique, fatigant en long combat et sur téléphone."] ] },
+      { id: "bouger", t: "Peut-on bouger en combattant ?", why: "Le combat est rapide (4/5). Bouger pendant un sort change toute la façon de jouer les mages et les soigneurs.", rec: 0, o: [
+        ["Oui, sauf pendant les sorts à incantation (bouger les annule)", "Le bon équilibre WoW : on danse entre les coups, on se plante pour les gros sorts."],
+        ["Oui, tout le temps, même en incantant", "Très fluide, mais les soigneurs deviennent trop forts."],
+        ["Non, on s'arrête pour frapper", "Plus tactique, beaucoup plus lent."] ] },
+      { id: "roulade", t: "Comment marche la roulade d'esquive ?", why: "Elle est dans le script. Le serveur doit la vérifier, sinon les tricheurs roulent sans arrêt.", rec: 0, o: [
+        ["Espace (ou bouton) : une roulade toutes les 4 s, invincible un court instant", "Simple, lisible, juste pour tous."],
+        ["Une jauge d'endurance : 2 roulades d'affilée, puis on souffle", "Plus de finesse, une jauge de plus à l'écran."],
+        ["Roulade sans invincibilité, juste un déplacement rapide", "Moins puissante, plus facile à équilibrer."] ] },
+      { id: "telephone", t: "Sur téléphone, à quoi ressemble l'écran de combat ?", why: "Paysage, joystick à gauche (déjà là). Il faut décider la place des boutons à droite.", rec: 0, o: [
+        ["Un éventail de 5 boutons de compétences + roulade + cible suivante", "Comme les bons jeux mobiles d'action ; ça tient dans le pouce droit."],
+        ["Une rangée de boutons en bas", "Plus proche du PC, moins confortable au pouce."],
+        ["Toucher le monstre pour frapper, glisser pour esquiver", "Très léger à l'écran, moins précis."] ] },
+    ] },
+  { id: "paladin", icon: "🛡️", title: "Le Paladin d'essai", sub: "Les 17 classes arrivent à l'Acte IV. Ici, une classe sert de banc d'essai pour tout le système.",
+    chest: { title: "Fragment XII : le serment de Solenn", lore: "Les premiers paladins n'étaient pas des chevaliers, mais des allumeurs de lanternes. Ils juraient devant Solenn de garder une flamme allumée pour ceux qui marchent dans le noir. Leur bouclier n'était qu'un couvercle de fer." },
+    qs: [
+      { id: "classe", t: "Quelle classe sert à tester le combat ?", why: "Chaque classe, c'est des compétences, des dessins d'animation et de l'équilibrage. Ton Paladin préféré coche tout : soin, renfort, encaisse, dégâts.", rec: 0, o: [
+        ["Le Paladin seul, très soigné", "On peaufine tout le système sur ta classe préférée ; les autres s'y branchent à l'Acte IV."],
+        ["Paladin + Mage + Archer", "Mêlée, magie et distance testées tout de suite ; environ 2 fois plus long."],
+        ["Un « aventurier » neutre avec une épée", "Rapide, mais jeté à l'Acte IV."] ] },
+      { id: "nb_comp", t: "Combien de compétences pour ce Paladin ?", why: "La classe finale en aura 15 à 20. Ici on teste le système, pas tout l'arsenal.", rec: 0, o: [
+        ["5 : frappe, coup de bouclier (étourdit), soin, aura de groupe, jugement de lumière", "Couvre les 4 rôles du Paladin, touches 1 à 5."],
+        ["3 : frappe, soin, aura", "Le minimum pour sentir la classe."],
+        ["8 avec une compétence ultime", "Plus riche, plus long à équilibrer."] ] },
+      { id: "ressource", t: "Quelle ressource fait tourner les compétences du Paladin ?", why: "Le script veut une ressource par classe (rage, énergie, mana…). Celle du Paladin donne le rythme du combat.", rec: 0, o: [
+        ["La Ferveur : elle monte quand on frappe ou encaisse, et paie les soins et le jugement", "Pousse à aller au contact, colle au Paladin qui encaisse et tape fort."],
+        ["Le mana classique, qui remonte doucement", "Connu de tous, un peu plan-plan."],
+        ["Pas de ressource, seulement des temps de recharge", "Plus simple, moins de décisions."] ] },
+      { id: "bouclier", t: "Comment marche le blocage au bouclier ?", why: "Il est dans le script ; le Paladin a un bouclier, c'est le bon moment.", rec: 0, o: [
+        ["Maintenir clic droit (ou un bouton) : bloque les coups de face, on avance lentement", "Un vrai geste de défense, le serveur vérifie la direction."],
+        ["Une compétence : bouclier levé 3 s, puis recharge", "Plus simple sur téléphone, moins de finesse."],
+        ["Plus tard, avec l'équipement de l'Acte V", "On garde la roulade seule pour l'instant."] ] },
+      { id: "potions", t: "Des potions dès l'Acte III ?", why: "Le script veut des potions avec temps de recharge. Sans inventaire (Acte V), on peut en donner un petit stock.", rec: 0, o: [
+        ["Oui : 5 potions de soin offertes par Sœur Clémence, recharge de 30 s", "On teste le geste ; elle en redonne quand on rentre au village."],
+        ["Plus tard, avec l'inventaire de l'Acte V", "Un combat plus dur sans filet."] ] },
+    ] },
+  { id: "effets", icon: "🔥", title: "Les coups qui brûlent", sub: "Effets d'état, éléments et ce qu'on voit à l'écran quand ça tape.",
+    chest: { title: "Fragment XIII : les six souffles", lore: "Les mages de Médiolane enseignent qu'il existe six souffles : le feu, l'eau, la terre, l'air, la lumière et l'ombre. Ils enseignent moins volontiers qu'un septième souffle, gris, ne fait pas de bruit." },
+    qs: [
+      { id: "etats", t: "Combien d'effets d'état dès l'Acte III ?", why: "Le script en veut 10. Chaque effet, c'est une règle serveur, une icône et une petite animation.", rec: 0, o: [
+        ["4 : brûlure, poison, étourdissement, ralentissement", "Dégâts dans le temps et contrôle ; le système est prêt pour les 6 autres à l'Acte IV."],
+        ["Les 10 tout de suite", "Complet, mais beaucoup ne servent à rien sans les classes."],
+        ["2 : brûlure et étourdissement", "Juste pour poser le système."] ] },
+      { id: "elements", t: "Les 6 éléments et leurs forces / faiblesses ?", why: "Le Paladin frappe en lumière, les Effacés sont de l'ombre : un bon premier duel.", rec: 0, o: [
+        ["Les 6 éléments, dans une roue simple (+50 % contre la faiblesse)", "Feu > air > terre > eau > feu, et lumière ↔ ombre."],
+        ["Seulement lumière et ombre pour l'instant", "Suffit pour le Paladin contre les Effacés."],
+        ["Plus tard, avec les classes", "Moins de choses à tester d'un coup."] ] },
+      { id: "chiffres", t: "À quoi ressemblent les chiffres de dégâts ?", why: "C'est la récompense visuelle de chaque coup, il faut que ce soit bon.", rec: 0, o: [
+        ["Chiffres qui sautent, critiques en gros doré avec un léger tremblement d'écran", "Vivant et lisible ; soins en vert, dégâts reçus en rouge."],
+        ["Chiffres sobres, sans tremblement", "Plus calme pour les yeux."],
+        ["Pas de chiffres, seulement les barres de vie", "Immersif, mais on ne sent pas sa force."] ] },
+      { id: "ralenti", t: "Et le ralenti sur les critiques ?", why: "Franchement : le monde est partagé, on ne peut pas ralentir le temps pour tout le monde. C'est un effet visuel sur ton écran seulement.", rec: 0, o: [
+        ["Seulement sur le coup qui achève un boss ou un élite", "Rare, donc spécial ; ne gêne jamais en plein combat."],
+        ["Un petit ralenti à chaque critique", "Spectaculaire, mais peut gêner la visée."],
+        ["Jamais", "Le combat ne s'arrête jamais."] ] },
+      { id: "telegraphe", t: "Les attaques annoncées au sol, ça ressemble à quoi ?", why: "Le script les veut. Elles rendent les boss lisibles et justes, surtout en exigeant (4/5).", rec: 0, o: [
+        ["Zones rouges qui se remplissent jusqu'à l'impact", "Ultra lisible, on sait quand rouler."],
+        ["Contours discrets, sans remplissage", "Plus difficile, plus « à l'ancienne »."],
+        ["Pas de zones : on lit l'animation du monstre", "Très exigeant, dur sur petit écran."] ] },
+    ] },
+  { id: "effaces", icon: "👁️", title: "Les Effacés", sub: "Les premiers monstres d'Erydor, et le premier boss.",
+    chest: { title: "Fragment XIV : ce que voit un Effacé", lore: "Un chasseur de Glennmor jure avoir croisé un loup effacé qui s'est arrêté net devant une lanterne. Il l'a regardée longtemps, très longtemps, comme on regarde une chose dont on a oublié le nom. Puis il a hurlé." },
+    qs: [
+      { id: "bestiaire", t: "Quels premiers monstres dans le Val de Glennmor ?", why: "La bible dit que les Effacés hantent la Lisière Grise. Le reste du val peut avoir des bêtes normales.", rec: 0, o: [
+        ["Des bêtes du val (loups, sangliers) + leurs versions effacées vers la Lisière", "On voit la Flétrissure gagner du terrain en marchant vers l'est."],
+        ["Seulement des Effacés, dans la Lisière Grise", "Plus d'histoire, mais le reste du val reste vide."],
+        ["Des gobelins des collines", "Classique, mais sans lien avec l'histoire."] ] },
+      { id: "nb_monstres", t: "Combien de sortes de monstres ?", why: "Chaque sorte : un dessin en 8 directions, des animations (marche, attaque, mort) et un comportement.", rec: 0, o: [
+        ["4 sortes + 1 élite (un « Doré » rare)", "Loup, sanglier, loup effacé, corbeau effacé, et un sanglier doré qui fuit."],
+        ["2 sortes", "Juste pour tester."],
+        ["8 sortes", "Riche, environ 2 fois plus de dessins."] ] },
+      { id: "comportement", t: "Comment se comportent les monstres ?", why: "C'est le serveur qui les fait penser, comme les habitants de Bourg-Lanterne.", rec: 0, o: [
+        ["Ils errent, attaquent si on s'approche, et rentrent chez eux si on fuit trop loin", "Le classique juste ; les loups chassent en meute, les Effacés détestent les torches."],
+        ["Ils attaquent seulement si on les frappe", "Très calme, pas de danger."],
+        ["Ils traquent les joueurs dans tout le val", "Stressant, dur pour les débutants."] ] },
+      { id: "boss", t: "Quel premier boss ?", why: "Un boss à phases, difficile (4/5), avec des attaques annoncées. Il pose le système pour tous les donjons.", rec: 0, o: [
+        ["Le Grand Sanglier de Mabon, devenu Effacé (2 phases)", "L'histoire de Mabon était vraie ! Il charge, puis la Flétrissure le rend fou à mi-vie."],
+        ["Le Gardien de la Lisière, un arbre effacé (3 phases)", "Plus épique, plus long à faire."],
+        ["Pas de boss avant les donjons de l'Acte VII", "On reste sur les monstres du val."] ] },
+      { id: "menace", t: "Le système de menace (pour les tanks) arrive quand ?", why: "La menace décide qui le monstre attaque. Le Paladin encaisse : c'est son terrain.", rec: 0, o: [
+        ["Maintenant : chaque coup et chaque soin crée de la menace, le coup de bouclier en crée beaucoup", "Le Paladin protège vraiment ses amis dès l'Acte III."],
+        ["Plus tard, avec les donjons", "Les monstres tapent celui qui les a touchés en premier."] ] },
+    ] },
+  { id: "mort", icon: "💀", title: "La mort et la gloire", sub: "Ce qui arrive quand on tombe, et ce qu'on gagne quand on gagne.",
+    chest: { title: "Fragment XV : le temple qui ne dort pas", lore: "Le temple de Solenn est le seul bâtiment de Bourg-Lanterne dont la porte ne se ferme jamais. Sœur Clémence dit que c'est pour les héros qui reviennent de loin. Elle ne précise jamais d'où." },
+    qs: [
+      { id: "mourir", t: "Quand on meurt, que se passe-t-il ?", why: "Le script dit : retour en ville avec une petite perte. Il n'y a pas encore d'équipement à user (Acte V).", rec: 0, o: [
+        ["Retour au temple de Solenn, « Faiblesse » 2 min (−25 % de force)", "Une perte qui se sent sans rien prendre ; l'usure d'équipement viendra à l'Acte V."],
+        ["Retour au temple et perte d'un peu d'XP", "Plus punitif, rageant au début."],
+        ["Fantôme qui court jusqu'à son corps, comme WoW", "Très WoW, plus de travail."] ] },
+      { id: "xp", t: "L'XP et les niveaux arrivent dès l'Acte III ?", why: "Pas de niveau maximum (script). Le Val de Glennmor couvre les niveaux 1 à 10.", rec: 0, o: [
+        ["Oui : XP, niveaux 1 à 10 dans le val, plus de vie et de dégâts par niveau", "Le combat a enfin un but ; les 9 attributs viennent à l'Acte IV."],
+        ["Oui, avec les 9 attributs à répartir tout de suite", "Complet, mais tout sera à revoir avec les classes."],
+        ["Plus tard (Acte IV)", "Le combat n'apporte rien pour l'instant."] ] },
+      { id: "butin", t: "Que lâchent les monstres ?", why: "L'inventaire et les objets arrivent à l'Acte V.", rec: 0, o: [
+        ["De l'or et, rarement, un trophée (croc, défense) à montrer", "Un premier goût du butin ; les trophées serviront plus tard au musée de la maison."],
+        ["Seulement de l'XP", "Simple, sans surprise."],
+        ["Un petit inventaire dès maintenant", "Empiète sur l'Acte V."] ] },
+      { id: "pvp", t: "Peut-on se battre entre joueurs ?", why: "Le PvP complet est à l'Acte VI. Bourg-Lanterne est une zone d'accueil.", rec: 0, o: [
+        ["Pas encore, mais les duels sur invitation arrivent tout de suite après le boss", "On teste le combat sur les monstres d'abord, puis entre amis."],
+        ["Duels dès le début de l'Acte III", "Fun entre amis, l'équilibre sera bancal."],
+        ["Pas avant l'Acte VI", "Tout le PvP d'un bloc."] ] },
+      { id: "hardcore", t: "Le mode hardcore (une seule vie) arrive quand ?", why: "Il se choisit à la création du héros, qui sera refaite à l'Acte IV.", rec: 0, o: [
+        ["À l'Acte IV, avec la nouvelle création du héros", "Une case « Hardcore » au bon endroit."],
+        ["Maintenant, pour les héros déjà créés", "Possible, mais à recâbler à l'Acte IV."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const LEVELS = ["Recrue de la garde", "Porteur de torche", "Briseur de crocs", "Chasseur d'Effacés", "Lame de Solenn", "Fléau du Grand Sanglier"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, certifié sans bug (pour l'instant).", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou.", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et je file chez Doran forger tout ça.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / 50) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? 50 : x % 50;
+  document.getElementById("xpfill").style.width = (inLevel / 50 * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte III)" : `${50 - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Nouveau fragment pour le Grimoire d'Erydor, à valider comme les autres. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les ${TOTAL} réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, puis je code le combat, et les Effacés n'ont qu'à bien se tenir.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil-acte3", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil-acte3") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>

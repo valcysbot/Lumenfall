@@ -28,8 +28,8 @@ SORTIE = os.path.join(RACINE, "client", "assets", "heros", "humain")
 
 # --- Cadre et caméra ---------------------------------------------------------
 
-W, H = 48, 64          # taille d'une image
-ANCRE = (24, 58)       # pixel des pieds (point au sol)
+W, H = 64, 64          # taille d'une image (large pour la chute)
+ANCRE = (32, 58)       # pixel des pieds (point au sol)
 PITCH = math.radians(30)   # la vue 2:1 des tuiles 64 × 32
 FWD = np.array([-math.cos(PITCH) / math.sqrt(2), -math.cos(PITCH) / math.sqrt(2), -math.sin(PITCH)])
 RIGHT = np.array([1 / math.sqrt(2), -1 / math.sqrt(2), 0.0])
@@ -38,7 +38,10 @@ LUMIERE = -RIGHT * 0.75 + UP * 0.9 - FWD * 0.55
 LUMIERE /= np.linalg.norm(LUMIERE)
 
 # Animations : nom -> (images, images par seconde, en boucle)
-ANIMS = [("repos", 4, 4, True), ("marche", 8, 10, True), ("course", 8, 14, True), ("salut", 6, 5, False)]
+ANIMS = [("repos", 4, 4, True), ("marche", 8, 10, True), ("course", 8, 14, True), ("salut", 6, 5, False),
+         # Le combat (Acte III).
+         ("attaque", 6, 14, False), ("bouclier", 5, 12, False), ("garde", 2, 3, True),
+         ("incante", 4, 6, True), ("sort", 5, 10, False), ("roulade", 6, 17, False), ("mort", 6, 8, False)]
 
 # --- Couleurs ----------------------------------------------------------------
 
@@ -49,7 +52,7 @@ CHEVEUX = {"noir": "#2e2433", "brun": "#5a3825", "chatain": "#8a5a35",
 FIXES = {"peau": "#f0bf98", "yeux": "#2a2238", "pantalon": "#6e4c35", "bottes": "#4a3328",
          "gants": "#8a5a3a", "cape": "#2f6f8a", "casque": "#a4adc0", "lame": "#d5deea",
          "garde": "#d0a548", "poignee": "#4a3328", "ceinture": "#5a3a24", "boucle": "#e3c060",
-         "tablier": "#e6dfcc"}
+         "tablier": "#e6dfcc", "bouclier": "#3d5f9e", "umbo": "#e3c060"}
 # Pour les habitants : d'autres peaux, et des chapeaux.
 PEAUX = {"": "#f0bf98", "mat": "#cf9670", "brun": "#8e5d40"}
 CHAPEAUX = {"paille": "#dcb862", "feutre": "#4a3d52"}
@@ -156,6 +159,15 @@ class Pose:
         ph = 2 * math.pi * t
         jambe = bras = coude = penche = rebond = 0.0
         salut = 0.0
+        ov = {}          # bras imposés : côté -> (angle, coude, écart)
+        baisse = 0.0     # les hanches descendent (à genoux)
+        pli_force = 0.0  # genoux pliés
+        cuisse_a = None  # angle des cuisses imposé
+        self.spin = 0.0  # roulade : tout le corps tourne
+        self.lame_bras = False  # l'épée suit l'avant-bras (coup d'épée)
+
+        def onde(a, b, k):
+            return a + (b - a) * max(0.0, min(1.0, k))
         if anim == "repos":
             rebond = 0.35 * math.sin(ph)
             bras = 0.04 * math.sin(ph)
@@ -175,6 +187,57 @@ class Pose:
         elif anim == "salut":
             salut = 1.0 if 0.15 < t < 0.85 else (t / 0.15 if t <= 0.15 else (1 - t) / 0.15)
             coude = 0.12
+        elif anim == "attaque":
+            # On arme au-dessus de l'épaule, on frappe en diagonale, on revient.
+            if t < 0.34:
+                k = t / 0.34
+                ov[1] = (onde(0.2, 2.7, k), onde(0.3, 0.9, k), 0.25)
+                penche = -0.08 * k
+            elif t < 0.67:
+                k = (t - 0.34) / 0.33
+                ov[1] = (onde(2.7, 0.15, k), onde(0.9, 0.05, k), onde(0.25, -0.15, k))
+                penche = onde(-0.08, 0.22, k)
+            else:
+                k = (t - 0.67) / 0.33
+                ov[1] = (onde(0.15, 0.2, k), onde(0.05, 0.3, k), onde(-0.15, 0.1, k))
+                penche = onde(0.22, 0.04, k)
+            ov[-1] = (0.5, 1.2, 0.1)
+            self.lame_bras = True
+        elif anim == "bouclier":
+            k = math.sin(math.pi * min(1.0, t / 0.8))
+            ov[-1] = (onde(0.9, 1.55, k), onde(1.3, 0.2, k), onde(0.15, -0.1, k))
+            ov[1] = (onde(0.1, -0.4, k), 0.4, 0.15)
+            penche = 0.3 * k
+            jambe = 0.25 * k
+        elif anim == "garde":
+            ov[-1] = (1.2, 1.4, -0.05)
+            ov[1] = (0.2, 0.5, 0.15)
+            penche = 0.1
+            rebond = -0.6 + 0.2 * math.sin(ph)
+        elif anim == "incante":
+            ov[-1] = ov[1] = (1.0 + 0.08 * math.sin(ph), 1.0, 0.32)
+            rebond = 0.3 * math.sin(ph)
+        elif anim == "sort":
+            k = math.sin(math.pi * t)
+            ov[-1] = ov[1] = (onde(1.0, 2.1, k), onde(1.0, 0.1, k), 0.3)
+            penche = -0.1 * k
+        elif anim == "roulade":
+            self.spin = 2 * math.pi * (t + 0.5 / n)   # un tour complet
+            k = math.sin(math.pi * min(1.0, (t + 0.5 / n)))
+            cuisse_a = 1.6 * k
+            pli_force = 2.2 * k
+            baisse = 9 * k
+            ov[-1] = ov[1] = (onde(0.2, 0.9, k), onde(0.3, 1.8, k), 0.1)
+            penche = 0.6 * k
+        elif anim == "mort":
+            k1 = min(1.0, t / 0.45)
+            k2 = max(0.0, min(1.0, (t - 0.3) / 0.6))
+            baisse = 11.5 * k1
+            cuisse_a = 0.0
+            pli_force = math.pi / 2 * k1
+            penche = -1.35 * k2 * k2 + 0.2 * k1 * (1 - k2)
+            ov[-1] = (onde(0.1, -0.5, k2), 0.3, onde(0.15, 0.7, k2))
+            ov[1] = (onde(0.1, -0.5, k2), 0.3, onde(0.15, 0.7, k2))
         self.t, self.anim = t, anim
         self.salut = salut
         self.vague = math.sin(ph * 2) * 0.45 * salut
@@ -184,7 +247,7 @@ class Pose:
 
         self.L = L
         self.rebond = rebond
-        hanche = 24.0 + rebond
+        hanche = 24.0 + rebond - baisse
         # Le buste se penche en avant autour des hanches.
         self.penche = penche
         def buste(f, r, z):
@@ -196,11 +259,12 @@ class Pose:
         # Jambes : cuisse + tibia, balancement autour de l'axe R.
         self.jambes = []
         for cote, sens in ((-1, 1), (1, -1)):
-            a = sens * jambe
+            a = sens * jambe if cuisse_a is None else cuisse_a
             h = L(0, cote * 3.4, hanche)
             cuisse = rot(-Z * 12.0, R, -a)          # a > 0 : jambe vers l'avant
             genou = h + cuisse
             pli = max(0.0, -a) * 0.9 + (0.25 if anim == "course" else 0.0) * max(0.0, math.sin(ph + (0 if sens > 0 else math.pi)))
+            pli += pli_force
             tibia = rot(-Z * 11.5, R, -a + pli)
             cheville = genou + tibia
             # Le pied posé reste au sol.
@@ -215,11 +279,11 @@ class Pose:
         self.bras = []
         for cote, sens in ((-1, 1), (1, -1)):
             ep = buste(0, cote * 8.6, 40.5)
-            a = sens * bras
+            a, cd, ecart = (sens * bras, coude, 0.0) if cote not in ov else ov[cote]
             haut = rot(-Z * 9.0, R, -a)
-            haut = rot(haut, F, cote * 0.12)        # bras légèrement écartés
+            haut = rot(haut, F, cote * (0.12 + ecart))   # bras légèrement écartés
             co = ep + haut
-            avant = rot(haut / 9.0 * 8.5, R, -coude)
+            avant = rot(haut / 9.0 * 8.5, R, -cd)
             if cote < 0 and salut > 0:             # bras gauche qui salue (la main droite tient l'épée)
                 haut = rot(Z * 9.0, F, -cote * 0.75) * salut + rot(-Z * 9.0, F, cote * 0.12) * (1 - salut)
                 haut = haut / np.linalg.norm(haut) * 9.0
@@ -300,7 +364,8 @@ def gants(p):
 
 def cape(p):
     F, R, Z = p.F, p.R, p.Z
-    vent = {"repos": 0.08, "marche": 0.3, "course": 0.7, "salut": 0.1}[p.anim]
+    vent = {"repos": 0.08, "marche": 0.3, "course": 0.7, "salut": 0.1, "attaque": 0.25, "bouclier": 0.3,
+            "roulade": 0.5, "mort": 0.05}.get(p.anim, 0.12)
     vent += 0.05 * math.sin(2 * math.pi * p.t * 2)
     haut = p.buste(0.4, 0, 41.5)
     # Repère de la cape : elle descend en s'évasant et le vent la pousse vers l'arrière.
@@ -394,6 +459,8 @@ def epee(p):
     av = (m - co) / np.linalg.norm(m - co)
     # L'épée pointe vers l'avant et le bas, en suivant un peu le mouvement du bras.
     lame_dir = F * 0.55 - Z * 0.85 + av * 0.35
+    if p.lame_bras:   # coup d'épée : la lame prolonge l'avant-bras
+        lame_dir = av * 1.0 + F * 0.25
     lame_dir = lame_dir / np.linalg.norm(lame_dir)
     lat = np.cross(lame_dir, R)
     lat /= np.linalg.norm(lat)
@@ -404,6 +471,31 @@ def epee(p):
     poignee = capsule(m - lame_dir * 2.5, m + lame_dir * 0.5, 1.0)
     pommeau = ellipsoide(m - lame_dir * 3.2, [F, R, Z], [1.3, 1.3, 1.3])
     return [(union(lame, pointe), "lame"), (garde, "garde"), (poignee, "poignee"), (pommeau, "garde")]
+
+
+def bouclier(p):
+    """L'écu du Paladin, au bras gauche : un disque bombé avec un umbo doré."""
+    e, co, m, k = p.bras[0]       # bras gauche
+    F, R, Z = p.F, p.R, p.Z
+    av = (m - co) / np.linalg.norm(m - co)
+    # L'écu se tient à plat contre l'avant-bras, tourné vers l'extérieur.
+    dehors = np.cross(av, Z) * -k
+    if np.linalg.norm(dehors) < 0.3:
+        dehors = -R * k
+    dehors = dehors - av * (dehors @ av)
+    dehors /= np.linalg.norm(dehors)
+    if p.anim in ("garde", "bouclier"):
+        # Bouclier levé : face à l'ennemi, bien droit devant la poitrine.
+        dehors, av = F, Z
+    lat = np.cross(dehors, av)
+    lat /= np.linalg.norm(lat)
+    av = np.cross(lat, dehors)
+    c = co + (m - co) * 0.55 + dehors * 2.6
+    if p.anim in ("garde", "bouclier"):
+        c = m + dehors * 2.4 + R * 1.5 + Z * 1.0
+    disque = ellipsoide(c, [dehors, av, lat], [1.4, 8.2, 7.2])
+    umbo = ellipsoide(c + dehors * 1.2, [dehors, av, lat], [1.3, 2.0, 2.0])
+    return [(disque, "bouclier"), (umbo, "umbo")]
 
 
 # Ordre d'empilement dans le jeu, et ce qui cache chaque pièce.
@@ -419,6 +511,7 @@ PIECES = {
     "cheveux_long":  {"f": cheveux_long,  "enveloppe": 0.6},
     "casque":        {"f": casque,        "enveloppe": 0.0},
     "epee":          {"f": epee,          "enveloppe": 1.0},
+    "bouclier":      {"f": bouclier,      "enveloppe": 1.0},
     "robe":          {"f": robe,          "enveloppe": 0.0},
     "tablier":       {"f": tablier,       "enveloppe": 1.4},
     "barbe":         {"f": barbe,         "enveloppe": 0.0},
@@ -476,6 +569,18 @@ def gonfle(f, e):
     return (lambda p: f(p) - e) if e else f
 
 
+def tourne(f, centre, axe, angle):
+    """La forme f tournée de `angle` autour de l'axe passant par `centre`."""
+    c, s = math.cos(-angle), math.sin(-angle)
+    k = np.asarray(axe, float)
+
+    def g(p):
+        v = p - centre
+        q = v * c + np.cross(k, v) * s + np.outer(v @ k, k) * (1 - c)
+        return f(q + centre)
+    return g
+
+
 def rendu_piece(nom, pose):
     """Renvoie (matériau, ton, profondeur) par pixel pour la pièce, déjà masquée par le corps."""
     base = corps(pose)
@@ -487,6 +592,12 @@ def rendu_piece(nom, pose):
         piece = PIECES[nom]["f"](pose)
         formes = [(gonfle(f, e), m) for f, m in base] + piece
         garde = set(range(len(base), len(formes)))
+    if pose.spin:
+        # Le héros tourne sur lui-même et décolle un peu, pour ne pas passer sous le sol.
+        centre = pose.L(0, 0, 19.0)
+        lift = pose.Z * 12.0 * abs(math.sin(pose.spin / 2))
+        formes = [(tourne(f, centre, pose.R, pose.spin), m) for f, m in formes]
+        formes = [((lambda f: lambda p: f(p - lift))(f), m) for f, m in formes]
     touche, prof, normales = lancer(formes)
     tons = ton_lumiere(normales)
     mats = np.full(touche.shape, "", dtype=object)
@@ -543,6 +654,8 @@ def palettes_de(nom):
         return {k: {"chapeau": rampe(c), "ceinture": f["ceinture"]} for k, c in CHAPEAUX.items()}
     if nom == "casque":
         return {"": {"casque": f["casque"], "garde": f["garde"]}}
+    if nom == "bouclier":
+        return {"": {"bouclier": f["bouclier"], "umbo": f["umbo"]}}
     return {"": {nom: f[nom]}}
 
 
@@ -590,7 +703,7 @@ def forge(apercu=False, seulement=None):
 
 def apercu_planche(meta, tenue=None, chemin=None):
     """Empile une tenue complète sur les 8 directions, pour vérifier à l'œil."""
-    tenue = tenue or ["corps", "pantalon", "bottes", "tunique_6", "gants", "cape", "cheveux_court_roux", "epee"]
+    tenue = tenue or ["corps", "pantalon", "bottes", "tunique_6", "gants", "cape", "cheveux_court_roux", "epee", "bouclier"]
     total = sum(a["images"] for a in meta["anims"].values())
     img = Image.new("RGBA", (total * W, 8 * H), (40, 36, 52, 255))
     for p in tenue:

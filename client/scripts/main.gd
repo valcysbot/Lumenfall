@@ -113,6 +113,29 @@ func _capture() -> void:
 		await get_tree().create_timer(float(args.get("marche", "6"))).timeout
 		if args.has("choix"):
 			current.dialogue._show(args.choix)
+	if args.has("cible"):
+		# Vise le monstre le plus proche de cette sorte et l'attaque, comme un joueur.
+		var best := -1
+		var best_d := 1e9
+		var me: Pawn = current.pawns.get(current.my_sid)
+		for sid in current.pawns:
+			var pawn: Pawn = current.pawns[sid]
+			if pawn.kind == args.cible and not pawn.dead and me != null:
+				var d := me.position.distance_to(pawn.position)
+				if d < best_d:
+					best_d = d
+					best = sid
+		if best != -1:
+			current._click_fighter(current.pawns[best].position + Vector2(0, -16))
+		for k in args.get("competences", "").split(",", false):
+			await get_tree().create_timer(float(args.get("pause", "1.6"))).timeout
+			if k == "roulade":
+				current._roll()
+			elif k == "garde":
+				current._set_block(true)
+			else:
+				current._use_skill(int(k))
+		await get_tree().create_timer(float(args.get("combat", "2"))).timeout
 	if args.has("chat"):
 		Net.send(Net.OP_CHAT, {"m": args.chat})
 		await get_tree().create_timer(1.0).timeout

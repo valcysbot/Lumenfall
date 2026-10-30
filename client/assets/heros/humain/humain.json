@@ -1,10 +1,10 @@
 {
  "image": [
-  48,
+  64,
   64
  ],
  "ancre": [
-  24,
+  32,
   58
  ],
  "directions": 8,
@@ -31,6 +31,48 @@
    "debut": 20,
    "images": 6,
    "fps": 5,
+   "boucle": false
+  },
+  "attaque": {
+   "debut": 26,
+   "images": 6,
+   "fps": 14,
+   "boucle": false
+  },
+  "bouclier": {
+   "debut": 32,
+   "images": 5,
+   "fps": 12,
+   "boucle": false
+  },
+  "garde": {
+   "debut": 37,
+   "images": 2,
+   "fps": 3,
+   "boucle": true
+  },
+  "incante": {
+   "debut": 39,
+   "images": 4,
+   "fps": 6,
+   "boucle": true
+  },
+  "sort": {
+   "debut": 43,
+   "images": 5,
+   "fps": 10,
+   "boucle": false
+  },
+  "roulade": {
+   "debut": 48,
+   "images": 6,
+   "fps": 17,
+   "boucle": false
+  },
+  "mort": {
+   "debut": 54,
+   "images": 6,
+   "fps": 8,
    "boucle": false
   }
  },
@@ -86,6 +128,9 @@
    ""
   ],
   "epee": [
+   ""
+  ],
+  "bouclier": [
    ""
   ],
   "robe": [

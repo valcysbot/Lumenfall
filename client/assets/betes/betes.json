@@ -1,0 +1,74 @@
+{
+ "image": [
+  64,
+  48
+ ],
+ "ancre": [
+  32,
+  40
+ ],
+ "directions": 8,
+ "anims": {
+  "repos": {
+   "debut": 0,
+   "images": 4,
+   "fps": 4,
+   "boucle": true
+  },
+  "marche": {
+   "debut": 4,
+   "images": 6,
+   "fps": 10,
+   "boucle": true
+  },
+  "course": {
+   "debut": 10,
+   "images": 6,
+   "fps": 15,
+   "boucle": true
+  },
+  "attaque": {
+   "debut": 16,
+   "images": 5,
+   "fps": 12,
+   "boucle": false
+  },
+  "mort": {
+   "debut": 21,
+   "images": 5,
+   "fps": 9,
+   "boucle": false
+  }
+ },
+ "betes": [
+  "sanglier",
+  "sanglier_dore",
+  "loup",
+  "loup_efface",
+  "corbeau_efface",
+  "grand_sanglier",
+  "grand_sanglier_efface"
+ ],
+ "tailles": {
+  "grand_sanglier": {
+   "image": [
+    152,
+    112
+   ],
+   "ancre": [
+    76,
+    96
+   ]
+  },
+  "grand_sanglier_efface": {
+   "image": [
+    152,
+    112
+   ],
+   "ancre": [
+    76,
+    96
+   ]
+  }
+ }
+}

@@ -44,6 +44,23 @@ const (
 	opNotice   = 15 // serveur → client : message système
 	opEmoteOut = 16 // serveur → client : {"s":sid,"e":"salut"}
 	opWeather  = 17 // serveur → client : {"w":"pluie"}
+
+	// Le combat (Acte III).
+	opTarget = 5  // client → serveur : {"t":sid} (0 : plus de cible)
+	opSkill  = 6  // client → serveur : {"k":1..5}
+	opRoll   = 7  // client → serveur : {"d":[dx,dy]}
+	opBlock  = 8  // client → serveur : {"b":true}
+	opPotion = 9  // client → serveur : {}
+	opHits   = 18 // serveur → client : {"h":[[src,cible,valeur,drapeaux,compétence,élément]…]}
+	opVitals = 19 // serveur → client : {"v":[[sid,vie,vie max,effets,niveau]…]}
+	opMe     = 20 // serveur → toi : Ferveur, endurance, recharges, potions, niveau, or…
+	opCast   = 21 // serveur → client : {"s":sid,"k":compétence,"ms":durée} (k = 0 : interrompu)
+	opAnim   = 22 // serveur → client : {"s":sid,"a":"attaque"}
+	opDeath  = 23 // serveur → client : {"s":sid,"k":tueur,"f":drapeaux}
+	opLevel  = 24 // serveur → client : {"s":sid,"lv":niveau}
+	opLoot   = 25 // serveur → toi : {"m":monstre,"or":n,"xp":n,"tr":"Croc de loup"}
+	opRefuse = 26 // serveur → toi : {"m":"Trop loin !"}
+	opTele   = 27 // serveur → client : attaque annoncée au sol {"s","l":ligne,"a":[x,y],"b":[x2,y2],"r","ms"}
 )
 
 // Les émotes connues ; les autres sont ignorées.
@@ -51,6 +68,7 @@ var emotes = map[string]bool{"salut": true}
 
 var worldMaps = []string{defaultMap}
 var worldMapsByID = map[string]*world.Map{}
+var worldCamps = map[string][]world.Camp{}
 
 func init() {
 	for _, id := range worldMaps {
@@ -61,7 +79,12 @@ func init() {
 		if _, err := world.LoadNPCs(m); err != nil {
 			panic(err)
 		}
+		camps, err := world.LoadCamps(m)
+		if err != nil {
+			panic(err)
+		}
 		worldMapsByID[id] = m
+		worldCamps[id] = camps
 	}
 }
 
@@ -86,6 +109,8 @@ type player struct {
 	presence  runtime.Presence
 	hero      Hero
 	body      world.Body
+	fighter   *world.Fighter
+	seen      [2]float64 // dernière position envoyée
 	lastChat  int64
 	lastPath  int64
 	lastEmote int64
@@ -98,6 +123,7 @@ type worldState struct {
 	nextSID int
 	weather *world.Weather
 	npcs    []*world.NPC // habitants ; le n° i a pour numéro npcSIDBase+i
+	arena   *world.Arena // le combat : héros et monstres
 	rng     *rand.Rand
 	// Mesure de charge.
 	loopTime time.Duration
@@ -120,8 +146,17 @@ func (w *worldMatch) MatchInit(ctx context.Context, logger runtime.Logger, db *s
 	for _, n := range npcs {
 		n.Start(now)
 	}
+	rng := rand.New(rand.NewSource(now.UnixNano()))
+	arena := world.NewArena(m, worldCamps[mapID], rand.New(rand.NewSource(now.UnixNano()+1)))
+	// Les héros tombés reviennent devant le temple de Solenn, près de Sœur Clémence.
+	for _, n := range npcs {
+		if n.ID == "clemence" {
+			arena.Temple = n.Work
+		}
+	}
+	arena.Village = m.Spawn
 	return &worldState{m: m, players: map[string]*player{}, pending: map[string]Hero{}, nextSID: 1,
-			weather: world.NewWeather(now, now.UnixNano()), npcs: npcs, rng: rand.New(rand.NewSource(now.UnixNano()))},
+			weather: world.NewWeather(now, now.UnixNano()), npcs: npcs, arena: arena, rng: rng},
 		tickRate, string(label)
 }
 
@@ -159,6 +194,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		if !s.m.Free(pl.body.X, pl.body.Y) {
 			pl.body.X, pl.body.Y = s.m.Spawn[0], s.m.Spawn[1]
 		}
+		pl.fighter = s.arena.AddHero(pl.sid, h.Name, &pl.body, h.Level, h.xp, h.gold, h.potions, h.trophies)
 		s.players[p.GetSessionId()] = pl
 
 		everyone := make([]map[string]interface{}, 0, len(s.players))
@@ -170,6 +206,11 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 				everyone = append(everyone, describeNPC(i, n))
 			}
 		}
+		for _, m := range s.arena.Monsters {
+			if m.Visible() {
+				everyone = append(everyone, describeMonster(m))
+			}
+		}
 		_ = d.BroadcastMessage(opSnapshot, mustJSON(map[string]interface{}{
 			"you": pl.sid, "map": s.m.ID, "tick_rate": tickRate, "players": everyone, "sky": s.sky(),
 		}), []runtime.Presence{p}, nil, true)
@@ -177,6 +218,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		if others := s.others(p.GetSessionId()); len(others) > 0 {
 			_ = d.BroadcastMessage(opJoin, mustJSON(describe(pl)), others, nil, true)
 		}
+		sendMe(d, pl)
 		if n := len(s.players); n > s.peak {
 			s.peak = n
 		}
@@ -198,7 +240,8 @@ func (w *worldMatch) removePlayer(ctx context.Context, logger runtime.Logger, db
 		return
 	}
 	delete(s.players, sessionID)
-	if err := saveHeroes(ctx, db, s.m.ID, []heroPos{{pl.hero.ID, pl.body.X, pl.body.Y}}); err != nil {
+	s.arena.RemoveHero(pl.sid)
+	if err := saveHeroes(ctx, db, s.m.ID, []heroPos{pl.save()}); err != nil {
 		logger.Error("Sauvegarde de %q au départ: %v", pl.hero.Name, err)
 	}
 	_ = d.BroadcastMessage(opLeave, mustJSON(map[string]int{"s": pl.sid}), nil, nil, true)
@@ -244,10 +287,23 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	for _, i := range world.Separate(s.m, bodies) {
 		changed[all[i]] = true
 	}
-	moved := make([][4]int, 0, len(changed))
+	// Le combat : coups, effets, monstres.
+	s.arena.Night = world.IsNight(time.Now())
+	s.arena.Tick(dt)
+	for _, pl := range s.players {
+		if pl.body.X != pl.seen[0] || pl.body.Y != pl.seen[1] {
+			changed[pl] = true // retour au temple après une chute
+		}
+	}
+	moved := make([][4]int, 0, len(changed)+len(s.arena.Moved))
 	for pl := range changed {
+		pl.seen = [2]float64{pl.body.X, pl.body.Y}
 		moved = append(moved, [4]int{pl.sid, cent(pl.body.X), cent(pl.body.Y), pl.body.Dir})
 	}
+	for _, m := range s.arena.Moved {
+		moved = append(moved, [4]int{m.SID, cent(m.Body.X), cent(m.Body.Y), m.Body.Dir})
+	}
+	w.sendCombat(d, s, tick)
 	// Les habitants vivent leur vie ; on ne bouscule pas les joueurs pour eux.
 	for i, n := range s.npcs {
 		if n.Visible && n.Body.Moving() && n.Body.Step(s.m, dt) {
@@ -277,7 +333,7 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	if tick%saveEvery == 0 && len(s.players) > 0 {
 		ps := make([]heroPos, 0, len(s.players))
 		for _, pl := range s.players {
-			ps = append(ps, heroPos{pl.hero.ID, pl.body.X, pl.body.Y})
+			ps = append(ps, pl.save())
 		}
 		if err := saveHeroes(ctx, db, s.m.ID, ps); err != nil {
 			logger.Error("Sauvegarde périodique: %v", err)
@@ -357,6 +413,36 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		}
 		pl.lastEmote = tick
 		_ = d.BroadcastMessage(opEmoteOut, mustJSON(map[string]interface{}{"s": pl.sid, "e": in.E}), nil, nil, true)
+	case opTarget:
+		var in struct {
+			T int `json:"t"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.SetTarget(pl.sid, in.T)
+		}
+	case opSkill:
+		var in struct {
+			K int `json:"k"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.UseSkill(pl.sid, in.K)
+		}
+	case opRoll:
+		var in struct {
+			D [2]float64 `json:"d"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.Roll(pl.sid, in.D[0], in.D[1])
+		}
+	case opBlock:
+		var in struct {
+			B bool `json:"b"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.Block(pl.sid, in.B)
+		}
+	case opPotion:
+		s.arena.Potion(pl.sid)
 	}
 }
 
@@ -384,7 +470,7 @@ func (w *worldMatch) MatchTerminate(ctx context.Context, logger runtime.Logger, 
 	s := state.(*worldState)
 	ps := make([]heroPos, 0, len(s.players))
 	for _, pl := range s.players {
-		ps = append(ps, heroPos{pl.hero.ID, pl.body.X, pl.body.Y})
+		ps = append(ps, pl.save())
 	}
 	if err := saveHeroes(ctx, db, s.m.ID, ps); err != nil {
 		logger.Error("Sauvegarde à l'arrêt: %v", err)
@@ -407,10 +493,28 @@ func (s *worldState) others(sessionID string) []runtime.Presence {
 }
 
 func describe(pl *player) map[string]interface{} {
+	f := pl.fighter
 	return map[string]interface{}{
 		"s": pl.sid, "n": pl.hero.Name, "c": pl.hero.Color,
 		"x": cent(pl.body.X), "y": cent(pl.body.Y), "d": pl.body.Dir,
+		"lv": f.Level, "hp": f.HP, "hpm": f.MaxHP, "fx": f.Bits(),
 	}
+}
+
+// describeMonster présente un monstre : sa sorte ("m") donne son allure au client.
+func describeMonster(f *world.Fighter) map[string]interface{} {
+	return map[string]interface{}{
+		"s": f.SID, "n": f.Name, "c": -1, "m": f.Mon.Kind.ID, "lv": f.Level,
+		"hp": f.HP, "hpm": f.MaxHP, "fx": f.Bits(), "el": f.Mon.Kind.Elite,
+		"x": cent(f.Body.X), "y": cent(f.Body.Y), "d": f.Body.Dir,
+	}
+}
+
+// save : ce qu'on garde du héros en base.
+func (pl *player) save() heroPos {
+	f := pl.fighter
+	return heroPos{ID: pl.hero.ID, X: pl.body.X, Y: pl.body.Y, Level: f.Level, XP: f.Hero.XP, Gold: f.Hero.Gold,
+		Potions: f.Hero.Potions, Trophies: f.Hero.Trophies}
 }
 
 // describeNPC présente un habitant comme un héros, avec son identifiant
