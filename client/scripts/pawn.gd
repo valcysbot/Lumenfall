@@ -33,6 +33,7 @@ var hp_max := 1
 var fx := 0
 var dead := false
 var targeted := false
+var foe := false        # ton adversaire en duel
 
 var sprite: HeroSprite
 var mon: MonsterSprite
@@ -237,7 +238,7 @@ func _draw() -> void:
 	if is_me:
 		draw_arc(Vector2.ZERO, 19, 0, TAU, 40, Color(UI.LUMEN, 0.8), 2.0, true)
 	if targeted and not dead:
-		var c := UI.DANGER if kind != "" else UI.MOSS
+		var c := UI.DANGER if kind != "" or foe else UI.MOSS
 		var r := shadow + 8 + sin(_t * 6) * 1.5
 		draw_arc(Vector2.ZERO, r, 0, TAU, 48, Color(c, 0.95), 2.5, true)
 		draw_arc(Vector2.ZERO, r + 4, 0, TAU, 48, Color(c, 0.35), 1.5, true)
@@ -255,7 +256,7 @@ func _draw() -> void:
 		return
 	# Barre de vie : toujours sur les monstres touchés ou visés, sur les héros blessés.
 	var hurt := hp < hp_max
-	if npc == "" and (targeted or _show_bar > 0 or (hurt and kind == "") or (kind != "" and hurt)):
+	if npc == "" and (targeted or foe or _show_bar > 0 or (hurt and kind == "") or (kind != "" and hurt)):
 		var w := 44.0 if kind != "" else 36.0
 		if kind == "grand_sanglier":
 			w = 90.0
@@ -263,7 +264,7 @@ func _draw() -> void:
 		var r := Rect2(-w / 2, y, w, 5)
 		draw_rect(r.grow(1), Color(0, 0, 0, 0.75))
 		draw_rect(Rect2(r.position, Vector2(w * _hp_shown, 5)), Color(1, 0.9, 0.6, 0.9))
-		var col := UI.DANGER if kind != "" else UI.MOSS
+		var col := UI.DANGER if kind != "" or foe else UI.MOSS
 		draw_rect(Rect2(r.position, Vector2(w * _pct(), 5)), col)
 	# Les effets : une rangée de petites pastilles.
 	var dots: Array[int] = []

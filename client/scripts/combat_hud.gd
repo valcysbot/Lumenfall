@@ -10,6 +10,7 @@ signal potion
 signal roll
 signal next_target
 signal block(on: bool)
+signal challenge
 
 ## Les compétences du Paladin (même ordre que le serveur, server/world/arena.go).
 const SKILLS := [
@@ -35,6 +36,7 @@ var hp := 1
 var hp_max := 1
 var fx := 0
 var target: Pawn
+var in_duel := false
 
 var _frame: PanelContainer
 var _hp_bar: ProgressBar
@@ -47,6 +49,7 @@ var _target_box: PanelContainer
 var _target_name: Label
 var _target_bar: ProgressBar
 var _target_fx: Label
+var _duel_btn: Button
 var _cast_box: PanelContainer
 var _cast_bar: ProgressBar
 var _cast_label: Label
@@ -142,6 +145,11 @@ func _build_target() -> void:
 	_target_fx.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_target_fx.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(_target_fx)
+	_duel_btn = UI.button("⚔️ Défier en duel")
+	_duel_btn.focus_mode = Control.FOCUS_NONE
+	_duel_btn.tooltip_text = "Un combat pour l'honneur : personne ne meurt."
+	_duel_btn.pressed.connect(func(): challenge.emit())
+	col.add_child(_duel_btn)
 	_target_box.visible = false
 	add_child(_target_box)
 
@@ -338,7 +346,8 @@ func _process(delta: float) -> void:
 		_target_name.text = "%s%s · niv. %d" % ["✦ " if target.elite else "", target.hero_name, target.level]
 		_target_bar.max_value = maxi(1, target.hp_max)
 		_target_bar.value = target.hp
-		var foe := target.kind != ""
+		var foe := target.kind != "" or target.foe
+		_duel_btn.visible = target.kind == "" and target.npc == "" and not target.is_me and not in_duel
 		(_target_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = UI.DANGER if foe else Color("5fbf6a")
 		_target_fx.text = fx_text(target.fx)
 		_target_fx.visible = _target_fx.text != ""

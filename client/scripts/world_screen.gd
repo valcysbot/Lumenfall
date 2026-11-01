@@ -49,6 +49,12 @@ var _slowmo := 0.0
 var _blocking := false
 var _fight_t := -1e9       # dernier coup donné ou reçu
 var tutorial: CombatTutorial
+var duel_card: PanelContainer
+var _duel_text: Label
+var _duel_t := 0.0          # secondes pour répondre au défi
+var _duel_rings := {}       # numéro du duel -> DuelRing
+var _duel_foe := 0          # ton adversaire en duel (0 : aucun)
+var _duel_id := 0
 const TUTO_REACH := 10.0    # cases : le tutoriel commence quand un monstre est à cette distance
 var info: Label
 var chat_log: VBoxContainer
@@ -169,6 +175,7 @@ func _build_hud() -> void:
 	combat.roll.connect(_roll)
 	combat.next_target.connect(_next_target)
 	combat.block.connect(_set_block)
+	combat.challenge.connect(func(): Net.send(Net.OP_CHALLENGE, {"t": target_sid}))
 	chat_log = VBoxContainer.new()
 	chat_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chat_log.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 14)
@@ -222,6 +229,7 @@ func _build_hud() -> void:
 	toast.add_theme_constant_override("outline_size", 6)
 	root.add_child(toast)
 
+	_build_duel_card(root)
 	tutorial = CombatTutorial.new()
 	tutorial.touch = touch
 	tutorial.glow.connect(_glow)
@@ -444,6 +452,8 @@ func _on_state(op: int, d: Dictionary) -> void:
 			_on_loot(d)
 		Net.OP_REFUSE:
 			_show_toast(d.m)
+		Net.OP_DUEL:
+			_on_duel(d)
 		Net.OP_TELE:
 			var t := Telegraph.new()
 			t.line = bool(d.l)
@@ -501,6 +511,11 @@ func _process(delta: float) -> void:
 	sky.update_torches(pawns, my_sid)
 	_update_npcs(delta)
 	_update_hunt()
+	if duel_card.visible:
+		_duel_t -= delta
+		_duel_text.text = "⚔️ %s" % duel_card.get_meta("text") + "\n(%d s pour répondre)" % ceili(maxf(0, _duel_t))
+		if _duel_t <= 0:
+			duel_card.visible = false
 	_info_t += delta
 	if _info_t > 1.0:
 		_info_t = 0.0
@@ -830,7 +845,7 @@ func _use_skill(k: int) -> void:
 	if k == 1:
 		_tuto("frappe")
 	# Frappe sacrée ou coup de bouclier sur un monstre trop loin : on y va d'abord.
-	if (k == 1 or k == 2) and pawns.has(target_sid) and pawns[target_sid].kind != "" and not _in_reach(target_sid):
+	if (k == 1 or k == 2) and _hostile(target_sid) and not _in_reach(target_sid):
 		_hunt = target_sid
 		_hunt_t = -1e9
 	Net.send(Net.OP_SKILL, {"k": k})
@@ -914,7 +929,7 @@ func _click_fighter(at: Vector2) -> bool:
 		return false
 	_talk_to = -1
 	_set_target(best)
-	if pawns[best].kind != "":
+	if _hostile(best):
 		_hunt = best
 		_hunt_t = -1e9
 	get_viewport().set_input_as_handled()
@@ -1045,3 +1060,106 @@ func _on_loot(d: Dictionary) -> void:
 			braise.say("Braise : « Oh, un %s ! On l'accroche où ? »" % tro.to_lower())
 	if pawns.has(int(d.m)):
 		_float(int(d.m), "+%d or" % int(d.get("or", 0)), UI.LUMEN)
+
+
+# --- Les duels ------------------------------------------------------------------
+
+## Un monstre, ou ton adversaire en duel : on peut lui courir dessus et le frapper.
+func _hostile(sid: int) -> bool:
+	return pawns.has(sid) and not pawns[sid].dead and (pawns[sid].kind != "" or sid == _duel_foe)
+
+
+func _build_duel_card(root: Control) -> void:
+	duel_card = PanelContainer.new()
+	duel_card.add_theme_stylebox_override("panel", UI.box(Color(UI.NIGHT, 0.94), UI.LUMEN, 14, 2, 16))
+	duel_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 190)
+	duel_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	duel_card.add_child(col)
+	_duel_text = UI.label("", 19, UI.LUMEN)
+	_duel_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_duel_text.custom_minimum_size = Vector2(380, 0)
+	col.add_child(_duel_text)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	col.add_child(row)
+	for b in [["⚔️ J'accepte", true], ["Non merci", false]]:
+		var btn := UI.button(b[0], b[1])
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.pressed.connect(func():
+			Net.send(Net.OP_DUEL_REPLY, {"ok": b[1]})
+			duel_card.visible = false)
+		row.add_child(btn)
+	duel_card.visible = false
+	root.add_child(duel_card)
+
+
+func _on_duel(d: Dictionary) -> void:
+	var a := int(d.get("a", 0))
+	var b := int(d.get("b", 0))
+	var id := int(d.get("id", 0))
+	var mine := a == my_sid or b == my_sid
+	match str(d.k):
+		"defi":
+			duel_card.set_meta("text", "%s te défie en duel !" % d.get("n", "Un héros"))
+			_duel_t = float(d.get("sec", 30))
+			duel_card.visible = true
+			if braise != null:
+				braise.say("Braise : « Un duel ? Montre-lui ce que vaut un Paladin ! »")
+		"debut":
+			var ring := DuelRing.new()
+			ring.id = id
+			ring.center = Vector2(d.c[0], d.c[1]) / 100.0
+			ring.r = float(d.r) / 100.0
+			tele_layer.add_child(ring)
+			_duel_rings[id] = ring
+			if mine:
+				_duel_foe = b if a == my_sid else a
+				_duel_id = id
+				combat.in_duel = true
+				duel_card.visible = false
+				if pawns.has(_duel_foe):
+					pawns[_duel_foe].foe = true
+					_set_target(_duel_foe)
+				_show_toast("⚔️ Duel ! Reste dans le cercle… %d" % int(d.get("sec", 3)))
+			elif pawns.has(a) and pawns.has(b):
+				_add_chat_line("", "⚔️ %s et %s commencent un duel !" % [pawns[a].hero_name, pawns[b].hero_name], true)
+		"compte":
+			if mine:
+				var n := int(d.get("n", 0))
+				_show_toast("⚔️ Combattez !" if n <= 0 else "⚔️ %d…" % n)
+		"fin":
+			if _duel_rings.has(id):
+				_duel_rings[id].queue_free()
+				_duel_rings.erase(id)
+			var w := a
+			var l := b
+			var wn: String = pawns[w].hero_name if pawns.has(w) else "?"
+			var ln: String = pawns[l].hero_name if pawns.has(l) else "?"
+			var line := ""
+			match int(d.get("f", 0)):
+				0: line = "⚔️ %s remporte le duel contre %s !" % [wn, ln]
+				1: line = "⚔️ %s sort du cercle : %s gagne par abandon." % [ln, wn]
+				2: line = "⚔️ Le temps est écoulé : match nul !"
+				_: line = "⚔️ Le duel est interrompu."
+			_add_chat_line("", line, true)
+			if id == _duel_id and _duel_foe != 0:
+				if pawns.has(_duel_foe):
+					pawns[_duel_foe].foe = false
+				if target_sid == _duel_foe:
+					_set_target(0)
+				_duel_foe = 0
+				_duel_id = 0
+				combat.in_duel = false
+				if w == my_sid:
+					_show_toast("🏆 Victoire !")
+					if braise != null:
+						braise.say("Braise fait un looping : « On a gagné ! On a gagné ! »")
+				elif l == my_sid:
+					_show_toast("Défaite… tu feras mieux la prochaine fois.")
+					if braise != null:
+						braise.say("Braise : « Pas grave. On s'entraîne sur les sangliers ? »")
+				else:
+					_show_toast(line)

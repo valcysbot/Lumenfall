@@ -60,6 +60,7 @@ python3 tools/sprites/forge_braise.py           # Braise, le petit dragon
 - Le bestiaire (vie, dégâts, vitesse, butin) : `server/world/monster.go`. Où vivent les monstres : `server/world/maps/glennmor.monstres.json` (le serveur vérifie au démarrage que chaque camp est praticable).
 - Les dessins des bêtes : `python3 tools/sprites/forge_betes.py` (environ 3 minutes), ou seulement quelques-unes : `python3 tools/sprites/forge_betes.py loup sanglier`.
 - Capture d'un combat : `--capture=world --cible=sanglier --competences=1,5,roulade` (ajoute `--tactile` pour la disposition téléphone).
+- Les duels : `server/world/duel.go`. Capture d'un duel à deux clients : lance d'abord `--capture=world --device=capture-lumenfall-0002 --name=Brann --accepter --reste=20`, puis un second `--capture=world --defier=Brann --competences=1,5,1`.
 
 ## Retoucher une carte
 
