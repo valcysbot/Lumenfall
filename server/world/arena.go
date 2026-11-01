@@ -101,6 +101,7 @@ const (
 	EvError          // message privé pour Tgt
 	EvTele           // une attaque annoncée au sol (Value : numéro dans Arena.Teles)
 	EvPhase          // le boss Src passe à la phase Value
+	EvDuel           // duel.go : Text = defi, debut, compte ou fin
 )
 
 // Event flags (EvHit).
@@ -132,14 +133,17 @@ type Arena struct {
 	Events   []Event
 	Moved    []*Fighter // monstres qui ont bougé pendant le dernier Tick
 	Teles    []*Telegraph
+	Duels    []*Duel
 
-	rng    *rand.Rand
-	teleID int
+	rng     *rand.Rand
+	teleID  int
+	duelID  int
+	invites map[int]invite // défi reçu par chaque héros
 }
 
 // NewArena prépare l'arène d'une carte et fait apparaître ses monstres.
 func NewArena(m *Map, camps []Camp, rng *rand.Rand) *Arena {
-	a := &Arena{M: m, Heroes: map[int]*Fighter{}, Camps: camps, rng: rng,
+	a := &Arena{M: m, Heroes: map[int]*Fighter{}, Camps: camps, rng: rng, invites: map[int]invite{},
 		Temple: m.Spawn, Village: m.Spawn}
 	for ci, c := range camps {
 		for i := 0; i < c.Count; i++ {
@@ -187,6 +191,7 @@ func (a *Arena) AddHero(sid int, name string, body *Body, level, xp, gold, potio
 // RemoveHero retire un héros (départ) : les monstres l'oublient.
 func (a *Arena) RemoveHero(sid int) {
 	delete(a.Heroes, sid)
+	delete(a.invites, sid)
 	for _, m := range a.Monsters {
 		delete(m.Mon.threat, sid)
 	}
@@ -242,12 +247,12 @@ func (a *Arena) UseSkill(sid, k int) {
 		return
 	}
 	t := a.Get(hs.Target)
-	foe := t != nil && t.Mon != nil && !t.Dead && !t.Mon.gone
+	foe := a.foe(h, t)
 	w := HeroWeapon(h.Level)
 	switch k {
 	case 1, 2: // corps à corps
 		if !foe {
-			a.refuse(h, "Choisis d'abord un monstre !")
+			a.noFoe(h, t)
 			return
 		}
 		if dist(h, t) > reachOf(t) {
@@ -260,13 +265,15 @@ func (a *Arena) UseSkill(sid, k int) {
 			a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "attaque"})
 		} else {
 			a.hit(h, t, w*0.6, Physique, 2, HeroCrit, 5)
-			a.addThreat(t, h, 30)
+			if t.Mon != nil {
+				a.addThreat(t, h, 30)
+			}
 			t.Apply(Etourdi, 2, 0, h.SID)
 			a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "bouclier"})
 		}
 	case 3: // soin : un allié visé, sinon soi-même
 		on := h
-		if t != nil && t.Hero != nil && !t.Dead {
+		if t != nil && t.Hero != nil && !t.Dead && !foe {
 			on = t
 		}
 		if dist(h, on) > sk.Range {
@@ -278,14 +285,14 @@ func (a *Arena) UseSkill(sid, k int) {
 		a.emit(Event{Kind: EvCast, Src: h.SID, Skill: 3, Value: int(sk.Cast * 1000)})
 	case 4: // aura de groupe
 		for _, o := range a.Heroes {
-			if !o.Dead && dist(h, o) <= 8 {
+			if !o.Dead && dist(h, o) <= 8 && !a.foe(h, o) {
 				o.Apply(Aura, 12, 0, h.SID)
 			}
 		}
 		a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "aura"})
 	case 5: // jugement, à distance
 		if !foe {
-			a.refuse(h, "Choisis d'abord un monstre !")
+			a.noFoe(h, t)
 			return
 		}
 		if dist(h, t) > sk.Range {
@@ -433,7 +440,7 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 	if tgt.Mon != nil && src.Hero != nil {
 		a.addThreat(tgt, src, float64(n)*threat)
 	}
-	if tgt.HP <= 0 {
+	if tgt.HP <= 0 && !a.duelBlow(src, tgt) {
 		a.kill(tgt, src)
 	}
 	return n
@@ -553,6 +560,7 @@ func (a *Arena) GainXP(h *Fighter, xp int) {
 func (a *Arena) Tick(dt float64) {
 	a.Moved = a.Moved[:0]
 	a.tickTeles(dt)
+	a.tickDuels(dt)
 	for _, h := range a.Heroes {
 		a.tickEffects(h, dt)
 		a.tickHero(h, dt)
@@ -656,7 +664,7 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 	}
 
 	// L'attaque de base tourne toute seule sur la cible, à portée.
-	if t := a.Get(hs.Target); t != nil && t.Mon != nil && !t.Dead && hs.autoCD <= 0 && hs.Cast == 0 && !hs.Blocking &&
+	if t := a.Get(hs.Target); a.foe(h, t) && hs.autoCD <= 0 && hs.Cast == 0 && !hs.Blocking &&
 		a.canAct(h) && dist(h, t) <= reachOf(t) {
 		hs.autoCD = AutoEvery
 		h.Body.Face(t.Body.X, t.Body.Y)

@@ -61,6 +61,11 @@ const (
 	opLoot   = 25 // serveur → toi : {"m":monstre,"or":n,"xp":n,"tr":"Croc de loup"}
 	opRefuse = 26 // serveur → toi : {"m":"Trop loin !"}
 	opTele   = 27 // serveur → client : attaque annoncée au sol {"s","l":ligne,"a":[x,y],"b":[x2,y2],"r","ms"}
+
+	// Les duels (server/world/duel.go).
+	opChallenge = 28 // client → serveur : {"t":sid} je défie ce héros
+	opDuelReply = 29 // client → serveur : {"ok":true} j'accepte le dernier défi reçu
+	opDuel      = 30 // serveur → client : {"k":"defi"|"debut"|"compte"|"fin", …}
 )
 
 // Les émotes connues ; les autres sont ignorées.
@@ -443,6 +448,20 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		}
 	case opPotion:
 		s.arena.Potion(pl.sid)
+	case opChallenge:
+		var in struct {
+			T int `json:"t"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.Challenge(pl.sid, in.T)
+		}
+	case opDuelReply:
+		var in struct {
+			OK bool `json:"ok"`
+		}
+		if json.Unmarshal(data, &in) == nil {
+			s.arena.AnswerDuel(pl.sid, in.OK)
+		}
 	}
 }
 

@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.3.1 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
+**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
 
 ---
 
@@ -97,12 +97,13 @@
 - ✓ **XP et niveaux** : sans niveau maximum, la vie et les dégâts montent à chaque niveau ; or et trophées. Tout est sauvegardé en base avec la position.
 - ✓ **La forge des bêtes** (`tools/sprites/forge_betes.py`) et 7 nouvelles animations du Paladin (attaque, coup de bouclier, garde, incantation, sort, roulade, chute) avec son écu.
 - ✓ **Le tutoriel de combat** (V0.3.1, `client/scripts/combat_tutorial.gd`) : au premier monstre croisé, Braise apprend les gestes un par un (viser, frapper, bouclier, roulade, potion, autres sorts) en faisant briller le bon bouton. On peut le passer, et le revoir dans les réglages ⚙.
+- ✓ **Les duels sur invitation** (V0.3.2, `server/world/duel.go`) : vise un héros, « Défier en duel » ; s'il accepte, un drapeau est planté entre vous et un cercle se dessine au sol. Après 3, 2, 1, les coups comptent. Personne ne meurt : le premier à 1 point de vie a perdu, sortir du cercle c'est abandonner, et au bout de 2 minutes c'est match nul.
 - ✓ **Le combat à l'écran** : cadre du héros (vie, Ferveur, XP, effets), cadre de la cible, barre de compétences (1 à 5, R, Espace), éventail pour le pouce sur téléphone, chiffres qui sautent, critiques dorés qui font trembler l'écran, ralenti sur le coup fatal d'un élite, zones rouges qui se remplissent, écran « Tu es tombé ».
 
 ### ○ Quêtes à venir
 
 - ○ Ton avis sur la V0.3, puis les réglages (vie des monstres, dégâts, temps de recharge).
-- ○ Les duels sur invitation (choix du Conseil : juste après le boss).
+- ○ Ta validation de l'Acte III, pour passer à l'Acte IV (les héros).
 
 ### ⚠️ Points d'attention
 
@@ -204,6 +205,14 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.3.2 · « Premier sang » (1er novembre 2026)
+
+- 🆕 **Les duels !** Vise un autre héros et clique sur « ⚔️ Défier en duel ». S'il accepte, un drapeau est planté entre vous, un cercle doré se dessine au sol, et après 3, 2, 1… combattez ! Personne ne meurt : le premier qui tombe à 1 point de vie a perdu. Sortir du cercle, c'est abandonner, et au bout de 2 minutes c'est match nul. Tout le monde voit le résultat dans le chat.
+- ✨ Ton adversaire a un cercle rouge et une barre de vie rouge, comme un monstre, et ton héros lui court dessus quand tu frappes.
+- ✨ Frapper un héros sans duel ? Braise te rappelle qu'il faut d'abord le défier.
+
+Captures : [défier](docs/captures/v0.3.2/defier.png) · [l'invitation](docs/captures/v0.3.2/invitation.png) · [le cercle du duel](docs/captures/v0.3.2/cercle-du-duel.png) · [la victoire](docs/captures/v0.3.2/victoire.png) · [les 4 étapes](docs/captures/v0.3.2/planche-duel.png).
 
 ### V0.3.1 · « Premier sang » (30 octobre 2026)
 

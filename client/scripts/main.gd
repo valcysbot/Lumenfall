@@ -3,7 +3,8 @@ extends Node
 ##
 ## Mode capture (captures d'écran automatiques, sans joueur) :
 ##   godot --path client -- --capture=world --out=/chemin/capture.png
-##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier)
+##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier
+##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s)
 
 const LoginScreen := preload("res://scripts/login_screen.gd")
 const HeroScreen := preload("res://scripts/hero_screen.gd")
@@ -113,6 +114,22 @@ func _capture() -> void:
 		await get_tree().create_timer(float(args.get("marche", "6"))).timeout
 		if args.has("choix"):
 			current.dialogue._show(args.choix)
+	if args.has("defier"):
+		# Défie en duel le héros de ce nom, comme un joueur (bouton « Défier »).
+		for sid in current.pawns:
+			if current.pawns[sid].hero_name == args.defier:
+				current._set_target(sid)
+				current.combat.challenge.emit()
+		await get_tree().create_timer(float(args.get("attente", "5"))).timeout
+	if args.has("accepter"):
+		# Accepte le premier défi reçu (bouton « J'accepte »).
+		for i in 600:
+			if current.duel_card.visible:
+				await get_tree().create_timer(1.0).timeout
+				Net.send(Net.OP_DUEL_REPLY, {"ok": true})
+				current.duel_card.visible = false
+				break
+			await get_tree().create_timer(0.1).timeout
 	if args.has("cible"):
 		# Vise le monstre le plus proche de cette sorte et l'attaque, comme un joueur.
 		var best := -1
@@ -127,6 +144,7 @@ func _capture() -> void:
 					best = sid
 		if best != -1:
 			current._click_fighter(current.pawns[best].position + Vector2(0, -16))
+	if args.has("cible") or args.has("defier"):
 		for k in args.get("competences", "").split(",", false):
 			await get_tree().create_timer(float(args.get("pause", "1.6"))).timeout
 			if k == "roulade":
@@ -136,6 +154,8 @@ func _capture() -> void:
 			else:
 				current._use_skill(int(k))
 		await get_tree().create_timer(float(args.get("combat", "2"))).timeout
+	if args.has("reste"):
+		await get_tree().create_timer(float(args.reste)).timeout
 	if args.has("chat"):
 		Net.send(Net.OP_CHAT, {"m": args.chat})
 		await get_tree().create_timer(1.0).timeout

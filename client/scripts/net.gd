@@ -33,6 +33,9 @@ const OP_LEVEL := 24
 const OP_LOOT := 25
 const OP_REFUSE := 26
 const OP_TELE := 27
+const OP_CHALLENGE := 28
+const OP_DUEL_REPLY := 29
+const OP_DUEL := 30
 
 const SESSION_PATH := "user://session.cfg"
 

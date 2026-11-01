@@ -59,6 +59,8 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 				_ = d.BroadcastMessage(opNotice, mustJSON(map[string]string{
 					"m": "Le " + m.Name + " hurle : la Flétrissure le dévore !"}), nil, nil, true)
 			}
+		case world.EvDuel:
+			sendDuel(d, a, e, only)
 		case world.EvError:
 			if to := only(e.Tgt); to != nil {
 				_ = d.BroadcastMessage(opRefuse, mustJSON(map[string]string{"m": e.Text}), to, nil, true)
@@ -108,4 +110,37 @@ func sendMe(d runtime.MatchDispatcher, pl *player) {
 		"po": h.Potions, "pocd": ms(h.PotionCD), "lv": f.Level, "xp": h.XP, "xpn": world.XPForLevel(f.Level),
 		"or": h.Gold, "tr": h.Trophies, "hp": f.HP, "hpm": f.MaxHP,
 	}), []runtime.Presence{pl.presence}, nil, true)
+}
+
+// sendDuel raconte un duel : le défi au seul héros défié, le reste à tous.
+func sendDuel(d runtime.MatchDispatcher, a *world.Arena, e world.Event, only func(int) []runtime.Presence) {
+	msg := map[string]interface{}{"k": e.Text, "id": e.Value, "a": e.Src, "b": e.Tgt}
+	switch e.Text {
+	case "defi":
+		to := only(e.Tgt)
+		if to == nil {
+			return
+		}
+		name := ""
+		if f := a.Get(e.Src); f != nil {
+			name = f.Name
+		}
+		msg["n"] = name
+		msg["sec"] = int(world.DuelInviteTime)
+		_ = d.BroadcastMessage(opDuel, mustJSON(msg), to, nil, true)
+		return
+	case "debut":
+		du := a.Duel(e.Value)
+		if du == nil {
+			return
+		}
+		msg["c"] = [2]int{cent(du.X), cent(du.Y)}
+		msg["r"] = cent(world.DuelRadius)
+		msg["sec"] = int(world.DuelCountdown)
+	case "compte":
+		msg["n"] = e.Flags
+	case "fin":
+		msg["f"] = e.Flags
+	}
+	_ = d.BroadcastMessage(opDuel, mustJSON(msg), nil, nil, true)
 }
