@@ -66,11 +66,11 @@ type SkillDef struct {
 // Mods : le bonus permanent d'une voie.
 type Mods struct {
 	Dmg, Heal, Taken, Threat, HP, Pet float64 // multiplicateurs (0 compte comme 1)
-	Crit, Dodge                         float64 // chances en plus
-	Speed                               float64 // vitesse en plus (0,1 = +10 %)
-	Lifelink                            float64 // part des dégâts qui soigne l'allié le plus blessé
-	PermanentPet                        float64 // un compagnon toujours là, de cette puissance
-	Shields                             float64 // boucliers posés plus solides
+	Crit, Dodge                       float64 // chances en plus
+	Speed                             float64 // vitesse en plus (0,1 = +10 %)
+	Lifelink                          float64 // part des dégâts qui soigne l'allié le plus blessé
+	PermanentPet                      float64 // un compagnon toujours là, de cette puissance
+	Shields                           float64 // boucliers posés plus solides
 }
 
 // Role : tank, soin, dégâts, soutien.
@@ -93,16 +93,16 @@ type Spec struct {
 
 // Resource : la ressource d'une classe.
 type Resource struct {
-	ID, Name                  string
-	Max, Start                float64
-	Regen                     float64 // par seconde, toujours
-	Decay                     float64 // par seconde, hors combat
-	OnDeal, OnTaken           float64 // par coup donné (attaque de base) et reçu
-	OnMove                    float64 // par case parcourue
-	Still                     float64 // par seconde sans bouger
-	OnKill                    float64 // quand un ennemi proche tombe
-	Heat                      bool    // la Vapeur : les compétences réchauffent, Regen refroidit
-	LowHP                     bool    // la Furie : double gain sous la moitié de la vie
+	ID, Name        string
+	Max, Start      float64
+	Regen           float64 // par seconde, toujours
+	Decay           float64 // par seconde, hors combat
+	OnDeal, OnTaken float64 // par coup donné (attaque de base) et reçu
+	OnMove          float64 // par case parcourue
+	Still           float64 // par seconde sans bouger
+	OnKill          float64 // quand un ennemi proche tombe
+	Heat            bool    // la Vapeur : les compétences réchauffent, Regen refroidit
+	LowHP           bool    // la Furie : double gain sous la moitié de la vie
 }
 
 // Class : une classe.
@@ -171,7 +171,7 @@ var Classes = []*Class{
 	{
 		ID: "guerrier", Names: [3]string{"Guerrier", "Guerrière", "Guerrier·e"},
 		Desc: "Maître de toutes les armes, il encaisse ou frappe fort. Sa Rage monte à chaque coup.",
-		Res: resRage, Weapons: []string{"epee", "bouclier_rond"}, Shield: true, Anim: "attaque",
+		Res:  resRage, Weapons: []string{"epee", "bouclier_rond"}, Shield: true, Anim: "attaque",
 		Attr: [9]int{4, 0, 1, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "frappe_heroique", Name: "Frappe héroïque", Desc: "Un grand coup d'épée qui te rend un peu de vie.", Level: 1, CD: 4, Gain: 15, Power: 1.6, Drain: 0.4, Anim: "attaque"},
@@ -194,7 +194,7 @@ var Classes = []*Class{
 	{
 		ID: "berserker", Names: [3]string{"Berserker", "Berserker", "Berserker"},
 		Desc: "Deux haches et aucune prudence. Plus il saigne, plus sa Furie monte.",
-		Res: resFurie, Weapons: []string{"hache"}, Anim: "attaque",
+		Res:  resFurie, Weapons: []string{"hache"}, Anim: "attaque",
 		Attr: [9]int{5, 0, 1, 1, 0, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "taillade", Name: "Taillade", Desc: "Un coup de hache rapide.", Level: 1, CD: 3, Gain: 10, Power: 1.4, Anim: "attaque"},
@@ -217,7 +217,7 @@ var Classes = []*Class{
 	{
 		ID: "lancier", Names: [3]string{"Lancier", "Lancière", "Lancier·e"},
 		Desc: "La lance tient l'ennemi à distance. Son Élan monte quand il bouge.",
-		Res: resElan, Weapons: []string{"lance"}, Anim: "attaque",
+		Res:  resElan, Weapons: []string{"lance"}, Anim: "attaque",
 		Attr: [9]int{4, 0, 2, 2, 1, 2, 1, 1, 1},
 		Skills: [7]SkillDef{
 			{ID: "estoc", Name: "Estoc", Desc: "Un coup de lance qui porte loin.", Level: 1, CD: 3, Gain: 10, Range: 2.5, Power: 1.5, Anim: "attaque"},
@@ -240,7 +240,7 @@ var Classes = []*Class{
 	{
 		ID: "chevalier_dragon", Names: [3]string{"Chevalier-dragon", "Chevalière-dragon", "Chevalier·e-dragon"},
 		Desc: "Lié à un dragonneau, il crache le feu et porte des écailles. Son Souffle draconique se recharge seul.",
-		Res: resDragon, Weapons: []string{"epee_longue"}, Elem: Feu, Anim: "attaque",
+		Res:  resDragon, Weapons: []string{"epee_longue"}, Elem: Feu, Anim: "attaque",
 		Attr: [9]int{3, 1, 1, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "frappe_d_ecailles", Name: "Frappe d'écailles", Desc: "Un coup d'épée longue.", Level: 1, CD: 3.5, Power: 1.5, Anim: "attaque"},
@@ -263,7 +263,7 @@ var Classes = []*Class{
 	{
 		ID: "paladin", Names: [3]string{"Paladin", "Paladine", "Paladin·e"},
 		Desc: "Le serment de Solenn : il se soigne, protège le groupe, encaisse et tape fort. Sa Ferveur monte au contact.",
-		Res: resFerveur, Weapons: []string{"epee", "bouclier"}, Shield: true, Anim: "attaque",
+		Res:  resFerveur, Weapons: []string{"epee", "bouclier"}, Shield: true, Anim: "attaque",
 		Attr: [9]int{3, 2, 0, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "frappe_sacree", Name: "Frappe sacrée", Desc: "Un coup d'épée chargé de lumière.", Level: 1, CD: 4, Gain: 15, Power: 1.6, Elem: Lumiere, Anim: "attaque"},
@@ -287,7 +287,7 @@ var Classes = []*Class{
 	{
 		ID: "moine", Names: [3]string{"Moine", "Moniale", "Moine"},
 		Desc: "Poings et bâton. Ses coups remplissent son Souffle intérieur, que ses coups finaux libèrent.",
-		Res: resMoine, Weapons: []string{"baton"}, Anim: "attaque",
+		Res:  resMoine, Weapons: []string{"baton"}, Anim: "attaque",
 		Attr: [9]int{2, 1, 3, 2, 2, 2, 1, 1, 1},
 		Skills: [7]SkillDef{
 			{ID: "paume_du_tigre", Name: "Paume du tigre", Desc: "Un coup rapide : +1 Souffle.", Level: 1, CD: 2.5, Gain: 1, Power: 1.2, Anim: "attaque"},
@@ -310,7 +310,7 @@ var Classes = []*Class{
 	{
 		ID: "mage", Names: [3]string{"Mage", "Mage", "Mage"},
 		Desc: "Le feu, la glace et la foudre. Son Mana se recharge tout seul.",
-		Res: resMana, Weapons: []string{"baton_mage"}, Range: 8, Magic: true, Elem: Feu, Anim: "sort",
+		Res:  resMana, Weapons: []string{"baton_mage"}, Range: 8, Magic: true, Elem: Feu, Anim: "sort",
 		Attr: [9]int{0, 5, 1, 1, 1, 2, 1, 1, 2},
 		Skills: [7]SkillDef{
 			{ID: "trait_de_feu", Name: "Trait de feu", Desc: "Une flèche de feu.", Level: 1, Cast: 1.2, Cost: 8, Range: 9, Power: 1.6, Magic: true, Elem: Feu, Anim: "sort"},
@@ -333,7 +333,7 @@ var Classes = []*Class{
 	{
 		ID: "necromancien", Names: [3]string{"Nécromancien", "Nécromancienne", "Nécromancien·ne"},
 		Desc: "Il parle aux esprits et lève les os. Chaque ennemi qui tombe près de lui lui donne des Âmes.",
-		Res: resAmes, Weapons: []string{"faux"}, Range: 7, Magic: true, Elem: Ombre, Anim: "sort",
+		Res:  resAmes, Weapons: []string{"faux"}, Range: 7, Magic: true, Elem: Ombre, Anim: "sort",
 		Attr: [9]int{0, 5, 1, 1, 1, 2, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "trait_d_ombre", Name: "Trait d'ombre", Desc: "Un trait d'ombre : +1 Âme.", Level: 1, Cast: 1.0, Gain: 1, Range: 9, Power: 1.4, Magic: true, Elem: Ombre, Anim: "sort"},
@@ -356,7 +356,7 @@ var Classes = []*Class{
 	{
 		ID: "invocateur", Names: [3]string{"Invocateur", "Invocatrice", "Invocateur·rice"},
 		Desc: "Ses créatures se battent pour lui. Son Lien se partage entre elles.",
-		Res: resLien, Weapons: []string{"orbe"}, Range: 8, Magic: true, Elem: Air, Anim: "sort",
+		Res:  resLien, Weapons: []string{"orbe"}, Range: 8, Magic: true, Elem: Air, Anim: "sort",
 		Attr: [9]int{0, 5, 1, 1, 1, 2, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "projectile_d_arcane", Name: "Projectile d'arcane", Desc: "Une boule d'énergie pure.", Level: 1, Cast: 1.0, Cost: 5, Range: 9, Power: 1.3, Magic: true, Elem: Air, Anim: "sort"},
@@ -379,7 +379,7 @@ var Classes = []*Class{
 	{
 		ID: "alchimiste", Names: [3]string{"Alchimiste", "Alchimiste", "Alchimiste"},
 		Desc: "Fioles, bombes et potions. Ses Réactifs se rechargent un par un.",
-		Res: resReactif, Weapons: []string{"fioles"}, Range: 7, Elem: Terre, Anim: "attaque",
+		Res:  resReactif, Weapons: []string{"fioles"}, Range: 7, Elem: Terre, Anim: "attaque",
 		Attr: [9]int{0, 4, 2, 1, 1, 2, 1, 1, 2},
 		Skills: [7]SkillDef{
 			{ID: "fiole_acide", Name: "Fiole acide", Desc: "Une fiole qui ronge.", Level: 1, Cost: 1, Range: 8, Power: 1.6, Elem: Terre, Anim: "attaque"},
@@ -402,7 +402,7 @@ var Classes = []*Class{
 	{
 		ID: "ingenieur", Names: [3]string{"Ingénieur", "Ingénieure", "Ingénieur·e"},
 		Desc: "Arquebuse, tourelles et vapeur. Chaque compétence fait chauffer sa Vapeur : attention à la surchauffe !",
-		Res: resVapeur, Weapons: []string{"arquebuse"}, Range: 8, Anim: "tir",
+		Res:  resVapeur, Weapons: []string{"arquebuse"}, Range: 8, Anim: "tir",
 		Attr: [9]int{1, 3, 3, 1, 1, 2, 1, 1, 2},
 		Skills: [7]SkillDef{
 			{ID: "tir_de_precision", Name: "Tir de précision", Desc: "Un tir d'arquebuse. +10 de Vapeur.", Level: 1, Cost: 10, Range: 9, Power: 1.6, Anim: "tir"},
@@ -425,7 +425,7 @@ var Classes = []*Class{
 	{
 		ID: "pretre", Names: [3]string{"Prêtre", "Prêtresse", "Prêtre"},
 		Desc: "Le vrai soigneur d'Erydor. Sa Grâce se recharge toute seule.",
-		Res: resGrace, Weapons: []string{"masse"}, Range: 7, Magic: true, Elem: Lumiere, Anim: "sort",
+		Res:  resGrace, Weapons: []string{"masse"}, Range: 7, Magic: true, Elem: Lumiere, Anim: "sort",
 		Attr: [9]int{0, 5, 0, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "chatiment", Name: "Châtiment", Desc: "Un trait de lumière.", Level: 1, Cast: 1.2, Cost: 6, Range: 9, Power: 1.4, Magic: true, Elem: Lumiere, Anim: "sort"},
@@ -449,7 +449,7 @@ var Classes = []*Class{
 	{
 		ID: "druide", Names: [3]string{"Druide", "Druidesse", "Druide"},
 		Desc: "Fidèle de Cernos : il soigne par les racines ou prend forme animale. Sa Sève se recharge toute seule.",
-		Res: resSeve, Weapons: []string{"baton_noueux"}, Range: 7, Magic: true, Elem: Terre, Anim: "sort",
+		Res:  resSeve, Weapons: []string{"baton_noueux"}, Range: 7, Magic: true, Elem: Terre, Anim: "sort",
 		Attr: [9]int{1, 4, 1, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "epines", Name: "Épines", Desc: "Une volée d'épines.", Level: 1, Cast: 1.0, Cost: 6, Range: 9, Power: 1.4, Magic: true, Elem: Terre, Anim: "sort"},
@@ -472,7 +472,7 @@ var Classes = []*Class{
 	{
 		ID: "chaman", Names: [3]string{"Chaman", "Chamane", "Chaman·e"},
 		Desc: "Il appelle les esprits des éléments avec ses totems.",
-		Res: resEsprits, Weapons: []string{"totem"}, Range: 7, Magic: true, Elem: Air, Anim: "sort",
+		Res:  resEsprits, Weapons: []string{"totem"}, Range: 7, Magic: true, Elem: Air, Anim: "sort",
 		Attr: [9]int{1, 4, 1, 1, 1, 3, 1, 2, 1},
 		Skills: [7]SkillDef{
 			{ID: "eclair", Name: "Éclair", Desc: "Un éclair.", Level: 1, Cast: 1.2, Cost: 8, Range: 9, Power: 1.5, Magic: true, Elem: Air, Anim: "sort"},
@@ -495,7 +495,7 @@ var Classes = []*Class{
 	{
 		ID: "barde", Names: [3]string{"Barde", "Barde", "Barde"},
 		Desc: "Il soigne, charme et frappe en musique. Enchaîner les chants remplit son Harmonie.",
-		Res: resHarmo, Weapons: []string{"rapiere", "luth"}, Range: 6, Magic: true, Elem: Air, Anim: "sort",
+		Res:  resHarmo, Weapons: []string{"rapiere", "luth"}, Range: 6, Magic: true, Elem: Air, Anim: "sort",
 		Attr: [9]int{0, 4, 2, 1, 1, 2, 2, 1, 1},
 		Skills: [7]SkillDef{
 			{ID: "note_percante", Name: "Note perçante", Desc: "Une note qui blesse : +15 d'Harmonie.", Level: 1, Gain: 15, Range: 8, Power: 1.2, Magic: true, Elem: Air, Anim: "sort"},
@@ -518,7 +518,7 @@ var Classes = []*Class{
 	{
 		ID: "voleur", Names: [3]string{"Voleur", "Voleuse", "Voleur·se"},
 		Desc: "Furtivité, poisons et coups bas. Son Énergie remonte très vite.",
-		Res: resEnergie, Weapons: []string{"dagues"}, Anim: "attaque",
+		Res:  resEnergie, Weapons: []string{"dagues"}, Anim: "attaque",
 		Attr: [9]int{2, 0, 4, 2, 2, 1, 2, 1, 2},
 		Skills: [7]SkillDef{
 			{ID: "coup_sournois", Name: "Coup sournois", Desc: "Un coup de dague.", Level: 1, Cost: 30, Power: 1.4, Anim: "attaque"},
@@ -541,7 +541,7 @@ var Classes = []*Class{
 	{
 		ID: "archer", Names: [3]string{"Archer", "Archère", "Archer·e"},
 		Desc: "Arcs et arbalètes. Sa Concentration monte quand il reste immobile.",
-		Res: resConcent, Weapons: []string{"arc", "carquois"}, Range: 9, Anim: "tir",
+		Res:  resConcent, Weapons: []string{"arc", "carquois"}, Range: 9, Anim: "tir",
 		Attr: [9]int{1, 0, 4, 1, 2, 2, 1, 1, 3},
 		Skills: [7]SkillDef{
 			{ID: "tir_vise", Name: "Tir visé", Desc: "Un tir soigneusement visé.", Level: 1, Cast: 1.0, Cost: 15, Range: 10, Power: 1.8, Anim: "tir"},

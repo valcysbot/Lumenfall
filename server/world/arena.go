@@ -60,13 +60,13 @@ type HeroInit struct {
 
 // HeroState : ce qu'un héros a de plus qu'un monstre.
 type HeroState struct {
-	Class     *Class
-	Spec      int
-	Race      string
-	Attrs     Attrs
-	Stats     Stats
-	Hardcore  bool
-	Quest     int // Effacés vaincus pour l'épreuve de la voie
+	Class    *Class
+	Spec     int
+	Race     string
+	Attrs    Attrs
+	Stats    Stats
+	Hardcore bool
+	Quest    int // Effacés vaincus pour l'épreuve de la voie
 
 	Target    int
 	Res       float64 // la ressource de la classe
@@ -127,11 +127,11 @@ const (
 
 // Event flags (EvHit).
 const (
-	FlagCrit  = 1
-	FlagHeal  = 2
-	FlagBlock = 4
-	FlagDodge = 8
-	FlagDot   = 16
+	FlagCrit     = 1
+	FlagHeal     = 2
+	FlagBlock    = 4
+	FlagDodge    = 8
+	FlagDot      = 16
 	FlagElite    = 32 // EvDeath : un élite ou un boss (ralenti à l'écran)
 	FlagHardcore = 64 // EvDeath : un héros hardcore tombé pour de bon
 )
@@ -1129,3 +1129,9 @@ func (a *Arena) goTo(f *Fighter, x, y float64) bool {
 
 // InCombat dit si le héros s'est battu il y a peu.
 func (h *HeroState) InCombat() bool { return h.combat < CombatTime }
+
+// TouchMe demande de renvoyer l'état privé du héros.
+func (h *HeroState) TouchMe() { h.me = true }
+
+// Overheat : les secondes de surchauffe restantes (Vapeur).
+func (h *HeroState) Overheat() float64 { return h.overheat }
