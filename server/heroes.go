@@ -195,6 +195,35 @@ RETURNING `+heroCols,
 	return string(out), nil
 }
 
+// rpcHeroDelete efface un héros à la demande de son joueur. Pour éviter un
+// clic malheureux, le client renvoie le nom du héros, tapé à la main.
+func rpcHeroDelete(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, payload string) (string, error) {
+	uid, err := userID(ctx)
+	if err != nil {
+		return "", err
+	}
+	var in struct {
+		HeroID string `json:"hero_id"`
+		Name   string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(payload), &in); err != nil || in.HeroID == "" {
+		return "", runtime.NewError("Demande illisible.", codeInvalidArgument)
+	}
+	h, err := loadHero(ctx, db, uid, in.HeroID)
+	if err != nil {
+		return "", runtime.NewError("Ce héros n'existe pas sur ton compte.", codeNotFound)
+	}
+	if world.NameKey(world.NormalizeName(in.Name)) != world.NameKey(h.Name) {
+		return "", runtime.NewError("Le nom tapé ne correspond pas : le héros est toujours là.", codeInvalidArgument)
+	}
+	if err := deleteHero(ctx, db, h.ID); err != nil {
+		logger.Error("hero_delete: %v", err)
+		return "", runtime.NewError("Impossible d'effacer ce héros.", codeInternal)
+	}
+	logger.Info("Héros %q effacé par son joueur (utilisateur %s)", h.Name, uid)
+	return `{"ok":true}`, nil
+}
+
 // heroForm : ce que le miroir de création envoie.
 type heroForm struct {
 	Slot     int        `json:"slot"`
@@ -223,7 +252,7 @@ func (in *heroForm) validate() error {
 	return in.Look.Validate()
 }
 
-// deleteHero efface un héros (la mort hardcore).
+// deleteHero efface un héros (la mort hardcore, ou à la demande du joueur).
 func deleteHero(ctx context.Context, db *sql.DB, heroID string) error {
 	_, err := db.ExecContext(ctx, `DELETE FROM lf_heroes WHERE id = $1`, heroID)
 	return err

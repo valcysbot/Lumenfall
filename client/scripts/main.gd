@@ -4,7 +4,8 @@ extends Node
 ## Mode capture (captures d'écran automatiques, sans joueur) :
 ##   godot --path client -- --capture=world --out=/chemin/capture.png
 ##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier
-##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s)
+##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s
+##    --capture=heroes --effacer --confirmer)
 
 const LoginScreen := preload("res://scripts/login_screen.gd")
 const HeroScreen := preload("res://scripts/hero_screen.gd")
@@ -92,6 +93,18 @@ func _capture() -> void:
 			m._show(args.get("onglet", "peuple"))
 			m._refresh()
 			await get_tree().create_timer(float(args.get("wait", "1"))).timeout
+		if args.has("effacer") and not current.heroes.is_empty():
+			# Ouvre la demande de confirmation et tape le nom, comme un joueur.
+			current._ask_delete(current.heroes[0])
+			await get_tree().process_frame
+			var field: LineEdit = current.find_child("Effacer", true, false).find_children("*", "LineEdit", true, false)[0]
+			field.text = current.heroes[0].name if args.effacer == "true" else args.effacer
+			field.text_changed.emit(field.text)
+			await get_tree().create_timer(0.5).timeout
+			if args.has("confirmer"):
+				var yes: Button = current.find_child("Effacer", true, false).find_children("*", "Button", true, false)[-1]
+				yes.pressed.emit()
+				await get_tree().create_timer(2.0).timeout
 		await _shoot(out)
 		return
 	var list := await Net.hero_list()

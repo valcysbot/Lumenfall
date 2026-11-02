@@ -177,6 +177,11 @@ func hero_create(form: Dictionary) -> Dictionary:
 	return await _rpc("hero_create", form)
 
 
+## Efface un héros pour de bon : le serveur demande son nom, tapé à la main.
+func hero_delete(hero_id: String, name: String) -> Dictionary:
+	return await _rpc("hero_delete", {"hero_id": hero_id, "name": name})
+
+
 # --- Monde -----------------------------------------------------------------
 
 func join_world(hero_id: String) -> String:

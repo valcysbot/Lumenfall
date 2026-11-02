@@ -129,7 +129,73 @@ func _slot_card(slot: int, hero: Dictionary) -> PanelContainer:
 		var b := UI.button("Jouer", true)
 		b.pressed.connect(func(): play.emit(hero))
 		col.add_child(b)
+		var del := UI.button("🗑️ Effacer")
+		del.add_theme_font_size_override("font_size", 15)
+		del.add_theme_color_override("font_color", UI.MUTED)
+		del.pressed.connect(_ask_delete.bind(hero))
+		col.add_child(del)
 	return card
+
+
+# --- Effacer un héros -----------------------------------------------------------
+
+## Demande confirmation : on tape le nom du héros, comme on grave une stèle.
+func _ask_delete(hero: Dictionary) -> void:
+	var root := Control.new()
+	root.name = "Effacer"
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(root)
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.6)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UI.box(UI.STONE, UI.DANGER, 16, 1, 18))
+	panel.custom_minimum_size = Vector2(minf(480, get_viewport_rect().size.x - 32), 0)
+	center.add_child(panel)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	panel.add_child(col)
+	col.add_child(UI.label("Effacer %s ?" % hero.name, 26, UI.DANGER))
+	var warn := UI.label("Son niveau, son or et ses objets disparaîtront pour toujours, et son nom redeviendra libre. Pour confirmer, tape son nom :", 16)
+	warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(warn)
+	var field := LineEdit.new()
+	field.placeholder_text = hero.name
+	field.custom_minimum_size = Vector2(0, 44)
+	col.add_child(field)
+	var err := UI.label("", 15, UI.DANGER)
+	err.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(err)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	col.add_child(row)
+	var no := UI.button("Garder mon héros", true)
+	no.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	no.pressed.connect(root.queue_free)
+	row.add_child(no)
+	var yes := UI.button("Effacer pour toujours")
+	yes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	yes.add_theme_color_override("font_color", UI.DANGER)
+	yes.disabled = true
+	row.add_child(yes)
+	field.text_changed.connect(func(t: String):
+		yes.disabled = t.strip_edges().to_lower() != str(hero.name).to_lower())
+	yes.pressed.connect(func():
+		yes.disabled = true
+		var r := await Net.hero_delete(str(hero.id), field.text.strip_edges())
+		if r.has("error"):
+			err.text = r.error
+			yes.disabled = false
+			return
+		root.queue_free()
+		UI.set_braise(braise, "Braise dit : %s s'en est %s en paix. Un emplacement attend un nouveau destin." % [hero.name,
+			Heros.accorde(["allé", "allée", "allé·e"], int((hero.get("look", {}) as Dictionary).get("a", 0)))])
+		refresh())
+	field.grab_focus.call_deferred()
 
 
 # --- Le miroir de création ------------------------------------------------------
