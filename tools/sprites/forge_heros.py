@@ -149,7 +149,8 @@ def rot(v, axe, angle):
 class Pose:
     """Positions des articulations pour une direction, une animation et un instant."""
 
-    def __init__(self, d, anim, i, n):
+    def __init__(self, d, anim, i, n, k=1.0):
+        self.k = k       # carrure : épaisseur du buste et des membres (mince 0,85, costaud 1,2)
         th = d * math.pi / 4
         F = np.array([math.cos(th), math.sin(th), 0.0])
         R = np.array([-F[1], F[0], 0.0])
@@ -221,6 +222,15 @@ class Pose:
             k = math.sin(math.pi * t)
             ov[-1] = ov[1] = (onde(1.0, 2.1, k), onde(1.0, 0.1, k), 0.3)
             penche = -0.1 * k
+        elif anim == "tir":
+            # Bras gauche tendu (l'arc), la main droite tire la corde jusqu'à la joue, puis lâche.
+            k = min(1.0, t / 0.6)
+            ov[-1] = (onde(0.6, 1.55, min(1.0, t / 0.3)), 0.05, -0.18)
+            if t < 0.75:
+                ov[1] = (onde(0.5, 1.45, min(1.0, t / 0.3)), onde(0.4, 2.5, k), -0.25)
+            else:
+                ov[1] = (1.3, 1.2, 0.2)
+            penche = 0.04
         elif anim == "roulade":
             self.spin = 2 * math.pi * (t + 0.5 / n)   # un tour complet
             k = math.sin(math.pi * min(1.0, (t + 0.5 / n)))

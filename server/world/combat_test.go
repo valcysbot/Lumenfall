@@ -19,8 +19,14 @@ func arene(t *testing.T) (*Arena, *Fighter) {
 	a := NewArena(m, camps, rand.New(rand.NewSource(7)))
 	a.Temple = [2]float64{111.5, 98.5}
 	a.Village = [2]float64{95.5, 100.5}
-	h := a.AddHero(1, "Elowyn", &Body{X: 111.5, Y: 98.5}, 1, 0, 0, MaxPotions, nil)
+	h := a.AddHero(1, "Elowyn", &Body{X: 111.5, Y: 98.5}, paladin(1))
 	return a, h
+}
+
+// paladin : un Paladin de niveau lv, ses points placés comme conseillé.
+func paladin(lv int) HeroInit {
+	c := ClassByID("paladin")
+	return HeroInit{Level: lv, Potions: MaxPotions, Class: c.ID, Spec: -1, Race: "humain", Attrs: Recommend(c, PointsAt(lv))}
 }
 
 // premier : le premier monstre d'une sorte.
@@ -101,7 +107,7 @@ func TestUnSanglierSeBatEtMeurt(t *testing.T) {
 	if morts != 1 || gold < 1 || xp <= 0 || h.Hero.Gold != gold {
 		t.Fatalf("morts %d, or %d, xp %d", morts, gold, xp)
 	}
-	if h.Hero.Ferveur <= 0 {
+	if h.Hero.Res <= 0 {
 		t.Fatal("frapper doit donner de la Ferveur")
 	}
 	// Le corps disparaît, puis le sanglier revient.
@@ -113,7 +119,9 @@ func TestUnSanglierSeBatEtMeurt(t *testing.T) {
 
 func TestLaMenaceEtLeCoupDeBouclier(t *testing.T) {
 	a, h := arene(t)
-	h2 := a.AddHero(2, "Ami", &Body{}, 1, 0, 0, 5, nil)
+	h.Level = 2
+	h.Restat()
+	h2 := a.AddHero(2, "Ami", &Body{}, paladin(1))
 	s := premier(a, "sanglier")
 	face(h2, s)
 	a.hit(h2, s, 10, Physique, 0, 0, 1)
@@ -251,7 +259,9 @@ func TestLesPotions(t *testing.T) {
 
 func TestLeSoinSIncanteEtSInterrompt(t *testing.T) {
 	a, h := arene(t)
-	h.Hero.Ferveur = 100
+	h.Level = 2
+	h.Restat()
+	h.Hero.Res = 100
 	h.HP = 30
 	a.UseSkill(h.SID, 3)
 	combat(a, 0.5)
@@ -310,7 +320,7 @@ func TestLeGrandSanglier(t *testing.T) {
 	h.Body.Teleport(b.Body.X+1, b.Body.Y)
 	a.hit(h, b, 1, Physique, 0, 0, 1)
 	combat(a, 0.3)
-	if b.Mon.Phase != 2 || b.Elem != Ombre || b.Bits()&(1<<8) == 0 {
+	if b.Mon.Phase != 2 || b.Elem != Ombre || b.Bits()&BitPhase2 == 0 {
 		t.Fatal("phase 2 attendue")
 	}
 	// Abandonné, il rentre chez lui et redevient lui-même.

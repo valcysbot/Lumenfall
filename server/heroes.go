@@ -49,6 +49,25 @@ ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS xp       INTEGER  NOT NULL DEFAUL
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS gold     INTEGER  NOT NULL DEFAULT 0;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS potions  SMALLINT NOT NULL DEFAULT 5;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS trophies JSONB    NOT NULL DEFAULT '{}'::jsonb`)
+	if err != nil {
+		return err
+	}
+	// Acte IV : peuple, classe, voie, dieu, attributs, allure… et le nouveau
+	// départ voulu au Conseil des Héros : les héros d'avant l'Acte IV
+	// (marqués 3 en ajoutant la colonne) sont effacés une fois pour toutes.
+	_, err = db.ExecContext(ctx, `
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS acte     SMALLINT NOT NULL DEFAULT 3;
+DELETE FROM lf_heroes WHERE acte < 4;
+ALTER TABLE lf_heroes ALTER COLUMN acte SET DEFAULT 4;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS race     TEXT     NOT NULL DEFAULT 'humain';
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS classe   TEXT     NOT NULL DEFAULT 'paladin';
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS voie     SMALLINT NOT NULL DEFAULT -1;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS dieu     TEXT     NOT NULL DEFAULT 'solenn';
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS hardcore BOOLEAN  NOT NULL DEFAULT false;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS attrs    JSONB    NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS quest    SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS look     JSONB    NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS miroir   SMALLINT NOT NULL DEFAULT 0`)
 	return err
 }
 
@@ -63,20 +82,35 @@ type Hero struct {
 	Y     float64 `json:"y"`
 	Level int     `json:"level"`
 
+	Race     string      `json:"race"`
+	Class    string      `json:"classe"`
+	Spec     int         `json:"voie"`
+	God      string      `json:"dieu"`
+	Hardcore bool        `json:"hardcore"`
+	Look     world.Look  `json:"look"`
+	attrs    world.Attrs // lus en base, privés
+	quest    int
+	miroir   int
+
 	xp, gold, potions int
 	trophies          map[string]int
 }
 
 // heroCols : les colonnes lues pour un héros, dans l'ordre de scanHero.
-const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies`
+const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies,
+	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir`
 
 func scanHero(row interface{ Scan(...any) error }, h *Hero) error {
-	var tro []byte
-	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro); err != nil {
+	var tro, at, look []byte
+	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro,
+		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir); err != nil {
 		return err
 	}
 	h.trophies = map[string]int{}
 	_ = json.Unmarshal(tro, &h.trophies)
+	_ = json.Unmarshal(at, &h.attrs)
+	h.Look = world.DefaultLook()
+	_ = json.Unmarshal(look, &h.Look)
 	return nil
 }
 
@@ -115,7 +149,7 @@ func rpcHeroList(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runt
 		logger.Error("hero_list: %v", err)
 		return "", runtime.NewError("Impossible de lire tes héros.", codeInternal)
 	}
-	out, _ := json.Marshal(map[string]interface{}{"heroes": heroes, "slots": world.MaxHeroes, "colors": world.HeroColors})
+	out, _ := json.Marshal(map[string]interface{}{"heroes": heroes, "slots": world.MaxHeroes})
 	return string(out), nil
 }
 
@@ -124,19 +158,12 @@ func rpcHeroCreate(ctx context.Context, logger runtime.Logger, db *sql.DB, nk ru
 	if err != nil {
 		return "", err
 	}
-	var in struct {
-		Slot  int    `json:"slot"`
-		Name  string `json:"name"`
-		Color int    `json:"color"`
-	}
+	var in heroForm
 	if err := json.Unmarshal([]byte(payload), &in); err != nil {
 		return "", runtime.NewError("Demande illisible.", codeInvalidArgument)
 	}
-	if in.Slot < 0 || in.Slot >= world.MaxHeroes {
-		return "", runtime.NewError("Emplacement de héros inconnu.", codeInvalidArgument)
-	}
-	if in.Color < 0 || in.Color >= len(world.HeroColors) {
-		return "", runtime.NewError("Couleur inconnue.", codeInvalidArgument)
+	if err := in.validate(); err != nil {
+		return "", runtime.NewError(err.Error(), codeInvalidArgument)
 	}
 	name := world.NormalizeName(in.Name)
 	if err := world.ValidateName(name); err != nil {
@@ -145,10 +172,11 @@ func rpcHeroCreate(ctx context.Context, logger runtime.Logger, db *sql.DB, nk ru
 	m := worldMapsByID[defaultMap]
 	var h Hero
 	row := db.QueryRowContext(ctx, `
-INSERT INTO lf_heroes (user_id, slot, name, name_key, color, map, x, y)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO lf_heroes (user_id, slot, name, name_key, color, map, x, y, acte, race, classe, dieu, hardcore, look)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 4, $9, $10, $11, $12, $13)
 RETURNING `+heroCols,
-		uid, in.Slot, name, world.NameKey(name), in.Color, m.ID, m.Spawn[0], m.Spawn[1],
+		uid, in.Slot, name, world.NameKey(name), in.Look.Tunique, m.ID, m.Spawn[0], m.Spawn[1],
+		in.Race, in.Class, in.God, in.Hardcore, string(mustJSON(in.Look)),
 	)
 	err = scanHero(row, &h)
 	if err != nil {
@@ -165,6 +193,40 @@ RETURNING `+heroCols,
 	logger.Info("Nouveau héros %q (utilisateur %s)", h.Name, uid)
 	out, _ := json.Marshal(h)
 	return string(out), nil
+}
+
+// heroForm : ce que le miroir de création envoie.
+type heroForm struct {
+	Slot     int        `json:"slot"`
+	Name     string     `json:"name"`
+	Race     string     `json:"race"`
+	Class    string     `json:"classe"`
+	God      string     `json:"dieu"`
+	Hardcore bool       `json:"hardcore"`
+	Look     world.Look `json:"look"`
+}
+
+func (in *heroForm) validate() error {
+	switch {
+	case in.Slot < 0 || in.Slot >= world.MaxHeroes:
+		return errors.New("Emplacement de héros inconnu.")
+	case world.Races[in.Race].ID == "":
+		return errors.New("Ce peuple n'existe pas en Erydor.")
+	case world.ClassByID(in.Class) == nil:
+		return errors.New("Cette classe n'existe pas.")
+	case !world.ValidGod(in.God):
+		return errors.New("Ce dieu n'existe pas.")
+	}
+	if in.Look.Marques == nil {
+		in.Look.Marques = [][2]int{}
+	}
+	return in.Look.Validate()
+}
+
+// deleteHero efface un héros (la mort hardcore).
+func deleteHero(ctx context.Context, db *sql.DB, heroID string) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM lf_heroes WHERE id = $1`, heroID)
+	return err
 }
 
 var errHeroNotFound = errors.New("héros introuvable")
@@ -223,9 +285,10 @@ func saveHeroes(ctx context.Context, db *sql.DB, mapID string, ps []heroPos) err
 	rows, _ := json.Marshal(ps)
 	_, err := db.ExecContext(ctx, `
 UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, level = v.level, xp = v.xp, gold = v.gold,
-	potions = v.potions, trophies = v.trophies, updated_at = now()
+	potions = v.potions, trophies = v.trophies, voie = v.voie, attrs = v.attrs, quest = v.quest,
+	look = v.look, miroir = v.miroir, updated_at = now()
 FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold integer,
-	potions smallint, trophies jsonb)
+	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint)
 WHERE h.id = v.id`, mapID, string(rows))
 	return err
 }
@@ -240,12 +303,17 @@ type heroPos struct {
 	Gold     int            `json:"gold"`
 	Potions  int            `json:"potions"`
 	Trophies map[string]int `json:"trophies"`
+	Voie     int            `json:"voie"`
+	Attrs    world.Attrs    `json:"attrs"`
+	Quest    int            `json:"quest"`
+	Look     world.Look     `json:"look"`
+	Miroir   int            `json:"miroir"`
 }
 
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
 // À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
 // afficher (une nouvelle région, par exemple).
-const minClientVersion = "0.3.0"
+const minClientVersion = "0.4.0"
 
 // versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
 // illisible compte comme trop ancienne.

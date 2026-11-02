@@ -1,0 +1,513 @@
+{
+ "ancre": [
+  32,
+  58
+ ],
+ "anims": {
+  "attaque": {
+   "boucle": false,
+   "debut": 26,
+   "fps": 14,
+   "images": 6
+  },
+  "bouclier": {
+   "boucle": false,
+   "debut": 32,
+   "fps": 12,
+   "images": 5
+  },
+  "course": {
+   "boucle": true,
+   "debut": 12,
+   "fps": 14,
+   "images": 8
+  },
+  "garde": {
+   "boucle": true,
+   "debut": 37,
+   "fps": 3,
+   "images": 2
+  },
+  "incante": {
+   "boucle": true,
+   "debut": 39,
+   "fps": 6,
+   "images": 4
+  },
+  "marche": {
+   "boucle": true,
+   "debut": 4,
+   "fps": 10,
+   "images": 8
+  },
+  "mort": {
+   "boucle": false,
+   "debut": 54,
+   "fps": 8,
+   "images": 6
+  },
+  "repos": {
+   "boucle": true,
+   "debut": 0,
+   "fps": 4,
+   "images": 4
+  },
+  "roulade": {
+   "boucle": false,
+   "debut": 48,
+   "fps": 17,
+   "images": 6
+  },
+  "salut": {
+   "boucle": false,
+   "debut": 20,
+   "fps": 5,
+   "images": 6
+  },
+  "sort": {
+   "boucle": false,
+   "debut": 43,
+   "fps": 10,
+   "images": 5
+  },
+  "tir": {
+   "boucle": false,
+   "debut": 60,
+   "fps": 12,
+   "images": 6
+  }
+ },
+ "colonnes": 32,
+ "directions": 8,
+ "image": [
+  64,
+  64
+ ],
+ "pieces": {
+  "arme_arc": [
+   "bois_arme",
+   "corde"
+  ],
+  "arme_arquebuse": [
+   "bois_arme",
+   "cuivre",
+   "fer"
+  ],
+  "arme_baton": [
+   "bois_arme",
+   "cuivre"
+  ],
+  "arme_baton_mage": [
+   "bois_arme",
+   "garde",
+   "orbe"
+  ],
+  "arme_baton_noueux": [
+   "bois_arme",
+   "mousse"
+  ],
+  "arme_bouclier": [
+   "bouclier",
+   "umbo"
+  ],
+  "arme_bouclier_rond": [
+   "bois_arme",
+   "fer"
+  ],
+  "arme_carquois": [
+   "cuir_carquois",
+   "plume"
+  ],
+  "arme_dagues": [
+   "lame"
+  ],
+  "arme_epee": [
+   "garde",
+   "lame"
+  ],
+  "arme_epee_longue": [
+   "garde",
+   "lame"
+  ],
+  "arme_faux": [
+   "bois_arme",
+   "lame"
+  ],
+  "arme_fioles": [
+   "potion",
+   "verre"
+  ],
+  "arme_hache": [
+   "bois_arme",
+   "garde",
+   "lame"
+  ],
+  "arme_lance": [
+   "bois_arme",
+   "lame",
+   "ruban"
+  ],
+  "arme_luth": [
+   "bois_arme",
+   "poignee"
+  ],
+  "arme_masse": [
+   "bois_arme",
+   "fer",
+   "garde"
+  ],
+  "arme_orbe": [
+   "garde",
+   "orbe"
+  ],
+  "arme_rapiere": [
+   "garde",
+   "lame"
+  ],
+  "arme_totem": [
+   "bois_arme",
+   "plume",
+   "totem"
+  ],
+  "barbe_00": [
+   "cheveux"
+  ],
+  "barbe_01": [
+   "cheveux"
+  ],
+  "barbe_02": [
+   "cheveux",
+   "boucle"
+  ],
+  "barbe_03": [
+   "cheveux"
+  ],
+  "barbe_04": [
+   "cheveux"
+  ],
+  "barbe_05": [
+   "cheveux"
+  ],
+  "bottes_costaud": [
+   "bottes"
+  ],
+  "bottes_mince": [
+   "bottes"
+  ],
+  "bottes_normale": [
+   "bottes"
+  ],
+  "cape_costaud": [
+   "cape"
+  ],
+  "cape_mince": [
+   "cape"
+  ],
+  "cape_normale": [
+   "cape"
+  ],
+  "casque": [
+   "casque",
+   "garde"
+  ],
+  "chapeau": [
+   "ceinture",
+   "chapeau"
+  ],
+  "cheveux_00": [
+   "cheveux"
+  ],
+  "cheveux_01": [
+   "cheveux"
+  ],
+  "cheveux_02": [
+   "cheveux"
+  ],
+  "cheveux_03": [
+   "cheveux"
+  ],
+  "cheveux_04": [
+   "cheveux"
+  ],
+  "cheveux_05": [
+   "cheveux"
+  ],
+  "cheveux_06": [
+   "cheveux"
+  ],
+  "cheveux_07": [
+   "cheveux"
+  ],
+  "cheveux_08": [
+   "cheveux"
+  ],
+  "cheveux_09": [
+   "cheveux"
+  ],
+  "cheveux_10": [
+   "cheveux"
+  ],
+  "cheveux_11": [
+   "cheveux"
+  ],
+  "cheveux_12": [
+   "cheveux"
+  ],
+  "cheveux_13": [
+   "cheveux"
+  ],
+  "cheveux_14": [
+   "cheveux"
+  ],
+  "cheveux_15": [
+   "cheveux"
+  ],
+  "cheveux_16": [
+   "cheveux"
+  ],
+  "cheveux_17": [
+   "cheveux"
+  ],
+  "cheveux_18": [
+   "cheveux"
+  ],
+  "cheveux_19": [
+   "cheveux"
+  ],
+  "corps_cristal_costaud": [
+   "peau",
+   "sous"
+  ],
+  "corps_cristal_mince": [
+   "peau",
+   "sous"
+  ],
+  "corps_cristal_normale": [
+   "peau",
+   "sous"
+  ],
+  "corps_pierre_costaud": [
+   "peau",
+   "sous",
+   "runes"
+  ],
+  "corps_pierre_mince": [
+   "peau",
+   "sous",
+   "runes"
+  ],
+  "corps_pierre_normale": [
+   "peau",
+   "sous",
+   "runes"
+  ],
+  "corps_standard_costaud": [
+   "peau",
+   "sous"
+  ],
+  "corps_standard_mince": [
+   "peau",
+   "sous"
+  ],
+  "corps_standard_normale": [
+   "peau",
+   "sous"
+  ],
+  "gants_costaud": [
+   "gants"
+  ],
+  "gants_mince": [
+   "gants"
+  ],
+  "gants_normale": [
+   "gants"
+  ],
+  "marque_cicatrice": [
+   "cicatrice"
+  ],
+  "marque_ecailles": [
+   "peau"
+  ],
+  "marque_larmes": [
+   "larmes"
+  ],
+  "marque_peinture": [
+   "peinture"
+  ],
+  "marque_runes": [
+   "runes"
+  ],
+  "marque_taches": [
+   "taches"
+  ],
+  "pantalon_costaud": [
+   "pantalon"
+  ],
+  "pantalon_mince": [
+   "pantalon"
+  ],
+  "pantalon_normale": [
+   "pantalon"
+  ],
+  "robe_costaud": [
+   "tissu",
+   "ceinture",
+   "boucle"
+  ],
+  "robe_mince": [
+   "tissu",
+   "ceinture",
+   "boucle"
+  ],
+  "robe_normale": [
+   "tissu",
+   "ceinture",
+   "boucle"
+  ],
+  "tablier_costaud": [
+   "tablier"
+  ],
+  "tablier_mince": [
+   "tablier"
+  ],
+  "tablier_normale": [
+   "tablier"
+  ],
+  "trait_ailes": [
+   "aile"
+  ],
+  "trait_bois": [
+   "corne"
+  ],
+  "trait_cornes": [
+   "corne"
+  ],
+  "trait_defenses": [
+   "corne"
+  ],
+  "trait_eclats": [
+   "peau"
+  ],
+  "trait_mousse": [
+   "peau",
+   "mousse"
+  ],
+  "trait_nageoires": [
+   "peau"
+  ],
+  "trait_oreilles_chat": [
+   "peau"
+  ],
+  "trait_oreilles_elfe": [
+   "peau"
+  ],
+  "trait_oreilles_fee": [
+   "peau"
+  ],
+  "trait_oreilles_gnome": [
+   "peau"
+  ],
+  "trait_oreilles_nageoires": [
+   "peau"
+  ],
+  "trait_oreilles_rondes": [
+   "peau"
+  ],
+  "trait_queue_chat": [
+   "peau"
+  ],
+  "trait_queue_drake": [
+   "peau"
+  ],
+  "trait_queue_touffue": [
+   "peau",
+   "cheveux"
+  ],
+  "tunique_costaud": [
+   "tissu"
+  ],
+  "tunique_mince": [
+   "tissu",
+   "boucle"
+  ],
+  "tunique_normale": [
+   "tissu"
+  ],
+  "visage_00": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_01": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_02": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_03": [
+   "peau",
+   "yeux"
+  ],
+  "visage_04": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_05": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_06": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_07": [
+   "peau",
+   "yeux"
+  ],
+  "visage_08": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_09": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_10": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_11": [
+   "peau",
+   "yeux"
+  ],
+  "visage_12": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_13": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_14": [
+   "peau",
+   "yeux",
+   "sourcils"
+  ],
+  "visage_15": [
+   "peau",
+   "yeux"
+  ]
+ }
+}

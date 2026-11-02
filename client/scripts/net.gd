@@ -36,6 +36,11 @@ const OP_TELE := 27
 const OP_CHALLENGE := 28
 const OP_DUEL_REPLY := 29
 const OP_DUEL := 30
+const OP_MIROIR := 31
+const OP_VOIE := 32
+const OP_ATTRS := 33
+const OP_FICHE := 34
+const OP_VOIE_OUT := 35
 
 const SESSION_PATH := "user://session.cfg"
 
@@ -167,8 +172,9 @@ func hero_list() -> Dictionary:
 	return await _rpc("hero_list", {})
 
 
-func hero_create(slot: int, hero_name: String, color: int) -> Dictionary:
-	return await _rpc("hero_create", {"slot": slot, "name": hero_name, "color": color})
+## form : slot, name, race, classe, dieu, hardcore, look (le miroir de création).
+func hero_create(form: Dictionary) -> Dictionary:
+	return await _rpc("hero_create", form)
 
 
 # --- Monde -----------------------------------------------------------------

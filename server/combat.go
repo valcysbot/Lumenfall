@@ -59,6 +59,10 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 				_ = d.BroadcastMessage(opNotice, mustJSON(map[string]string{
 					"m": "Le " + m.Name + " hurle : la Flétrissure le dévore !"}), nil, nil, true)
 			}
+		case world.EvVoie:
+			if to := only(e.Tgt); to != nil {
+				_ = d.BroadcastMessage(opVoieOut, mustJSON(map[string]interface{}{"k": e.Text, "n": e.Value, "max": world.VoieQuest}), to, nil, true)
+			}
 		case world.EvDuel:
 			sendDuel(d, a, e, only)
 		case world.EvError:
@@ -101,14 +105,17 @@ func sendMe(d runtime.MatchDispatcher, pl *player) {
 	f := pl.fighter
 	h := f.Hero
 	ms := func(v float64) int { return int(math.Ceil(v * 1000)) }
-	cd := make([]int, 5)
-	for k := 1; k <= 5; k++ {
+	cd := make([]int, world.NSkills)
+	for k := 1; k <= world.NSkills; k++ {
 		cd[k-1] = ms(h.CD[k])
 	}
 	_ = d.BroadcastMessage(opMe, mustJSON(map[string]interface{}{
-		"f": int(h.Ferveur), "en": int(h.Endurance * 10), "cd": cd, "gcd": ms(h.GCD),
+		"r": int(h.Res), "rm": int(h.Class.Res.Max), "oh": ms(h.Overheat()),
+		"en": int(h.Endurance * 10), "cd": cd, "gcd": ms(h.GCD),
 		"po": h.Potions, "pocd": ms(h.PotionCD), "lv": f.Level, "xp": h.XP, "xpn": world.XPForLevel(f.Level),
 		"or": h.Gold, "tr": h.Trophies, "hp": f.HP, "hpm": f.MaxHP,
+		"cl": h.Class.ID, "v": h.Spec, "q": h.Quest, "qm": world.VoieQuest, "at": h.Attrs, "pt": world.PointsAt(f.Level),
+		"mir": pl.hero.miroir,
 	}), []runtime.Presence{pl.presence}, nil, true)
 }
 

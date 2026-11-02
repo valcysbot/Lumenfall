@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"math"
 	"math/rand"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,13 +48,13 @@ const (
 
 	// Le combat (Acte III).
 	opTarget = 5  // client → serveur : {"t":sid} (0 : plus de cible)
-	opSkill  = 6  // client → serveur : {"k":1..5}
+	opSkill  = 6  // client → serveur : {"k":1..8} (8 : l'ultime de la voie)
 	opRoll   = 7  // client → serveur : {"d":[dx,dy]}
 	opBlock  = 8  // client → serveur : {"b":true}
 	opPotion = 9  // client → serveur : {}
 	opHits   = 18 // serveur → client : {"h":[[src,cible,valeur,drapeaux,compétence,élément]…]}
 	opVitals = 19 // serveur → client : {"v":[[sid,vie,vie max,effets,niveau]…]}
-	opMe     = 20 // serveur → toi : Ferveur, endurance, recharges, potions, niveau, or…
+	opMe     = 20 // serveur → toi : ressource, endurance, recharges, potions, niveau, or, attributs, voie…
 	opCast   = 21 // serveur → client : {"s":sid,"k":compétence,"ms":durée} (k = 0 : interrompu)
 	opAnim   = 22 // serveur → client : {"s":sid,"a":"attaque"}
 	opDeath  = 23 // serveur → client : {"s":sid,"k":tueur,"f":drapeaux}
@@ -66,7 +67,17 @@ const (
 	opChallenge = 28 // client → serveur : {"t":sid} je défie ce héros
 	opDuelReply = 29 // client → serveur : {"ok":true} j'accepte le dernier défi reçu
 	opDuel      = 30 // serveur → client : {"k":"defi"|"debut"|"compte"|"fin", …}
+
+	// Les héros (Acte IV).
+	opMiroir  = 31 // client → serveur : {"look":{…}} au miroir de Solenn, près du temple
+	opVoie    = 32 // client → serveur : {"v":0..2} choisir (ou changer) sa voie
+	opAttrs   = 33 // client → serveur : {"a":[9 nombres]} placer ses points
+	opFiche   = 34 // client → serveur : {"s":sid} ; serveur → toi : la fiche publique du héros
+	opVoieOut = 35 // serveur → toi : {"k":"quete"|"progres"|"pret"|"choisie","n":Effacés,"v":voie}
 )
+
+// fallenDelay : le temps de voir sa chute avant d'être renvoyé (hardcore).
+const fallenDelay = 6 * tickRate
 
 // Les émotes connues ; les autres sont ignorées.
 var emotes = map[string]bool{"salut": true}
@@ -119,6 +130,7 @@ type player struct {
 	lastChat  int64
 	lastPath  int64
 	lastEmote int64
+	fallen    int64 // tick de la mort hardcore (0 : vivant)
 }
 
 type worldState struct {
@@ -199,7 +211,10 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		if !s.m.Free(pl.body.X, pl.body.Y) {
 			pl.body.X, pl.body.Y = s.m.Spawn[0], s.m.Spawn[1]
 		}
-		pl.fighter = s.arena.AddHero(pl.sid, h.Name, &pl.body, h.Level, h.xp, h.gold, h.potions, h.trophies)
+		pl.fighter = s.arena.AddHero(pl.sid, h.Name, &pl.body, world.HeroInit{
+			Level: h.Level, XP: h.xp, Gold: h.gold, Potions: h.potions, Trophies: h.trophies,
+			Class: h.Class, Spec: h.Spec, Race: h.Race, Attrs: h.attrs, Hardcore: h.Hardcore, Quest: h.quest,
+		})
 		s.players[p.GetSessionId()] = pl
 
 		everyone := make([]map[string]interface{}, 0, len(s.players))
@@ -246,8 +261,10 @@ func (w *worldMatch) removePlayer(ctx context.Context, logger runtime.Logger, db
 	}
 	delete(s.players, sessionID)
 	s.arena.RemoveHero(pl.sid)
-	if err := saveHeroes(ctx, db, s.m.ID, []heroPos{pl.save()}); err != nil {
-		logger.Error("Sauvegarde de %q au départ: %v", pl.hero.Name, err)
+	if pl.fallen == 0 {
+		if err := saveHeroes(ctx, db, s.m.ID, []heroPos{pl.save()}); err != nil {
+			logger.Error("Sauvegarde de %q au départ: %v", pl.hero.Name, err)
+		}
 	}
 	_ = d.BroadcastMessage(opLeave, mustJSON(map[string]int{"s": pl.sid}), nil, nil, true)
 }
@@ -309,6 +326,7 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 		moved = append(moved, [4]int{m.SID, cent(m.Body.X), cent(m.Body.Y), m.Body.Dir})
 	}
 	w.sendCombat(d, s, tick)
+	w.buryFallen(ctx, logger, db, d, s, tick)
 	// Les habitants vivent leur vie ; on ne bouscule pas les joueurs pour eux.
 	for i, n := range s.npcs {
 		if n.Visible && n.Body.Moving() && n.Body.Step(s.m, dt) {
@@ -338,7 +356,9 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	if tick%saveEvery == 0 && len(s.players) > 0 {
 		ps := make([]heroPos, 0, len(s.players))
 		for _, pl := range s.players {
-			ps = append(ps, pl.save())
+			if pl.fallen == 0 {
+				ps = append(ps, pl.save())
+			}
 		}
 		if err := saveHeroes(ctx, db, s.m.ID, ps); err != nil {
 			logger.Error("Sauvegarde périodique: %v", err)
@@ -462,6 +482,102 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		if json.Unmarshal(data, &in) == nil {
 			s.arena.AnswerDuel(pl.sid, in.OK)
 		}
+	case opVoie:
+		var in struct {
+			V int `json:"v"`
+		}
+		if json.Unmarshal(data, &in) != nil {
+			return
+		}
+		if err := s.arena.ChooseSpec(pl.sid, in.V); err != nil {
+			refuse(d, pl, err.Error())
+			return
+		}
+		pl.hero.Spec = in.V
+		_ = d.BroadcastMessage(opJoin, mustJSON(describe(pl)), nil, nil, true)
+	case opAttrs:
+		var in struct {
+			A world.Attrs `json:"a"`
+		}
+		if json.Unmarshal(data, &in) != nil {
+			return
+		}
+		if err := s.arena.SetAttrs(pl.sid, in.A); err != nil {
+			refuse(d, pl, err.Error())
+		}
+	case opMiroir:
+		w.miroir(d, s, pl, data)
+	case opFiche:
+		var in struct {
+			S int `json:"s"`
+		}
+		if json.Unmarshal(data, &in) != nil {
+			return
+		}
+		for _, o := range s.players {
+			if o.sid == in.S {
+				_ = d.BroadcastMessage(opFiche, mustJSON(fiche(o)), []runtime.Presence{pl.presence}, nil, true)
+			}
+		}
+	}
+}
+
+func refuse(d runtime.MatchDispatcher, pl *player, text string) {
+	_ = d.BroadcastMessage(opRefuse, mustJSON(map[string]string{"m": text}), []runtime.Presence{pl.presence}, nil, true)
+}
+
+// miroir : le miroir de Solenn, au temple. Le premier passage est offert.
+func (w *worldMatch) miroir(d runtime.MatchDispatcher, s *worldState, pl *player, data []byte) {
+	var in struct {
+		Look world.Look `json:"look"`
+	}
+	if json.Unmarshal(data, &in) != nil {
+		return
+	}
+	if in.Look.Marques == nil {
+		in.Look.Marques = [][2]int{}
+	}
+	if err := in.Look.Validate(); err != nil {
+		refuse(d, pl, err.Error())
+		return
+	}
+	f := pl.fighter
+	if math.Hypot(pl.body.X-s.arena.Temple[0], pl.body.Y-s.arena.Temple[1]) > world.VillageRadius {
+		refuse(d, pl, "Le miroir de Solenn est au temple.")
+		return
+	}
+	price := 0
+	if pl.hero.miroir > 0 {
+		price = world.MiroirGold
+	}
+	if f.Hero.Gold < price {
+		refuse(d, pl, "Le miroir demande une offrande de "+strconv.Itoa(price)+" or.")
+		return
+	}
+	f.Hero.Gold -= price
+	pl.hero.miroir++
+	pl.hero.Look = in.Look
+	f.Hero.TouchMe()
+	_ = d.BroadcastMessage(opJoin, mustJSON(describe(pl)), nil, nil, true)
+}
+
+// buryFallen : un héros hardcore tombé est effacé, puis renvoyé à l'écran des héros.
+func (w *worldMatch) buryFallen(ctx context.Context, logger runtime.Logger, db *sql.DB, d runtime.MatchDispatcher, s *worldState, tick int64) {
+	for id, pl := range s.players {
+		f := pl.fighter
+		if pl.fallen == 0 && f.Dead && f.Hero.Hardcore {
+			pl.fallen = tick
+			if err := deleteHero(ctx, db, pl.hero.ID); err != nil {
+				logger.Error("Effacement du héros hardcore %q: %v", pl.hero.Name, err)
+			}
+			logger.Info("Héros hardcore %q tombé pour toujours", pl.hero.Name)
+			_ = d.BroadcastMessage(opNotice, mustJSON(map[string]string{
+				"m": pl.hero.Name + " est " + [3]string{"tombé", "tombée", "tombé·e"}[pl.hero.Look.Accord] + " pour toujours. Erydor se souviendra de son nom."}), nil, nil, true)
+		}
+		if pl.fallen > 0 && tick-pl.fallen >= fallenDelay {
+			_ = d.MatchKick([]runtime.Presence{pl.presence})
+			w.removePlayer(ctx, logger, db, d, s, id)
+		}
 	}
 }
 
@@ -489,7 +605,9 @@ func (w *worldMatch) MatchTerminate(ctx context.Context, logger runtime.Logger, 
 	s := state.(*worldState)
 	ps := make([]heroPos, 0, len(s.players))
 	for _, pl := range s.players {
-		ps = append(ps, pl.save())
+		if pl.fallen == 0 {
+			ps = append(ps, pl.save())
+		}
 	}
 	if err := saveHeroes(ctx, db, s.m.ID, ps); err != nil {
 		logger.Error("Sauvegarde à l'arrêt: %v", err)
@@ -514,9 +632,30 @@ func (s *worldState) others(sessionID string) []runtime.Presence {
 func describe(pl *player) map[string]interface{} {
 	f := pl.fighter
 	return map[string]interface{}{
-		"s": pl.sid, "n": pl.hero.Name, "c": pl.hero.Color,
+		"s": pl.sid, "n": pl.hero.Name, "c": pl.hero.Look.Tunique,
 		"x": cent(pl.body.X), "y": cent(pl.body.Y), "d": pl.body.Dir,
 		"lv": f.Level, "hp": f.HP, "hpm": f.MaxHP, "fx": f.Bits(),
+		"r": f.Hero.Race, "cl": f.Hero.Class.ID, "v": f.Hero.Spec, "dieu": pl.hero.God,
+		"hc": f.Hero.Hardcore, "lk": pl.hero.Look,
+	}
+}
+
+// fiche : la fiche publique d'un héros (clic sur son nom).
+func fiche(pl *player) map[string]interface{} {
+	f := pl.fighter
+	hs := f.Hero
+	tro := 0
+	for _, n := range hs.Trophies {
+		tro += n
+	}
+	voie := ""
+	if hs.Spec >= 0 {
+		voie = hs.Class.Specs[hs.Spec].ID
+	}
+	return map[string]interface{}{
+		"s": pl.sid, "n": pl.hero.Name, "lv": f.Level, "r": hs.Race, "cl": hs.Class.ID, "v": voie,
+		"dieu": pl.hero.God, "f": world.Races[hs.Race].Faction, "hc": hs.Hardcore, "a": pl.hero.Look.Accord,
+		"at": hs.Attrs, "hpm": f.MaxHP, "tr": tro, "lk": pl.hero.Look,
 	}
 }
 
@@ -533,7 +672,8 @@ func describeMonster(f *world.Fighter) map[string]interface{} {
 func (pl *player) save() heroPos {
 	f := pl.fighter
 	return heroPos{ID: pl.hero.ID, X: pl.body.X, Y: pl.body.Y, Level: f.Level, XP: f.Hero.XP, Gold: f.Hero.Gold,
-		Potions: f.Hero.Potions, Trophies: f.Hero.Trophies}
+		Potions: f.Hero.Potions, Trophies: f.Hero.Trophies, Voie: f.Hero.Spec, Attrs: f.Hero.Attrs,
+		Quest: f.Hero.Quest, Look: pl.hero.Look, Miroir: pl.hero.miroir}
 }
 
 // describeNPC présente un habitant comme un héros, avec son identifiant

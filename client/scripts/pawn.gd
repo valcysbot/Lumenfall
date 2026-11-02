@@ -1,19 +1,27 @@
 class_name Pawn
 extends Node2D
-## Quelqu'un dans le monde : un héros (son allure en couches, HeroSprite), un
-## habitant (identifiant `npc`) ou un monstre (sorte `kind`, MonsterSprite).
-## Avec son ombre, son nom, ses bulles de chat, sa barre de vie et ses effets.
+## Quelqu'un dans le monde : un héros (son peuple et son allure, PeupleSprite),
+## un habitant (identifiant `npc`, HeroSprite) ou un monstre (sorte `kind`,
+## MonsterSprite). Avec son ombre, son nom, ses bulles de chat, sa barre de
+## vie, ses effets et, pour les héros, leur aura qui grandit tous les 10 niveaux.
 
-const FX_COLORS := [Color("f08a3c"), Color("7cc45a"), Color("f2d94e"), Color("6fa8e8"), Color("a070d8"), Color("e8c66a")]
-const FX_BRULURE := 1
-const FX_POISON := 2
-const FX_ETOURDI := 4
-const FX_RALENTI := 8
-const FX_FAIBLESSE := 16
-const FX_AURA := 32
-const FX_GARDE := 64
-const FX_INCANTE := 128
-const FX_PHASE2 := 256
+## Les effets, dans l'ordre du serveur (server/world/combat.go) : une pastille
+## pour ceux qu'on veut voir d'un coup d'œil.
+const FX_DOTS := {0: Color("f08a3c"), 1: Color("7cc45a"), 3: Color("6fa8e8"), 4: Color("a070d8"), 6: Color("bfe8ff"),
+	7: Color("d03a3a"), 8: Color("8a8a96"), 9: Color("3a3a5a"), 10: Color("c040c0"), 11: Color("f080b0"),
+	15: Color("e05a47"), 16: Color("a69c8a"), 17: Color("f2c14e"), 18: Color("86c493"), 19: Color("e86a5a"), 20: Color("e8c66a")}
+const FX_ETOURDI := 1 << 2
+const FX_AURA := 1 << 5
+const FX_BOUCLIER := 1 << 12
+const FX_FURTIF := 1 << 14
+const FX_COMPAGNON := 1 << 21
+const FX_GARDE := 1 << 24
+const FX_INCANTE := 1 << 25
+const FX_PHASE2 := 1 << 26
+## La couleur de l'aura, d'après le dieu du héros.
+const AURA_DIEUX := {"solenn": Color("f2d94e"), "maelis": Color("4fb3d9"), "brannoc": Color("c98a4a"),
+	"caelia": Color("bfe8f0"), "fergal": Color("f08a3c"), "seren": Color("8a6ad8"), "aurel": Color("f4f4f4"),
+	"selis": Color("c8d0e0"), "cernos": Color("6a9a4a")}
 
 var look := {}
 var hero_name := ""
@@ -24,7 +32,14 @@ var running := false
 var npc := ""        # identifiant d'habitant, vide pour un joueur
 var kind := ""       # sorte de monstre, vide pour un héros ou un habitant
 var elite := false
-var stature := 1.0   # les enfants sont plus petits
+var stature := 1.0   # les enfants sont plus petits ; les peuples ont leur taille
+# Les héros (Acte IV).
+var race := ""
+var classe := ""
+var voie := -1
+var dieu := ""
+var hardcore := false
+var allure := {}
 
 # Le combat.
 var level := 1
@@ -35,7 +50,8 @@ var dead := false
 var targeted := false
 var foe := false        # ton adversaire en duel
 
-var sprite: HeroSprite
+var sprite: Node2D     # PeupleSprite (héros) ou HeroSprite (habitants)
+var _floats := false   # les fées flottent
 var mon: MonsterSprite
 var torch: PointLight2D   # allumée par le ciel quand il fait nuit
 var _name_label: Label
@@ -57,6 +73,12 @@ func _ready() -> void:
 		mon.dir = dir
 		if kind == "grand_sanglier" and fx & FX_PHASE2:
 			mon.set_kind("grand_sanglier_efface")
+	elif race != "":
+		sprite = PeupleSprite.new()
+		add_child(sprite)
+		stature = Heros.echelle(race, allure)
+		_floats = Heros.peuple(race).get("flotte", false)
+		dress_hero()
 	else:
 		sprite = HeroSprite.new()
 		add_child(sprite)
@@ -89,10 +111,18 @@ func _ready() -> void:
 		die()
 
 
+## Habille (ou rhabille, après le miroir de Solenn) un héros.
+func dress_hero() -> void:
+	sprite.dress(Heros.couches(race, classe, allure))
+	sprite.dir = dir
+	sprite.scale = Vector2(stature, stature)
+	_refresh_name()
+
+
 func _head() -> float:
 	match kind:
 		"":
-			return 74.0 * stature
+			return 74.0 * stature + (12.0 if _floats else 0.0)
 		"corbeau_efface":
 			return 56.0
 		"grand_sanglier":
@@ -106,6 +136,12 @@ func _refresh_name() -> void:
 		t = "%s · niv. %d" % [hero_name, level]
 	if elite and kind != "":
 		t = "✦ " + t
+	if race != "":
+		t = Heros.faction_of(race).blason + " " + t
+		if hardcore:
+			t = "💀 " + t
+	if _name_label == null:
+		return
 	_name_label.text = t
 	_name_label.reset_size()
 	_name_label.position = Vector2(-_name_label.size.x / 2, -_head())
@@ -211,6 +247,10 @@ func _process(delta: float) -> void:
 	else:
 		sprite.dir = dir
 		sprite.set_motion(walking and not dead, running)
+		if _floats:
+			sprite.position.y = -12.0 + sin(_t * 2.2) * 2.5 if not dead else 0.0
+		# Furtif : on ne voit plus qu'une ombre qui glisse.
+		sprite.modulate.a = 0.35 if fx & FX_FURTIF else 1.0
 	if _flash > 0:
 		_flash -= delta
 		body.self_modulate = Color(2.2, 2.2, 2.2) if _flash > 0 else Color.WHITE
@@ -245,7 +285,42 @@ func _draw() -> void:
 	if fx & FX_AURA:
 		var k := 0.6 + 0.4 * sin(_t * 3)
 		draw_arc(Vector2.ZERO, 26, 0, TAU, 48, Color(UI.LUMEN, 0.55 * k), 3.0, true)
+	# L'aura du héros : discrète au niveau 10, plus large à chaque dizaine.
+	var tier := level / 10 if race != "" and not dead else 0
+	if tier > 0:
+		var ac: Color = AURA_DIEUX.get(dieu, UI.LUMEN)
+		for i in tier:
+			var rr := 20.0 + i * 5 + sin(_t * 2 + i) * 1.2
+			draw_arc(Vector2.ZERO, rr, 0, TAU, 48, Color(ac, 0.28 - i * 0.04), 2.0, true)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	if tier > 0:
+		var ac: Color = AURA_DIEUX.get(dieu, UI.LUMEN)
+		for i in tier * 2:
+			var ph := fposmod(_t * 0.35 + i * 0.37, 1.0)
+			var px := sin(i * 2.4 + _t) * 14.0
+			draw_circle(Vector2(px, -ph * 60.0 * stature), 1.4, Color(ac, 0.7 * (1.0 - ph)))
+	if race == "revenant" and not dead:
+		# Des flammes d'âme, bleues et douces, qui tournent autour du Revenant.
+		for i in 3:
+			var a := _t * 1.3 + i * TAU / 3
+			var p := Vector2(cos(a) * 16, -34 * stature + sin(a) * 6)
+			var fl := 2.2 + sin(_t * 9 + i) * 0.6
+			draw_circle(p, fl + 1.5, Color(0.55, 0.85, 1.0, 0.25))
+			draw_circle(p, fl, Color(0.75, 0.95, 1.0, 0.8))
+	if race == "lumin" and not dead:
+		var k := 0.5 + 0.2 * sin(_t * 2.5)
+		draw_circle(Vector2(0, -30 * stature), 18 * stature, Color(0.7, 0.9, 1.0, 0.12 * k))
+	if fx & FX_COMPAGNON and not dead:
+		# Le compagnon : une petite créature qui tourne autour du héros.
+		var a := _t * 1.6
+		var p := Vector2(cos(a) * 26, -10 + sin(a) * 10)
+		var cc := Color("c06ad8") if classe in ["invocateur", "necromancien"] else Color("d8a050")
+		draw_circle(p, 6, Color(0, 0, 0, 0.5))
+		draw_circle(p, 5, cc)
+		draw_circle(p + Vector2(-2, -1), 1.2, Color.WHITE)
+		draw_circle(p + Vector2(2, -1), 1.2, Color.WHITE)
+	if fx & FX_BOUCLIER and not dead:
+		draw_arc(Vector2(0, -30 * stature), 24 * stature, 0, TAU, 40, Color(0.75, 0.9, 1.0, 0.45), 2.0, true)
 	if elite and kind != "" and not dead:
 		# Le Doré scintille.
 		for i in 5:
@@ -268,14 +343,14 @@ func _draw() -> void:
 		draw_rect(Rect2(r.position, Vector2(w * _pct(), 5)), col)
 	# Les effets : une rangée de petites pastilles.
 	var dots: Array[int] = []
-	for e in 5:
+	for e in FX_DOTS:
 		if fx & (1 << e):
 			dots.append(e)
 	var x0 := -float(dots.size() - 1) * 5.0
 	for i in dots.size():
 		var p := Vector2(x0 + i * 10, -_head() - 16)
 		draw_circle(p, 4, Color(0, 0, 0, 0.7))
-		draw_circle(p, 3, FX_COLORS[dots[i]])
+		draw_circle(p, 3, FX_DOTS[dots[i]])
 	if fx & FX_ETOURDI:
 		for i in 3:
 			var a := _t * 5 + i * TAU / 3

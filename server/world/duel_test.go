@@ -6,7 +6,7 @@ import "testing"
 func duellistes(t *testing.T) (*Arena, *Fighter, *Fighter) {
 	t.Helper()
 	a, h := arene(t)
-	b := a.AddHero(2, "Brann", &Body{X: 113.5, Y: 98.5}, 1, 0, 0, MaxPotions, nil)
+	b := a.AddHero(2, "Brann", &Body{X: 113.5, Y: 98.5}, paladin(1))
 	return a, h, b
 }
 
@@ -128,8 +128,12 @@ func TestToutesLesCompetencesEnDuel(t *testing.T) {
 	combat(a, DuelCountdown+0.1)
 	face(h, b)
 	a.SetTarget(h.SID, b.SID)
-	h.Hero.Ferveur = MaxFerveur
-	for k := 1; k <= 5; k++ {
+	h.Level, b.Level = 9, 9
+	h.Restat()
+	b.Restat()
+	b.HP = b.MaxHP
+	for k := 1; k <= 7; k++ {
+		h.Hero.Res = 100
 		h.Hero.GCD = 0
 		a.UseSkill(h.SID, k)
 		combat(a, 1.6)
