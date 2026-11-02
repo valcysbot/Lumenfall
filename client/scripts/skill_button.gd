@@ -13,7 +13,8 @@ var round_shape := false
 var tint := UI.LUMEN
 var cd_end := 0.0       # en secondes (Time.get_ticks_msec() / 1000)
 var cd_total := 1.0
-var dim := false        # pas assez de Ferveur, plus de potions…
+var dim := false        # pas assez de ressource, plus de potions…
+var locked := false     # pas encore apprise (niveau, voie)
 var count := -1         # petit nombre en coin (potions), -1 : rien
 var pips := -1.0        # roulades disponibles (0 à 2), -1 : rien
 var glow := false       # le tutoriel montre ce bouton
@@ -40,6 +41,13 @@ func _ready() -> void:
 	_icon_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_icon_label)
+
+
+## Change l'icône (les compétences dépendent de la classe).
+func set_icon(p_icon: String) -> void:
+	icon = p_icon
+	if _icon_label != null:
+		_icon_label.text = icon
 
 
 static func now() -> float:
@@ -75,7 +83,7 @@ func _gui_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_press_t = maxf(0, _press_t - delta)
-	_icon_label.modulate = Color(1, 1, 1, 0.45 if dim else 1.0)
+	_icon_label.modulate = Color(1, 1, 1, 0.2 if locked else (0.45 if dim else 1.0))
 	queue_redraw()
 
 
@@ -120,6 +128,9 @@ func _draw() -> void:
 			draw_string_outline(font, c + Vector2(-tw.x / 2, fs * 0.35), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.9))
 			draw_string(font, c + Vector2(-tw.x / 2, fs * 0.35), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UI.PARCH)
 	var f := ThemeDB.fallback_font
+	if locked:
+		draw_string_outline(f, c + Vector2(-8, 6), "🔒", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 3, Color(0, 0, 0, 0.9))
+		draw_string(f, c + Vector2(-8, 6), "🔒", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.PARCH)
 	if key != "":
 		draw_string_outline(f, Vector2(5, 15), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 3, Color(0, 0, 0, 0.9))
 		draw_string(f, Vector2(5, 15), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UI.MUTED)

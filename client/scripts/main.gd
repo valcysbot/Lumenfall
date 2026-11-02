@@ -84,17 +84,24 @@ func _capture() -> void:
 		await get_tree().create_timer(1.5).timeout
 		if what == "create":
 			current._open_form(1)
-			current.name_edit.text = "D'Arvel"
-			current.form_color = 0
-			current._mark_swatch()
-			current._dress_preview()
+			await get_tree().process_frame
+			var m: Miroir = current.get_child(current.get_child_count() - 1)
+			m.form.race = args.get("race", "elfe")
+			m.form.classe = args.get("classe", "druide")
+			m.form.name = "D'Arvel"
+			m._show(args.get("onglet", "peuple"))
+			m._refresh()
+			await get_tree().create_timer(float(args.get("wait", "1"))).timeout
 		await _shoot(out)
 		return
 	var list := await Net.hero_list()
 	var heroes: Array = list.get("heroes", [])
 	var hero: Dictionary
 	if heroes.is_empty():
-		hero = await Net.hero_create(0, args.get("name", "Elowyn"), int(args.get("color", "6")))
+		var lk := Heros.allure_au_hasard(args.get("race", "humain"))
+		lk.tu = int(args.get("color", "6"))
+		hero = await Net.hero_create({"slot": 0, "name": args.get("name", "Elowyn"), "race": args.get("race", "humain"),
+			"classe": args.get("classe", "paladin"), "dieu": args.get("dieu", "solenn"), "hardcore": false, "look": lk})
 	else:
 		hero = heroes[0]
 	enter_world(hero)
@@ -154,6 +161,20 @@ func _capture() -> void:
 			else:
 				current._use_skill(int(k))
 		await get_tree().create_timer(float(args.get("combat", "2"))).timeout
+	if args.has("zoom"):
+		current._zoom_by(float(args.zoom))
+	if args.has("conseil"):
+		# « Répartition conseillée » puis « Valider », comme un joueur.
+		current._open_sheet()
+		current.sheet._render()
+		var c := Heros.classe(str(current._me.get("cl", "")))
+		current.sheet.attrs.emit(HeroSheet.conseil(c.conseil, int(current._me.get("pt", 0))))
+		await get_tree().create_timer(1.0).timeout
+		current._close_sheet()
+	if args.has("fiche"):
+		current._open_sheet()
+		current.sheet._tab = args.fiche
+		current.sheet._render()
 	if args.has("reste"):
 		await get_tree().create_timer(float(args.reste)).timeout
 	if args.has("chat"):

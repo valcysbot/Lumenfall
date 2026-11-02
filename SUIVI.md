@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte IV, les héros
+**Version actuelle :** V0.4 « Mille visages » (2 novembre 2026) · **Acte en cours :** Acte IV, les héros
 
 ---
 
@@ -13,7 +13,7 @@
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
-| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ en cours |
+| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ V0.4 livrée, talents à venir |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
 | VII | Donjons, raids, quêtes et histoire | ○ |
@@ -120,16 +120,20 @@
 ### ✓ Quêtes accomplies
 
 - ✓ **Le Conseil des Héros** : 40 questions en 7 chapitres, toutes répondues le 2 novembre 2026 ([archive](docs/conseil-des-heros.html)).
+- ✓ **La forge des peuples** (`tools/sprites/forge_peuples.py`, données dans `tools/sprites/peuples.py`) : 116 planches pour les 15 races. Trois corps (chair, pierre pour les Golems, cristal pour les Lumins) en 3 carrures, 16 visages, 6 marques, 16 traits (oreilles, cornes, bois, défenses, ailes, queues, nageoires, mousse, éclats), 20 coupes, 6 barbes, les habits et 20 armes, plus l'animation « tir ». Les planches ne portent pas de couleurs : un petit shader les teint (24 peaux par race, 12 yeux, 24 couleurs de cheveux, 12 tuniques). Planches de 32 images de large, sous la limite des téléphones.
+- ✓ **Le miroir de création** (`client/scripts/miroir.gd`) : peuple (par faction, avec son blason), homme / femme / autre et les accords (il, elle, iel), taille en 5 crans et carrure, visage, peau, yeux, cheveux, barbe, marques empilées (3 au plus), tunique, classe (avec ses compétences et ses voies), dieu, Hardcore, nom. Le reflet tourne sur lui-même ; les Fées flottent.
+- ✓ **Le miroir de Solenn** : près de Sœur Clémence, le bouton 🪞 Miroir rouvre le miroir pour changer d'allure. Le premier passage est offert, ensuite 50 or.
+- ✓ **Les 17 classes** (`server/world/classes.go`, moteur dans `server/world/skills.go`) : chacune sa ressource, ses armes et 7 compétences (niveaux 1 à 9), plus l'ultime de sa voie sur la touche 8. 22 effets (gel, saignement, silence, peur, charme, bouclier, régénération, furtivité, rage, provocation, compagnons…). Les compagnons (squelettes, esprits, tourelles, dragonneau, meute) frappent la cible du héros.
+- ✓ **Les 51 voies** : au niveau 10, l'épreuve de la voie (vaincre 5 Effacés), puis le choix dans la fiche du héros. Chaque voie donne un bonus permanent et son ultime. On peut en changer au temple contre 20 or par niveau.
+- ✓ **Les 9 attributs** : 5 points par niveau, bouton ⭐ « Répartition conseillée », tout se redistribue gratuitement jusqu'au niveau 10. Chaque peuple a son petit bonus (+1 dans un attribut, ou un peu de résistance à un élément ; les Humains ont +1 en Chance).
+- ✓ **La gloire** : une aura discrète aux couleurs du dieu, qui grandit tous les 10 niveaux ; le blason de faction devant le nom ; la fiche publique d'un héros (« 📜 Sa fiche » dans le cadre de la cible).
+- ✓ **Hardcore** : une seule vie. Le héros tombé est effacé de la base, tout le monde l'apprend dans le chat, et le joueur revient à l'écran des héros.
+- ✓ **Nouveau départ** : les héros d'avant l'Acte IV sont effacés au premier démarrage du serveur V0.4 (choix d'Elowan). Le serveur demande au moins la v0.4.0.
+- ✓ **L'équilibrage simulé des 17 classes** (`server/world/equilibre_test.go`) : 10 combats automatiques par camp et par classe ; chaque classe bat ses sangliers au niveau 1 au moins 8 fois sur 10, et les loups, loups effacés et corbeaux effacés aux bons niveaux.
 
 ### ✱ Quêtes en cours
 
-- ✱ **La forge des peuples** : les 15 races dessinées par code, chacune avec sa silhouette et sa taille (de 60 % à 120 %), 16 visages, 24 teintes de peau, 12 couleurs d'yeux et des marques en couches, 20 coupes et 24 couleurs de cheveux, barbes et moustaches.
-- ○ **Le miroir de création** : homme, femme ou autre (avec ses accords), taille (5 crans) et carrure (3), dieu servi, blason de faction, case Hardcore.
-- ○ **Les 17 classes, toutes d'un coup** : une ressource et des armes propres à chacune, 8 compétences dont une ultime au niveau 10, et les 51 voies à choisir au niveau 10 après une quête de classe.
-- ○ **Les 9 attributs** : 5 points par niveau, répartition conseillée, remise à zéro gratuite jusqu'au niveau 10.
-- ○ **La gloire** : aura qui grandit tous les 10 niveaux, fiche publique en jeu.
-- ○ **Nouveau départ** : tous les héros actuels sont effacés à l'arrivée de la V0.4 (choix d'Elowan).
-- ○ **Les talents** : à la fin de l'Acte IV, une fois les 17 classes en place.
+- ○ **Les talents** : à la fin de l'Acte IV, une fois les 17 classes essayées en vrai.
 
 ### 🗡️ Les 51 voies
 
@@ -162,6 +166,12 @@
 - **Hardcore sans filet** (choix d'Elowan) : un héros hardcore qui meurt est supprimé pour de bon.
 - **Beaucoup de dessins** : 16 visages × 24 teintes × 20 coupes × 24 couleurs par race. La forge par code les fabrique pièce par pièce (les couleurs sont des teintures de palette), mais les planches devront être découpées pour tenir sous 4 096 pixels sur téléphone.
 - **Fées très petites** : à 60 %, une Fée fait environ 19 pixels de haut ; son nom et son cercle de sélection restent à la taille normale pour qu'on puisse la viser.
+- **Équilibrage à l'aveugle, puissance 17** : les chiffres viennent des combats simulés, pas de vraies parties. Seul contre le Grand Sanglier, les classes qui se soignent ou se drainent (Paladin, Prêtre, Druide, Nécromancien, Alchimiste, Moine) gagnent presque toujours, alors que la plupart des classes de dégâts perdent : c'est voulu pour un boss de groupe, mais dis-moi ce que vous en pensez.
+- **Deux retouches après les simulations** : la Frappe héroïque du Guerrier rend 40 % de ses dégâts en vie, et la Lumière de Solenn du Paladin s'apprend dès le niveau 1 (le Coup de bouclier passe au niveau 2). Sans ça, ces deux classes perdaient trop souvent contre les sangliers.
+- **Homme, femme, autre** : le choix change les accords du jeu (« tombé », « tombée », « tombé·e ») et les noms (Guerrière, Elfe noire…), pas encore la silhouette ; les carrures et les coupes font la différence à l'écran.
+- **Formes et compagnons simplifiés** : la Forme d'ours ou de lynx du Druide et le Pilote d'armure changent les chiffres, pas encore le dessin. Les compagnons sont une petite créature qui tourne autour du héros, pas encore un monstre à part entière.
+- **Les habitants** gardent leurs anciennes planches (dessinées pour l'Acte II).
+- **Hardcore** : l'effacement est testé dans les simulations et sur un serveur local, pas encore avec une vraie mort sur le serveur de test.
 
 ---
 
@@ -276,6 +286,20 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.4 · « Mille visages » (2 novembre 2026)
+
+- 🆕 **Le miroir de création !** 15 peuples, 17 classes, et ton héros à toi : taille, carrure, visage, peau, yeux, coupe, couleur de cheveux, barbe et moustache, marques empilées, tunique. Homme, femme ou autre, et tu choisis comment le jeu parle de toi : il, elle ou iel.
+- 🆕 **17 classes, 8 compétences chacune** (touches 1 à 8 ; sur téléphone, deux rangées d'éventail). Chaque classe a sa ressource : la Rage du Guerrier, la Furie du Berserker, les Âmes du Nécromancien, la Vapeur de l'Ingénieur, l'Harmonie du Barde…
+- 🆕 **Les voies** : au niveau 10, vaincs 5 Effacés, puis choisis l'une des 3 voies de ta classe et son **ultime** (touche 8).
+- 🆕 **📜 Ta fiche** (touche C) : place tes 5 points par niveau dans les 9 attributs, ou laisse faire la ⭐ répartition conseillée.
+- 🆕 **Ton dieu et ta faction** : une aura à ses couleurs qui grandit tous les 10 niveaux, et le blason de ta faction devant ton nom. « 📜 Sa fiche » montre celle des autres héros.
+- 🆕 **💀 Hardcore** : une seule vie. Si tu tombes, ton héros est effacé pour toujours.
+- 🆕 **Le miroir de Solenn**, près de Sœur Clémence : change d'allure (gratuit la première fois, puis 50 or).
+- ✨ Les Fées flottent, les Revenants ont des flammes d'âme, les Lumins brillent doucement, et les compagnons tournent autour de leur maître.
+- ⚠️ **Nouveau départ** : tous les héros d'avant sont effacés. Il faut la v0.4.0 pour entrer dans le monde.
+
+Captures : [le miroir de création](docs/captures/v0.4/miroir.png) · [les 15 peuples](docs/captures/v0.4/quinze-peuples.png) · [quatre héros sur la place](docs/captures/v0.4/groupe.png) · [premier combat](docs/captures/v0.4/combat.png) · [les attributs](docs/captures/v0.4/fiche.png) · [les voies](docs/captures/v0.4/voie.png) · [sur téléphone](docs/captures/v0.4/telephone.png).
 
 ### V0.3.2 · « Premier sang » (1er novembre 2026)
 

@@ -63,6 +63,11 @@ var joystick: TouchStick
 var run_btn: Button
 var settings: PanelContainer
 var toast: Label
+var sheet: HeroSheet        # la fiche du héros ouverte (C), ou nil
+var miroir_btn: Button
+var _me := {}               # le dernier état privé du héros (opMe)
+var _miroir: Miroir
+const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
 
 var _last_dir := Vector2.ZERO
 var _last_run := false
@@ -141,6 +146,15 @@ func _build_hud() -> void:
 	wave_btn.tooltip_text = "Touche H"
 	wave_btn.pressed.connect(_wave)
 	buttons.add_child(wave_btn)
+	var sheet_btn := UI.button("📜 Héros")
+	sheet_btn.tooltip_text = "Tes attributs et ta voie (touche C)"
+	sheet_btn.pressed.connect(_open_sheet)
+	buttons.add_child(sheet_btn)
+	miroir_btn = UI.button("🪞 Miroir")
+	miroir_btn.tooltip_text = "Le miroir de Solenn : change ton allure"
+	miroir_btn.pressed.connect(_open_miroir)
+	miroir_btn.visible = false
+	buttons.add_child(miroir_btn)
 	var chat_btn := UI.button("💬 Parler")
 	chat_btn.pressed.connect(_open_chat)
 	buttons.add_child(chat_btn)
@@ -176,6 +190,7 @@ func _build_hud() -> void:
 	combat.next_target.connect(_next_target)
 	combat.block.connect(_set_block)
 	combat.challenge.connect(func(): Net.send(Net.OP_CHALLENGE, {"t": target_sid}))
+	combat.fiche.connect(func(): Net.send(Net.OP_FICHE, {"s": target_sid}))
 	chat_log = VBoxContainer.new()
 	chat_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chat_log.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 14)
@@ -437,7 +452,18 @@ func _on_state(op: int, d: Dictionary) -> void:
 				if sid == my_sid:
 					combat.set_vitals(int(v[1]), int(v[2]), int(v[3]), int(v[4]))
 		Net.OP_ME:
+			_me.merge(d, true)
 			combat.set_me(d)
+			if sheet != null and is_instance_valid(sheet) and sheet.public.is_empty():
+				sheet.update_me(_me)
+		Net.OP_FICHE:
+			_close_sheet()
+			sheet = HeroSheet.new()
+			sheet.public = d
+			sheet.closed.connect(func(): sheet = null)
+			hud.get_child(0).add_child(sheet)
+		Net.OP_VOIE_OUT:
+			_on_voie(d)
 		Net.OP_CAST:
 			if int(d.s) == my_sid:
 				combat.start_cast(int(d.k), int(d.ms))
@@ -467,9 +493,22 @@ func _on_state(op: int, d: Dictionary) -> void:
 func _add_pawn(p: Dictionary) -> void:
 	var sid := int(p.s)
 	if pawns.has(sid):
+		# Un héros déjà là a changé d'allure (miroir de Solenn) ou de voie.
+		var old: Pawn = pawns[sid]
+		if p.has("r") and old.race != "":
+			old.allure = p.get("lk", {})
+			old.voie = int(p.get("v", -1))
+			old.stature = Heros.echelle(old.race, old.allure)
+			old.dress_hero()
 		return
 	var pawn := Pawn.new()
-	pawn.look = HeroSprite.look_for(p.n, int(p.c))
+	if p.has("r"):
+		pawn.race = str(p.r)
+		pawn.classe = str(p.get("cl", ""))
+		pawn.voie = int(p.get("v", -1))
+		pawn.dieu = str(p.get("dieu", ""))
+		pawn.hardcore = bool(p.get("hc", false))
+		pawn.allure = p.get("lk", {})
 	if p.has("npc"):
 		var who := DialogueBox.info(map_id, p.npc)
 		pawn.npc = p.npc
@@ -495,6 +534,10 @@ func _add_pawn(p: Dictionary) -> void:
 		camera.position = pawn.position
 		camera.reset_smoothing()
 		combat.set_vitals(pawn.hp, pawn.hp_max, pawn.fx, pawn.level)
+		combat.hardcore = pawn.hardcore
+		combat.accord = int(pawn.allure.get("a", 0))
+		if pawn.classe != "":
+			tutorial.shield = bool(Heros.classe(pawn.classe).bouclier)
 	if sid == target_sid:
 		pawn.targeted = true
 	_update_info()
@@ -519,6 +562,7 @@ func _process(delta: float) -> void:
 	_info_t += delta
 	if _info_t > 1.0:
 		_info_t = 0.0
+		miroir_btn.visible = _near_npc("clemence", MIROIR_REACH)
 		_update_info()
 		_maybe_tutorial()
 	if my_sid != -1 and pawns.has(my_sid):
@@ -817,15 +861,20 @@ func _set_tuto_done(on: bool) -> void:
 	cfg.set_value("jeu", "tuto_combat", on)
 	cfg.save(WorldSky.SETTINGS)
 
-## Les touches de combat : 1 à 5, R (potion), Espace (roulade), Tab, Échap.
+## Les touches de combat : 1 à 8, R (potion), Espace (roulade), Tab, Échap, C (ta fiche).
 func _combat_key(event: InputEventKey) -> bool:
 	if dialogue.visible:
 		return false   # 1 à 4 choisissent une réponse
 	var k := event.physical_keycode
-	if k >= KEY_1 and k <= KEY_5:
+	if k >= KEY_1 and k <= KEY_8:
 		_use_skill(k - KEY_1 + 1)
-	elif k >= KEY_KP_1 and k <= KEY_KP_5:
+	elif k >= KEY_KP_1 and k <= KEY_KP_8:
 		_use_skill(k - KEY_KP_1 + 1)
+	elif k == KEY_C:
+		if sheet != null:
+			_close_sheet()
+		else:
+			_open_sheet()
 	elif k == KEY_R:
 		_potion()
 	elif k == KEY_SPACE:
@@ -844,8 +893,9 @@ func _use_skill(k: int) -> void:
 		return
 	if k == 1:
 		_tuto("frappe")
-	# Frappe sacrée ou coup de bouclier sur un monstre trop loin : on y va d'abord.
-	if (k == 1 or k == 2) and _hostile(target_sid) and not _in_reach(target_sid):
+	# Une compétence au corps à corps sur un monstre trop loin : on y va d'abord.
+	var sk := Heros.competence(str(_me.get("cl", "")), k, int(_me.get("v", -1)))
+	if not sk.is_empty() and sk.cible == "ennemi" and float(sk.portee) == 0 and _hostile(target_sid) and not _in_reach(target_sid):
 		_hunt = target_sid
 		_hunt_t = -1e9
 	Net.send(Net.OP_SKILL, {"k": k})
@@ -1026,13 +1076,20 @@ func _on_death(sid: int, killer: int, flags: int) -> void:
 	if flags & 32 and (killer == my_sid or _near(sid, 12)):
 		_slowmo = 0.6
 		_shake = 0.3
+	var accord := int(p.allure.get("a", 0))
+	var tombe: String = ["tombé", "tombée", "tombé·e"][clampi(accord, 0, 2)]
 	if sid == my_sid:
 		combat.show_death(true)
 		_hunt = 0
-		if braise != null:
+		if flags & 64:
+			# Hardcore : le héros est effacé ; retour à l'écran des héros.
+			if braise != null:
+				braise.say("Braise pleure une petite flamme : « Je me souviendrai de toi. »")
+			get_tree().create_timer(6.0).timeout.connect(func(): quit_world.emit())
+		elif braise != null:
 			braise.say("Braise : « Non ! Je reste avec toi jusqu'au temple. »")
-	elif p.kind == "":
-		_add_chat_line("", "%s est tombé au combat." % p.hero_name, true)
+	elif p.kind == "" and not flags & 64:
+		_add_chat_line("", "%s est %s au combat." % [p.hero_name, tombe], true)
 
 
 func _on_level(sid: int, lv: int) -> void:
@@ -1163,3 +1220,72 @@ func _on_duel(d: Dictionary) -> void:
 						braise.say("Braise : « Pas grave. On s'entraîne sur les sangliers ? »")
 				else:
 					_show_toast(line)
+
+
+# --- Le héros : fiche, voie, miroir de Solenn (Acte IV) --------------------------
+
+func _open_sheet() -> void:
+	_close_sheet()
+	sheet = HeroSheet.new()
+	sheet.me = _me
+	if pawns.has(my_sid):
+		sheet.hero = {"race": pawns[my_sid].race}
+	sheet.attrs.connect(func(a): Net.send(Net.OP_ATTRS, {"a": a}))
+	sheet.voie.connect(func(i): Net.send(Net.OP_VOIE, {"v": i}))
+	sheet.closed.connect(func(): sheet = null)
+	hud.get_child(0).add_child(sheet)
+
+
+func _close_sheet() -> void:
+	if sheet != null and is_instance_valid(sheet):
+		sheet.queue_free()
+	sheet = null
+
+
+func _near_npc(id: String, reach: float) -> bool:
+	for sid in pawns:
+		if pawns[sid].npc == id:
+			return _near(sid, reach)
+	return false
+
+
+func _open_miroir() -> void:
+	if _miroir != null or not pawns.has(my_sid):
+		return
+	var me: Pawn = pawns[my_sid]
+	_miroir = Miroir.new()
+	_miroir.mode = "solenn"
+	_miroir.price = 0 if int(_me.get("mir", 0)) == 0 else int(Heros.data().miroir)
+	_miroir.form = {"race": me.race, "classe": me.classe, "look": me.allure.duplicate(true)}
+	_miroir.cancelled.connect(func():
+		_miroir.queue_free()
+		_miroir = null)
+	_miroir.done.connect(func(form):
+		Net.send(Net.OP_MIROIR, {"look": form.look})
+		_miroir.queue_free()
+		_miroir = null
+		_show_toast("🪞 Le miroir de Solenn scintille…"))
+	hud.get_child(0).add_child(_miroir)
+
+
+func _on_voie(d: Dictionary) -> void:
+	var n := int(d.get("n", 0))
+	var mx := int(d.get("max", 5))
+	match str(d.k):
+		"quete":
+			_show_toast("🌟 Les voies s'ouvrent ! Épreuve : vaincs %d Effacés." % mx)
+			_add_chat_line("", "🌟 L'épreuve de la voie commence : vaincs %d Effacés (%d / %d)." % [mx, n, mx], true)
+			if braise != null:
+				braise.say("Braise : « Niveau 10 ! Les Effacés t'attendent, et ta voie aussi. »")
+		"progres":
+			_add_chat_line("", "🗡️ Effacé vaincu : %d / %d." % [n, mx], true)
+		"pret":
+			_show_toast("✨ Épreuve réussie ! Appuie sur C pour choisir ta voie.")
+			_add_chat_line("", "✨ L'épreuve est réussie ! Ouvre ta fiche (📜 Héros, touche C) pour choisir ta voie.", true)
+		"choisie":
+			var v := Heros.competence(str(_me.get("cl", "")), 8, n)
+			for sp in Heros.classe(str(_me.get("cl", ""))).voies:
+				if sp.ultime.id == v.get("id", ""):
+					_show_toast("🌟 Tu suis la voie : %s ! Ultime : %s (touche 8)." % [sp.nom, sp.ultime.nom])
+			if braise != null:
+				braise.say("Braise fait trois loopings : « Quelle voie ! »")

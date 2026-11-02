@@ -47,7 +47,17 @@ pip install numpy pillow
 python3 tools/sprites/forge_heros.py --apercu   # environ 3 minutes
 python3 tools/sprites/forge_heros.py --pieces robe chapeau   # seulement quelques pièces
 python3 tools/sprites/forge_braise.py           # Braise, le petit dragon
+python3 tools/sprites/forge_peuples.py --apercu # les 15 peuples (Acte IV) : environ 2 heures
+python3 tools/sprites/forge_peuples.py --pieces cheveux_03 arme_arc   # seulement quelques pièces
 ```
+
+Les planches des peuples n'ont pas de couleurs : le rouge de chaque pixel code un matériau et un ton, et `client/scripts/peuple_sprite.gd` les teint avec les couleurs du miroir. Les peuples, les peaux et les palettes : `tools/sprites/peuples.py`.
+
+## Les classes
+
+- Les 17 classes, leurs compétences et leurs 51 voies : `server/world/classes.go` (des données) ; le moteur qui les fait tourner : `server/world/skills.go` ; attributs, peuples et dieux : `server/world/stats.go`.
+- Le client lit une copie : `client/data/heros/classes.json`. Après avoir touché aux classes : `cd server && LF_ECRIRE=1 go test ./world -run DonneesDuClient` (un test vérifie que la copie est à jour).
+- Capture du miroir : `--capture=create --race=elfe --classe=druide --onglet=allure` ; d'un héros : `--capture=world --race=drakeide --classe=guerrier --fiche=voie`.
 
 ## Les habitants
 
@@ -56,7 +66,7 @@ python3 tools/sprites/forge_braise.py           # Braise, le petit dragon
 
 ## Le combat et les monstres
 
-- Les règles (éléments, effets, Paladin, menace, mort, XP) : `server/world/combat.go` et `server/world/arena.go` ; le Grand Sanglier : `server/world/boss.go`.
+- Les règles (éléments, effets, menace, mort, XP) : `server/world/combat.go` et `server/world/arena.go` ; le Grand Sanglier : `server/world/boss.go`.
 - Le bestiaire (vie, dégâts, vitesse, butin) : `server/world/monster.go`. Où vivent les monstres : `server/world/maps/glennmor.monstres.json` (le serveur vérifie au démarrage que chaque camp est praticable).
 - Les dessins des bêtes : `python3 tools/sprites/forge_betes.py` (environ 3 minutes), ou seulement quelques-unes : `python3 tools/sprites/forge_betes.py loup sanglier`.
 - Capture d'un combat : `--capture=world --cible=sanglier --competences=1,5,roulade` (ajoute `--tactile` pour la disposition téléphone).

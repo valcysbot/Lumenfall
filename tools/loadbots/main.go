@@ -31,7 +31,7 @@ var (
 	serveur = flag.String("serveur", "http://127.0.0.1:7350", "adresse du serveur Nakama")
 	cle     = flag.String("cle", "lumenfall-dev-key", "clé serveur Nakama (socket.server_key)")
 	prefixe = flag.String("prefixe", "bot", "préfixe des comptes de test")
-	version = flag.String("version", "0.3.0", "version du jeu annoncée (celle de client/project.godot)")
+	version = flag.String("version", "0.4.0", "version du jeu annoncée (celle de client/project.godot)")
 )
 
 var (
@@ -102,7 +102,7 @@ func runBot(i int, stop time.Time) error {
 		var err error
 		for try := 0; try < 6; try++ {
 			name := botName(i + try*1000 + int(fnv(*prefixe)%997)*7)
-			if err = rpc(token, "hero_create", map[string]interface{}{"slot": 0, "name": name, "color": i % 12}, &h); err == nil {
+			if err = rpc(token, "hero_create", heroForm(i, name), &h); err == nil {
 				break
 			}
 		}
@@ -261,4 +261,16 @@ func do(req *http.Request, out interface{}) error {
 		return fmt.Errorf("HTTP %d : %s", res.StatusCode, strings.TrimSpace(string(b)))
 	}
 	return json.Unmarshal(b, out)
+}
+
+// heroForm : ce que le miroir de création envoie (Acte IV), varié d'un bot à l'autre.
+func heroForm(i int, name string) map[string]interface{} {
+	races := []string{"humain", "nain", "halfelin", "gnome", "golem", "elfe", "fee", "felin", "homme_bete", "sirene",
+		"orque", "drakeide", "revenant", "elfe_noir", "lumin"}
+	classes := []string{"guerrier", "berserker", "lancier", "chevalier_dragon", "paladin", "moine", "mage", "necromancien",
+		"invocateur", "alchimiste", "ingenieur", "pretre", "druide", "chaman", "barde", "voleur", "archer"}
+	look := map[string]interface{}{"g": i % 3, "a": i % 3, "t": 2, "k": i % 3, "v": i % 16, "p": i % 24, "y": i % 12,
+		"h": i % 20, "hc": i % 24, "b": -1, "m": [][2]int{}, "tu": i % 12}
+	return map[string]interface{}{"slot": 0, "name": name, "race": races[i%len(races)], "classe": classes[i%len(classes)],
+		"dieu": "solenn", "hardcore": false, "look": look}
 }

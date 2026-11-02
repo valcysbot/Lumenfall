@@ -1,9 +1,9 @@
 class_name CombatHud
 extends Control
-## L'interface de combat : ta vie, ta Ferveur, tes roulades, ta barre de
-## compétences (touches 1 à 5, R pour la potion), le cadre de ta cible, la
-## barre d'incantation et l'écran « Tu es tombé ». Sur téléphone, les
-## compétences forment un éventail sous le pouce droit.
+## L'interface de combat : ta vie, la ressource de ta classe, tes roulades, ta
+## barre de compétences (touches 1 à 8, la 8 étant l'ultime de ta voie ; R pour
+## la potion), le cadre de ta cible, la barre d'incantation et l'écran « Tu es
+## tombé ». Sur téléphone, les compétences forment un éventail sous le pouce droit.
 
 signal skill(k: int)
 signal potion
@@ -11,21 +11,20 @@ signal roll
 signal next_target
 signal block(on: bool)
 signal challenge
+signal fiche
 
-## Les compétences du Paladin (même ordre que le serveur, server/world/arena.go).
-const SKILLS := [
-	{},
-	{"nom": "Frappe sacrée", "icone": "⚔️", "cd": 4.0, "cout": 0, "aide": "Un coup de lumière au corps à corps. +15 Ferveur."},
-	{"nom": "Coup de bouclier", "icone": "🛡️", "cd": 10.0, "cout": 0, "aide": "Étourdit 2 s et attire la colère du monstre."},
-	{"nom": "Lumière de Solenn", "icone": "💛", "cd": 6.0, "cout": 30, "aide": "Soigne ta cible alliée, ou toi. 1,5 s d'incantation : ne bouge pas !"},
-	{"nom": "Aura de Solenn", "icone": "🌟", "cd": 30.0, "cout": 0, "aide": "12 s : ton groupe encaisse mieux et frappe plus fort."},
-	{"nom": "Jugement de lumière", "icone": "☀️", "cd": 8.0, "cout": 40, "aide": "Frappe à distance et embrase la cible."},
-]
-const FX_NAMES := ["🔥 Brûlure", "🧪 Poison", "💫 Étourdi", "🐌 Ralenti", "💔 Faiblesse", "🌟 Aura"]
+const NSKILLS := 8
 
 var touch := false
-var buttons := {}     # 1..5, "potion", "roulade", "cible", "garde"
-var ferveur := 0
+var buttons := {}     # 1..8, "potion", "roulade", "cible", "garde"
+var classe := ""
+var voie := -1
+var accord := 0
+var hardcore := false
+var res := 0
+var res_max := 100
+var overheat := 0.0
+var skills := []      # 0 : rien, puis les 8 compétences de la classe (Heros.competence)
 var endurance := 2.0
 var potions := 5
 var level := 1
@@ -41,7 +40,8 @@ var in_duel := false
 var _frame: PanelContainer
 var _hp_bar: ProgressBar
 var _hp_text: Label
-var _fer_bar: ProgressBar
+var _res_bar: ProgressBar
+var _res_text: Label
 var _xp_bar: ProgressBar
 var _lvl_text: Label
 var _fx_text: Label
@@ -50,6 +50,7 @@ var _target_name: Label
 var _target_bar: ProgressBar
 var _target_fx: Label
 var _duel_btn: Button
+var _fiche_btn: Button
 var _cast_box: PanelContainer
 var _cast_bar: ProgressBar
 var _cast_label: Label
@@ -114,10 +115,19 @@ func _build_frame() -> void:
 	_hp_text.add_theme_constant_override("outline_size", 4)
 	hp_row.add_child(_hp_text)
 	col.add_child(hp_row)
-	_fer_bar = _bar(UI.LUMEN, 9, 250)
-	_fer_bar.max_value = 100
-	_fer_bar.tooltip_text = "Ferveur : elle monte quand tu frappes ou encaisses."
-	col.add_child(_fer_bar)
+	var res_row := Control.new()
+	res_row.custom_minimum_size = Vector2(250, 14)
+	_res_bar = _bar(UI.LUMEN, 14, 250)
+	_res_bar.max_value = 100
+	res_row.add_child(_res_bar)
+	_res_text = UI.label("", 11)
+	_res_text.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_res_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_res_text.size = Vector2(250, 14)
+	_res_text.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_res_text.add_theme_constant_override("outline_size", 3)
+	res_row.add_child(_res_text)
+	col.add_child(res_row)
 	_xp_bar = _bar(Color("8a6ad8"), 5, 250)
 	col.add_child(_xp_bar)
 	_fx_text = UI.label("", 14, UI.MUTED)
@@ -150,6 +160,10 @@ func _build_target() -> void:
 	_duel_btn.tooltip_text = "Un combat pour l'honneur : personne ne meurt."
 	_duel_btn.pressed.connect(func(): challenge.emit())
 	col.add_child(_duel_btn)
+	_fiche_btn = UI.button("📜 Sa fiche")
+	_fiche_btn.focus_mode = Control.FOCUS_NONE
+	_fiche_btn.pressed.connect(func(): fiche.emit())
+	col.add_child(_fiche_btn)
 	_target_box.visible = false
 	add_child(_target_box)
 
@@ -179,16 +193,15 @@ func _build_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.add_theme_constant_override("separation", 6)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for k in range(1, 6):
-		var s: Dictionary = SKILLS[k]
-		bar.add_child(_make(k, s.icone, str(k), 60, false, "%s (%d)\n%s" % [s.nom, k, s.aide]))
-	bar.add_child(_make("potion", "🧪", "R", 60, false, "Potion de soin (R)\nRend 40 % de ta vie. Recharge 30 s."))
-	bar.add_child(_make("roulade", "💨", "Esp.", 60, false, "Roulade (Espace)\nTu esquives tout pendant la roulade. Deux d'affilée, puis tu souffles."))
+	for k in range(1, NSKILLS + 1):
+		bar.add_child(_make(k, "", str(k), 56, false, ""))
+	bar.add_child(_make("potion", "🧪", "R", 56, false, "Potion de soin (R)\nRend 40 % de ta vie. Recharge 30 s."))
+	bar.add_child(_make("roulade", "💨", "Esp.", 56, false, "Roulade (Espace)\nTu esquives tout pendant la roulade. Deux d'affilée, puis tu souffles."))
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 14)
 	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(bar)
-	_tip = UI.label("Clic : viser · Tab : cible suivante · clic droit maintenu : bouclier", 13, UI.MUTED)
+	_tip = UI.label("Clic : viser · Tab : cible suivante · C : ton héros", 13, UI.MUTED)
 	_tip.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_tip.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 82)
 	_tip.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -202,19 +215,22 @@ func _build_bar() -> void:
 func _build_fan() -> void:
 	var fan := Control.new()
 	fan.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fan.custom_minimum_size = Vector2(330, 300)
+	fan.custom_minimum_size = Vector2(330, 360)
 	fan.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
 	fan.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	fan.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(fan)
-	var center := Vector2(250, 200)
+	var center := Vector2(250, 230)
 	var big := _make("roulade", "💨", "", 96, true, "Roulade")
 	big.position = center - Vector2(48, 48)
 	fan.add_child(big)
-	for k in range(1, 6):
-		var a := deg_to_rad(180.0 + (k - 1) * 27.0)
-		var b := _make(k, SKILLS[k].icone, "", 70, true, SKILLS[k].nom)
-		b.position = center + Vector2(cos(a), sin(a)) * 150 - Vector2(35, 35)
+	# Deux arcs : les compétences 1 à 5 tout près du pouce, 6 à 8 (et l'ultime) plus haut.
+	for k in range(1, NSKILLS + 1):
+		var inner := k <= 5
+		var a := deg_to_rad(180.0 + (k - 1) * 22.5) if inner else deg_to_rad(192.0 + (k - 6) * 33.0)
+		var r := 150.0 if inner else 228.0
+		var b := _make(k, "", "", 58, true, "")
+		b.position = center + Vector2(cos(a), sin(a)) * r - Vector2(29, 29)
 		fan.add_child(b)
 	var extras := [["cible", "🎯", Vector2(-232, 70)], ["garde", "🛡️", Vector2(-160, 78)], ["potion", "🧪", Vector2(-88, 76)]]
 	for e in extras:
@@ -253,6 +269,7 @@ func _build_death() -> void:
 	col.add_theme_constant_override("separation", 8)
 	_death.add_child(col)
 	var title := UI.label("💀 Tu es tombé…", 30, UI.DANGER)
+	title.name = "Title"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(title)
 	_death_label = UI.label("", 17)
@@ -266,7 +283,15 @@ func _build_death() -> void:
 # --- Ce que le serveur raconte -----------------------------------------------
 
 func set_me(d: Dictionary) -> void:
-	ferveur = int(d.get("f", ferveur))
+	var cl := str(d.get("cl", classe))
+	var v := int(d.get("v", voie))
+	if cl != classe or v != voie:
+		classe = cl
+		voie = v
+		_apply_class()
+	res = int(d.get("r", res))
+	res_max = maxi(1, int(d.get("rm", res_max)))
+	overheat = float(d.get("oh", 0)) / 1000.0
 	endurance = float(d.get("en", endurance * 10)) / 10.0
 	potions = int(d.get("po", potions))
 	level = int(d.get("lv", level))
@@ -278,9 +303,9 @@ func set_me(d: Dictionary) -> void:
 		hp_max = int(d.hpm)
 	var gcd := float(d.get("gcd", 0)) / 1000.0
 	var cds: Array = d.get("cd", [])
-	for k in range(1, 6):
+	for k in range(1, NSKILLS + 1):
 		var left := float(cds[k - 1]) / 1000.0 if k - 1 < cds.size() else 0.0
-		var total: float = SKILLS[k].cd
+		var total: float = float(skills[k].get("cd", 1.0)) if k < skills.size() else 1.0
 		if gcd > left:
 			left = gcd
 			total = 1.0
@@ -303,12 +328,14 @@ func start_cast(k: int, ms: int) -> void:
 		return
 	_cast_total = ms / 1000.0
 	_cast_end = SkillButton.now() + _cast_total
-	_cast_label.text = SKILLS[k].nom if k < SKILLS.size() else ""
+	_cast_label.text = str(skills[k].get("nom", "")) if k < skills.size() else ""
 	_cast_box.visible = true
 
 
 func show_death(on: bool) -> void:
 	_death.visible = on
+	(_death.get_child(0).get_node("Title") as Label).text = ("💀 Tu es %s pour toujours…" if hardcore else "💀 Tu es %s…") % \
+			["tombé", "tombée", "tombé·e"][clampi(accord, 0, 2)]
 	_death_t = 5.0
 	if on:
 		_cast_box.visible = false
@@ -316,24 +343,66 @@ func show_death(on: bool) -> void:
 
 static func fx_text(bits: int) -> String:
 	var parts: Array[String] = []
-	for e in FX_NAMES.size():
-		if bits & (1 << e):
-			parts.append(FX_NAMES[e])
+	var names: Array = Heros.data().effets
+	for e in names.size():
+		if bits & (1 << e) and names[e] != "compagnon":
+			parts.append(Heros.EFFETS.get(names[e], names[e]))
 	return "  ".join(parts)
+
+
+## La classe ou la voie a changé : les boutons prennent leurs compétences.
+func _apply_class() -> void:
+	skills = [{}]
+	for k in range(1, NSKILLS + 1):
+		skills.append(Heros.competence(classe, k, voie))
+	var c := Heros.classe(classe)
+	var rname: String = c.ressource.nom
+	var col := Color(Heros.RESSOURCE_COULEURS.get(str(c.ressource.id), "e8c66a"))
+	(_res_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = col
+	_res_bar.tooltip_text = rname
+	for k in range(1, NSKILLS + 1):
+		var sk: Dictionary = skills[k]
+		var b: SkillButton = buttons[k]
+		if sk.is_empty():
+			b.set_icon("🌟")
+			b.tooltip_text = "Ultime (8)\nChoisis ta voie au niveau 10 pour l'apprendre."
+			continue
+		b.set_icon(sk.icone)
+		var cost := ""
+		if float(sk.cout) > 0:
+			cost = "\n%s %d %s" % ["+" if c.ressource.chaleur else "−", int(sk.cout), rname]
+		var cast := "\nIncantation %.1f s : ne bouge pas !" % float(sk.incante) if float(sk.incante) > 0 else ""
+		b.tooltip_text = "%s (%d) · niv. %d\n%s%s%s\nRecharge %d s" % [sk.nom, k, int(sk.niveau), sk.aide, cost, cast, int(sk.cd)]
+	if buttons.has("garde"):
+		buttons.garde.visible = bool(c.bouclier)
 
 
 func _refresh() -> void:
 	_hp_bar.max_value = maxi(1, hp_max)
 	_hp_bar.value = hp
 	_hp_text.text = "%d / %d" % [hp, hp_max]
-	_fer_bar.value = ferveur
+	_res_bar.max_value = res_max
+	_res_bar.value = res
+	if not skills.is_empty():
+		var c := Heros.classe(classe)
+		_res_text.text = "%s %d / %d%s" % [c.ressource.nom, res, res_max, "  · SURCHAUFFE" if overheat > 0 else ""]
 	_xp_bar.max_value = maxi(1, xp_next)
 	_xp_bar.value = xp
 	_lvl_text.text = "Niv. %d · ✨ %d / %d XP · 🪙 %d" % [level, xp, xp_next, gold]
 	_fx_text.text = fx_text(fx)
 	_fx_text.visible = _fx_text.text != ""
-	for k in range(1, 6):
-		buttons[k].dim = ferveur < int(SKILLS[k].cout)
+	for k in range(1, NSKILLS + 1):
+		var b: SkillButton = buttons[k]
+		var sk: Dictionary = skills[k] if k < skills.size() else {}
+		b.locked = sk.is_empty() or level < int(sk.niveau)
+		if sk.is_empty():
+			continue
+		if Heros.classe(classe).ressource.chaleur:
+			b.dim = overheat > 0
+		elif sk.get("final", false):
+			b.dim = res < 1
+		else:
+			b.dim = res < int(sk.cout)
 	buttons.potion.count = potions
 	buttons.potion.dim = potions <= 0
 	buttons.roulade.pips = endurance
@@ -343,11 +412,13 @@ func _refresh() -> void:
 func _process(delta: float) -> void:
 	if target != null and is_instance_valid(target) and not target.dead:
 		_target_box.visible = true
-		_target_name.text = "%s%s · niv. %d" % ["✦ " if target.elite else "", target.hero_name, target.level]
+		var crest: String = (Heros.faction_of(target.race).blason + " ") if target.race != "" else ""
+		_target_name.text = "%s%s%s · niv. %d" % ["✦ " if target.elite else "", crest, target.hero_name, target.level]
 		_target_bar.max_value = maxi(1, target.hp_max)
 		_target_bar.value = target.hp
 		var foe := target.kind != "" or target.foe
 		_duel_btn.visible = target.kind == "" and target.npc == "" and not target.is_me and not in_duel
+		_fiche_btn.visible = target.race != "" and not target.is_me
 		(_target_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = UI.DANGER if foe else Color("5fbf6a")
 		_target_fx.text = fx_text(target.fx)
 		_target_fx.visible = _target_fx.text != ""

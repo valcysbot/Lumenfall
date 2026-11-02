@@ -41,6 +41,7 @@ func _ready() -> void:
 				if not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
 					printerr("Planche manquante : ", file)
 					failed += 1
+	failed += _check_heros()
 	failed += _check_npcs()
 	failed += _check_monsters()
 	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
@@ -48,6 +49,55 @@ func _ready() -> void:
 		failed += 1
 	print("Vérification du client : %s" % ("OK" if failed == 0 else "%d erreur(s)" % failed))
 	get_tree().quit(1 if failed > 0 else 0)
+
+
+## Acte IV : les 15 peuples, les 17 classes et chaque pièce que le miroir
+## peut demander existent ; la répartition conseillée place tous les points.
+func _check_heros() -> int:
+	var failed := 0
+	var D := Heros.peuples()
+	if D.peuples.size() != 15 or Heros.ORDRE_PEUPLES.size() != 15:
+		printerr("Il faut 15 peuples")
+		failed += 1
+	var data := Heros.data()
+	if data.classes.size() != 17:
+		printerr("Il faut 17 classes")
+		failed += 1
+	var pm := PeupleSprite.meta()
+	for anim in ["repos", "marche", "course", "salut", "attaque", "bouclier", "garde", "incante", "sort", "roulade", "mort", "tir"]:
+		if not pm.anims.has(anim):
+			printerr("Animation des peuples manquante : ", anim)
+			failed += 1
+	for c in data.classes:
+		if c.competences.size() != 7 or c.voies.size() != 3:
+			printerr("Classe incomplète : ", c.id)
+			failed += 1
+		if HeroSheet._sum(HeroSheet.conseil(c.conseil, 45)) != 45:
+			printerr("Répartition conseillée incomplète : ", c.id)
+			failed += 1
+		if not pm.anims.has(str(c.attaque)):
+			printerr("Animation d'attaque inconnue : ", c.attaque)
+			failed += 1
+		for sk in c.competences:
+			if str(sk.get("icone", "")) == "":
+				printerr("Compétence sans icône : ", sk.id)
+				failed += 1
+	var seen := {}
+	for r in Heros.ORDRE_PEUPLES:
+		if D.peuples[r].peaux.size() != 24:
+			printerr("24 teintes de peau attendues : ", r)
+			failed += 1
+		for c in data.classes:
+			for n in 3:
+				var lk := {"g": n % 3, "a": n % 3, "t": n, "k": n % 3, "v": n * 5, "p": n * 7, "y": n, "h": n * 6,
+					"hc": n, "b": n - 1, "m": [[n, n], [n + 1, 2]], "tu": n}
+				for couche in Heros.couches(r, c.id, lk):
+					seen[couche[0]] = true
+	for piece in seen:
+		if not pm.pieces.has(piece) or not ResourceLoader.exists(PeupleSprite.DIR + piece + ".png"):
+			printerr("Pièce du miroir manquante : ", piece)
+			failed += 1
+	return failed
 
 
 ## Chaque habitant du serveur a sa tenue et ses dialogues côté client, et
