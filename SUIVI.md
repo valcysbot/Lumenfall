@@ -129,6 +129,7 @@
 - ✓ **La gloire** : une aura discrète aux couleurs du dieu, qui grandit tous les 10 niveaux ; le blason de faction devant le nom ; la fiche publique d'un héros (« 📜 Sa fiche » dans le cadre de la cible).
 - ✓ **Hardcore** : une seule vie. Le héros tombé est effacé de la base, tout le monde l'apprend dans le chat, et le joueur revient à l'écran des héros.
 - ✓ **Nouveau départ** : les héros d'avant l'Acte IV sont effacés au premier démarrage du serveur V0.4 (choix d'Elowan). Le serveur demande au moins la v0.4.0.
+- ✓ **Effacer un héros** (V0.4.1, demande d'Elowan) : un bouton 🗑️ « Effacer » sous chaque héros. Pour confirmer, on retape son nom ; le serveur le vérifie aussi. L'emplacement et le nom redeviennent libres.
 - ✓ **L'équilibrage simulé des 17 classes** (`server/world/equilibre_test.go`) : 10 combats automatiques par camp et par classe ; chaque classe bat ses sangliers au niveau 1 au moins 8 fois sur 10, et les loups, loups effacés et corbeaux effacés aux bons niveaux.
 
 ### ✱ Quêtes en cours
@@ -171,6 +172,7 @@
 - **Homme, femme, autre** : le choix change les accords du jeu (« tombé », « tombée », « tombé·e ») et les noms (Guerrière, Elfe noire…), pas encore la silhouette ; les carrures et les coupes font la différence à l'écran.
 - **Formes et compagnons simplifiés** : la Forme d'ours ou de lynx du Druide et le Pilote d'armure changent les chiffres, pas encore le dessin. Les compagnons sont une petite créature qui tourne autour du héros, pas encore un monstre à part entière.
 - **Les habitants** gardent leurs anciennes planches (dessinées pour l'Acte II).
+- **Effacer, c'est pour toujours** : il n'y a pas de corbeille. Si le héros est encore en jeu sur un autre appareil, il continue jusqu'à sa déconnexion, puis disparaît.
 - **Hardcore** : l'effacement est testé dans les simulations et sur un serveur local, pas encore avec une vraie mort sur le serveur de test.
 
 ---
@@ -286,6 +288,12 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.4.1 · « Mille visages » (2 novembre 2026)
+
+- 🗑️ **Effacer un héros** : un bouton sous chaque héros de l'écran de choix. On retape son nom pour confirmer, et l'emplacement se libère pour un nouveau destin.
+
+![La confirmation avant d'effacer un héros](docs/captures/v0.4/effacer.png)
 
 ### V0.4 · « Mille visages » (2 novembre 2026)
 

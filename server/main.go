@@ -59,6 +59,7 @@ func InitModule(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runti
 		initializer.RegisterHttp("/lumenfall/discord/callback", auth.httpCallback, "GET"),
 		initializer.RegisterRpc("hero_list", rpcHeroList),
 		initializer.RegisterRpc("hero_create", rpcHeroCreate),
+		initializer.RegisterRpc("hero_delete", rpcHeroDelete),
 		initializer.RegisterRpc("world_join", rpcWorldJoin),
 		initializer.RegisterMatch(worldModule, newWorldMatch),
 	}
