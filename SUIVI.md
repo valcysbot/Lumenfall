@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte III, le combat
+**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte IV, les héros (à lancer)
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
-| III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✱ en cours |
+| III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
 | IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ○ |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
@@ -99,11 +99,11 @@
 - ✓ **Le tutoriel de combat** (V0.3.1, `client/scripts/combat_tutorial.gd`) : au premier monstre croisé, Braise apprend les gestes un par un (viser, frapper, bouclier, roulade, potion, autres sorts) en faisant briller le bon bouton. On peut le passer, et le revoir dans les réglages ⚙.
 - ✓ **Les duels sur invitation** (V0.3.2, `server/world/duel.go`) : vise un héros, « Défier en duel » ; s'il accepte, un drapeau est planté entre vous et un cercle se dessine au sol. Après 3, 2, 1, les coups comptent. Personne ne meurt : le premier à 1 point de vie a perdu, sortir du cercle c'est abandonner, et au bout de 2 minutes c'est match nul.
 - ✓ **Le combat à l'écran** : cadre du héros (vie, Ferveur, XP, effets), cadre de la cible, barre de compétences (1 à 5, R, Espace), éventail pour le pouce sur téléphone, chiffres qui sautent, critiques dorés qui font trembler l'écran, ralenti sur le coup fatal d'un élite, zones rouges qui se remplissent, écran « Tu es tombé ».
+- ✓ **Clôture** : V0.3.2 sur le serveur de test et publiée, Acte III validé par Elowan le 2 novembre 2026.
 
-### ○ Quêtes à venir
+### ○ À suivre
 
-- ○ Ton avis sur la V0.3, puis les réglages (vie des monstres, dégâts, temps de recharge).
-- ○ Ta validation de l'Acte III, pour passer à l'Acte IV (les héros).
+- ○ Les réglages au fil des parties (vie des monstres, dégâts, temps de recharge) : dis-moi ce qui est trop dur ou trop mou.
 
 ### ⚠️ Points d'attention
 
