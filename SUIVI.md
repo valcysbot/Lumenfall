@@ -153,7 +153,7 @@
 | Voleur / assassin | Énergie | Assassin ⚔️ · Bretteur ⚔️ · Ombrelame ⚔️ |
 | Archer | Concentration | Tireur d'élite ⚔️ · Rôdeur ⚔️ · Trappeur ⚔️ |
 
-🛡️ tank · 💚 soin · ⚔️ dégâts · 🎺 soutien. Bilan : 8 voies de tank, 8 de soin, 4 de soutien, 31 de dégâts.
+🛡️ tank · 💚 soin · ⚔️ dégâts · 🎺 soutien. Bilan : 8 voies de tank, 8 de soin, 3 de soutien, 32 de dégâts.
 
 ### ⚠️ Points d'attention
 
