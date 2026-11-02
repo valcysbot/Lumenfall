@@ -37,29 +37,64 @@ func ElementMul(atk, def Element) float64 {
 	return 1
 }
 
-// Effect : les effets d'état. Les 4 premiers sont ceux du Conseil des Armes ;
-// les autres sont des bonus et malus propres au Paladin et à la mort.
+// Effect : les effets d'état. Les 10 du script (brûlure, poison,
+// étourdissement, ralentissement, gel, saignement, silence, aveuglement, peur,
+// charme), plus les bonus et malus des classes (Acte IV).
 type Effect int
 
 const (
-	Brulure Effect = iota
-	Poison
-	Etourdi
-	Ralenti
-	Faiblesse // après la mort : −25 % de dégâts infligés
-	Aura      // Aura de Solenn : −15 % de dégâts reçus, +10 % infligés
+	Brulure    Effect = iota // feu, dégâts chaque seconde
+	Poison                   // terre, dégâts chaque seconde
+	Etourdi                  // ni bouger ni agir
+	Ralenti                  // −40 % de vitesse
+	Faiblesse                // après la mort : −25 % de dégâts infligés
+	Aura                     // Aura de Solenn : −15 % de dégâts reçus, +10 % infligés
+	Gel                      // cloué sur place (on peut encore frapper)
+	Saignement               // physique, dégâts chaque seconde
+	Silence                  // plus de sorts
+	Aveugle                  // un coup sur deux rate
+	Peur                     // le monstre fuit
+	Charme                   // le monstre ne se bat plus
+	Bouclier                 // absorbe Power dégâts
+	Regen                    // rend Power points de vie chaque seconde
+	Furtif                   // invisible pour les monstres ; le prochain coup frappe double
+	Rage                     // +25 % de dégâts infligés
+	Protection               // −30 % de dégâts reçus
+	Provoque                 // le monstre ne frappe que celui qui l'a provoqué
+	Hate                     // +30 % de vitesse
+	Marque                   // +15 % de dégâts reçus
+	Inspire                  // +10 % de dégâts et de soins
+	Compagnon                // une créature frappe la cible du héros (Power par coup)
 	nEffects
 )
 
-var EffectNames = [...]string{"brulure", "poison", "etourdi", "ralenti", "faiblesse", "aura"}
+var EffectNames = [...]string{"brulure", "poison", "etourdi", "ralenti", "faiblesse", "aura", "gel", "saignement",
+	"silence", "aveugle", "peur", "charme", "bouclier", "regen", "furtif", "rage", "protection", "provoque", "hate",
+	"marque", "inspire", "compagnon"}
+
+// Bits en plus des effets, pour le client.
+const (
+	BitGarde   = 1 << 24 // bouclier levé
+	BitIncante = 1 << 25 // incantation en cours
+	BitPhase2  = 1 << 26 // un boss dans sa deuxième phase
+)
 
 // Durées et forces des effets.
 const (
-	FaiblesseTime = 120.0 // secondes
-	FaiblesseMul  = 0.75
-	AuraTakenMul  = 0.85
-	AuraDealtMul  = 1.10
-	RalentiMul    = 0.6
+	FaiblesseTime  = 120.0 // secondes
+	FaiblesseMul   = 0.75
+	AuraTakenMul   = 0.85
+	AuraDealtMul   = 1.10
+	RalentiMul     = 0.6
+	RageMul        = 1.25
+	ProtectionMul  = 0.7
+	MarqueMul      = 1.15
+	InspireMul     = 1.10
+	HateMul        = 1.3
+	AveugleMiss    = 0.5
+	FurtifMul      = 2.0
+	CompagnonEvery = 1.5 // secondes entre deux coups d'un compagnon
+	CompagnonReach = 9.0
 )
 
 type effect struct {
@@ -101,18 +136,18 @@ func (f *Fighter) FxBits() int {
 	return n
 }
 
-// Bits : les effets, plus le bouclier levé (bit 6), l'incantation (bit 7)
-// et la phase 2 d'un boss (bit 8).
+// Bits : les effets, plus le bouclier levé, l'incantation et la phase 2
+// d'un boss.
 func (f *Fighter) Bits() int {
 	n := f.FxBits()
 	if f.Hero != nil && f.Hero.Blocking {
-		n |= 1 << 6
+		n |= BitGarde
 	}
 	if f.Hero != nil && f.Hero.Cast != 0 {
-		n |= 1 << 7
+		n |= BitIncante
 	}
 	if f.Mon != nil && f.Mon.Phase == 2 {
-		n |= 1 << 8
+		n |= BitPhase2
 	}
 	return n
 }

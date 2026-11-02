@@ -12,14 +12,13 @@ import (
 // MonsterSIDBase : les monstres ont des numéros à part (les habitants sont à 100000).
 const MonsterSIDBase = 200000
 
-// Réglages du Paladin et du combat.
+// Réglages du combat.
 const (
-	MaxFerveur    = 100.0
 	MaxEndurance  = 2.0 // deux roulades d'affilée
 	EnduranceTime = 3.0 // secondes pour regagner une roulade
 	RollDist      = 3.5
 	RollTime      = 0.35
-	AutoEvery     = 2.0 // l'attaque de base du Paladin
+	AutoEvery     = 2.0 // l'attaque de base
 	GCD           = 1.0
 	MeleeReach    = 1.3 // + la taille du monstre
 	MaxPotions    = 5
@@ -34,41 +33,45 @@ const (
 	BlockMul      = 0.3
 	BlockSlow     = 0.5
 	BlockArc      = 70 * math.Pi / 180
+	OverheatTime  = 3.0 // la Vapeur bloque tout pendant 3 s à 100
+	VoieQuest     = 5   // Effacés à vaincre, au niveau 10, pour choisir sa voie
 )
-
-// Skill : une compétence du Paladin.
-type Skill struct {
-	Name  string
-	CD    float64 // recharge, en secondes
-	Cast  float64 // incantation (0 : instantanée)
-	Cost  float64 // Ferveur dépensée
-	Gain  float64 // Ferveur gagnée
-	Range float64 // 0 : corps à corps
-}
-
-// Skills : la barre du Paladin, touches 1 à 5.
-var Skills = [6]Skill{
-	{},
-	{Name: "Frappe sacrée", CD: 4, Gain: 15},
-	{Name: "Coup de bouclier", CD: 10, Gain: 10},
-	{Name: "Lumière de Solenn", CD: 6, Cast: 1.5, Cost: 30, Range: 10},
-	{Name: "Aura de Solenn", CD: 30},
-	{Name: "Jugement de lumière", CD: 8, Cost: 40, Range: 8},
-}
 
 // Numéros de compétence en dehors de la barre (pour les événements).
 const (
 	SkillAuto   = 0
-	SkillPotion = 6
-	SkillDot    = 7
+	SkillPotion = 9
+	SkillDot    = 10
+	SkillPet    = 11
+	NSkills     = 8 // touches 1 à 8 (la 8 est l'ultime de la voie)
 )
+
+// HeroInit : ce qu'on sait d'un héros en entrant dans le monde.
+type HeroInit struct {
+	Level, XP, Gold, Potions int
+	Trophies                 map[string]int
+	Class                    string
+	Spec                     int // -1 : pas encore de voie
+	Race                     string
+	Attrs                    Attrs
+	Hardcore                 bool
+	Quest                    int
+}
 
 // HeroState : ce qu'un héros a de plus qu'un monstre.
 type HeroState struct {
+	Class     *Class
+	Spec      int
+	Race      string
+	Attrs     Attrs
+	Stats     Stats
+	Hardcore  bool
+	Quest     int // Effacés vaincus pour l'épreuve de la voie
+
 	Target    int
-	Ferveur   float64
+	Res       float64 // la ressource de la classe
 	Endurance float64
-	CD        [6]float64
+	CD        [NSkills + 1]float64
 	GCD       float64
 	Cast      int // compétence en cours d'incantation (0 : aucune)
 	CastLeft  float64
@@ -79,12 +82,29 @@ type HeroState struct {
 	XP, Gold  int
 	Trophies  map[string]int
 
-	autoCD  float64
-	combat  float64 // secondes depuis le dernier coup donné ou reçu
-	respawn float64
-	regen   float64
-	shown   [3]int // Ferveur, Endurance (en dixièmes), potions au dernier envoi
-	me      bool   // état privé à renvoyer au joueur
+	autoCD    float64
+	combat    float64 // secondes depuis le dernier coup donné ou reçu
+	respawn   float64
+	regen     float64
+	overheat  float64
+	lastSkill int
+	petCD     float64
+	lastX     float64
+	lastY     float64
+	shown     [3]int // ressource, endurance (en dixièmes), potions au dernier envoi
+	me        bool   // état privé à renvoyer au joueur
+}
+
+// Weapon : la puissance de base de l'arme du héros.
+func (h *Fighter) Weapon() float64 { return HeroWeapon(h.Level) }
+
+// Power : la puissance d'une attaque, magique ou non, avec les attributs.
+func (h *Fighter) Power(magic bool) float64 {
+	s := h.Hero.Stats
+	if magic {
+		return h.Weapon() * s.Mag
+	}
+	return h.Weapon() * s.Phys
 }
 
 // Event kinds.
@@ -102,6 +122,7 @@ const (
 	EvTele           // une attaque annoncée au sol (Value : numéro dans Arena.Teles)
 	EvPhase          // le boss Src passe à la phase Value
 	EvDuel           // duel.go : Text = defi, debut, compte ou fin
+	EvVoie           // l'épreuve de la voie : Text = quete, progres, pret ou choisie
 )
 
 // Event flags (EvHit).
@@ -111,7 +132,8 @@ const (
 	FlagBlock = 4
 	FlagDodge = 8
 	FlagDot   = 16
-	FlagElite = 32 // EvDeath : un élite ou un boss (ralenti à l'écran)
+	FlagElite    = 32 // EvDeath : un élite ou un boss (ralenti à l'écran)
+	FlagHardcore = 64 // EvDeath : un héros hardcore tombé pour de bon
 )
 
 // Event : quelque chose que les joueurs doivent voir.
@@ -174,18 +196,44 @@ func (f *Fighter) Visible() bool { return f.Mon == nil || !f.Mon.gone }
 func (f *Fighter) Golden() bool { return f.Mon != nil && f.Mon.Golden }
 
 // AddHero fait entrer un héros dans l'arène.
-func (a *Arena) AddHero(sid int, name string, body *Body, level, xp, gold, potions int, trophies map[string]int) *Fighter {
-	if level < 1 {
-		level = 1
+func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter {
+	if in.Level < 1 {
+		in.Level = 1
 	}
-	if trophies == nil {
-		trophies = map[string]int{}
+	if in.Trophies == nil {
+		in.Trophies = map[string]int{}
 	}
-	f := &Fighter{SID: sid, Name: name, Body: body, Level: level, MaxHP: HeroMaxHP(level),
-		Hero: &HeroState{Endurance: MaxEndurance, Potions: potions, XP: xp, Gold: gold, Trophies: trophies, combat: CombatTime, me: true}}
+	c := ClassByID(in.Class)
+	if c == nil {
+		c = ClassByID("paladin")
+	}
+	if in.Spec < -1 || in.Spec > 2 {
+		in.Spec = -1
+	}
+	if _, ok := Races[in.Race]; !ok {
+		in.Race = "humain"
+	}
+	hs := &HeroState{Class: c, Spec: in.Spec, Race: in.Race, Attrs: in.Attrs, Hardcore: in.Hardcore, Quest: in.Quest,
+		Endurance: MaxEndurance, Potions: in.Potions, XP: in.XP, Gold: in.Gold, Trophies: in.Trophies,
+		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y}
+	f := &Fighter{SID: sid, Name: name, Body: body, Level: in.Level, Hero: hs}
+	f.Restat()
 	f.HP = f.MaxHP
 	a.Heroes[sid] = f
 	return f
+}
+
+// Restat recalcule les statistiques d'un héros (niveau, attributs, voie).
+func (f *Fighter) Restat() {
+	hs := f.Hero
+	hs.Stats = ComputeStats(hs.Class, hs.Spec, hs.Race, hs.Attrs, f.Level)
+	old := f.MaxHP
+	f.MaxHP = hs.Stats.MaxHP
+	if old > 0 && f.HP > 0 {
+		f.HP = max(1, min(f.MaxHP, f.HP+f.MaxHP-old))
+	}
+	f.dirty = true
+	hs.me = true
 }
 
 // RemoveHero retire un héros (départ) : les monstres l'oublient.
@@ -231,89 +279,6 @@ func (a *Arena) canAct(h *Fighter) bool {
 	return h != nil && !h.Dead && !h.Has(Etourdi) && !h.Body.Dashing()
 }
 
-// UseSkill : compétence k (1 à 5) sur la cible actuelle.
-func (a *Arena) UseSkill(sid, k int) {
-	h := a.Heroes[sid]
-	if !a.canAct(h) || k < 1 || k > 5 {
-		return
-	}
-	hs := h.Hero
-	sk := Skills[k]
-	if hs.CD[k] > 0 || hs.GCD > 0 || hs.Cast != 0 {
-		return // le client grise déjà le bouton : inutile d'insister
-	}
-	if hs.Ferveur < sk.Cost {
-		a.refuse(h, "Pas assez de Ferveur !")
-		return
-	}
-	t := a.Get(hs.Target)
-	foe := a.foe(h, t)
-	w := HeroWeapon(h.Level)
-	switch k {
-	case 1, 2: // corps à corps
-		if !foe {
-			a.noFoe(h, t)
-			return
-		}
-		if dist(h, t) > reachOf(t) {
-			a.refuse(h, "Trop loin pour frapper !")
-			return
-		}
-		h.Body.Face(t.Body.X, t.Body.Y)
-		if k == 1 {
-			a.hit(h, t, w*1.6, Lumiere, 1, HeroCrit, 1)
-			a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "attaque"})
-		} else {
-			a.hit(h, t, w*0.6, Physique, 2, HeroCrit, 5)
-			if t.Mon != nil {
-				a.addThreat(t, h, 30)
-			}
-			t.Apply(Etourdi, 2, 0, h.SID)
-			a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "bouclier"})
-		}
-	case 3: // soin : un allié visé, sinon soi-même
-		on := h
-		if t != nil && t.Hero != nil && !t.Dead && !foe {
-			on = t
-		}
-		if dist(h, on) > sk.Range {
-			a.refuse(h, "Trop loin pour le soigner !")
-			return
-		}
-		hs.Cast, hs.CastLeft, hs.castOn = 3, sk.Cast, on.SID
-		hs.Blocking = false
-		a.emit(Event{Kind: EvCast, Src: h.SID, Skill: 3, Value: int(sk.Cast * 1000)})
-	case 4: // aura de groupe
-		for _, o := range a.Heroes {
-			if !o.Dead && dist(h, o) <= 8 && !a.foe(h, o) {
-				o.Apply(Aura, 12, 0, h.SID)
-			}
-		}
-		a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "aura"})
-	case 5: // jugement, à distance
-		if !foe {
-			a.noFoe(h, t)
-			return
-		}
-		if dist(h, t) > sk.Range {
-			a.refuse(h, "Trop loin pour le jugement !")
-			return
-		}
-		h.Body.Face(t.Body.X, t.Body.Y)
-		a.hit(h, t, w*2.4, Lumiere, 5, HeroCrit, 1)
-		t.Apply(Brulure, 4, int(math.Max(1, w*0.3)), h.SID)
-		a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "sort"})
-	}
-	if k != 3 { // le soin ne se paie qu'une fois incanté
-		hs.Ferveur = math.Min(MaxFerveur, hs.Ferveur-sk.Cost+sk.Gain)
-		hs.CD[k] = sk.CD
-		hs.Blocking = false
-	}
-	hs.GCD = GCD
-	hs.me = true
-	h.dirty = true
-}
-
 // Roll : roulade dans la direction (dx, dy), ou droit devant.
 func (a *Arena) Roll(sid int, dx, dy float64) {
 	h := a.Heroes[sid]
@@ -338,6 +303,9 @@ func (a *Arena) Block(sid int, on bool) {
 	h := a.Heroes[sid]
 	if h == nil || h.Dead || h.Hero.Blocking == on {
 		return
+	}
+	if on && !h.Hero.Class.Shield {
+		return // seuls les porteurs de bouclier peuvent bloquer
 	}
 	if on {
 		a.interrupt(h)
@@ -394,10 +362,16 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 		return 0
 	}
 	ev := Event{Kind: EvHit, Src: src.SID, Tgt: tgt.SID, Skill: skill, Elem: elem}
-	if skill == SkillDot {
+	dot := skill == SkillDot
+	if dot {
 		ev.Flags |= FlagDot
 	}
-	if (tgt.Hero != nil && tgt.Body.Dashing()) || (tgt.Mon != nil && tgt.Mon.evading) {
+	dodge := (tgt.Hero != nil && tgt.Body.Dashing()) || (tgt.Mon != nil && tgt.Mon.evading)
+	if !dot && !dodge {
+		dodge = (src.Has(Aveugle) && a.rng.Float64() < AveugleMiss) ||
+			(tgt.Hero != nil && a.rng.Float64() < tgt.Hero.Stats.Dodge)
+	}
+	if dodge {
 		ev.Flags |= FlagDodge
 		a.emit(ev)
 		return 0
@@ -409,18 +383,60 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 	if src.Has(Aura) {
 		dmg *= AuraDealtMul
 	}
-	if skill != SkillDot && a.rng.Float64() < crit {
-		dmg *= CritMul
+	if src.Has(Rage) {
+		dmg *= RageMul
+	}
+	if src.Has(Inspire) {
+		dmg *= InspireMul
+	}
+	if !dot && src.Has(Furtif) {
+		dmg *= FurtifMul
+		src.fx[Furtif] = effect{}
+		src.dirty = true
+	}
+	cm := CritMul
+	if src.Hero != nil {
+		cm = src.Hero.Stats.CritMul
+	}
+	if !dot && a.rng.Float64() < crit {
+		dmg *= cm
 		ev.Flags |= FlagCrit
 	}
 	if tgt.Has(Aura) {
 		dmg *= AuraTakenMul
 	}
-	if tgt.Hero != nil && tgt.Hero.Blocking && skill != SkillDot && facing(tgt, src) {
-		dmg *= BlockMul
-		ev.Flags |= FlagBlock
+	if tgt.Has(Protection) {
+		dmg *= ProtectionMul
+	}
+	if tgt.Has(Marque) {
+		dmg *= MarqueMul
+	}
+	if tgt.Hero != nil {
+		dmg *= tgt.Hero.Stats.Taken
+		if r := tgt.Hero.Stats.Resist; r != Physique && r == elem {
+			dmg *= 0.9
+		}
+		if tgt.Hero.Blocking && !dot && facing(tgt, src) {
+			dmg *= BlockMul
+			ev.Flags |= FlagBlock
+		}
 	}
 	n := int(math.Max(1, math.Round(dmg)))
+	// Un bouclier absorbe d'abord.
+	if sh := &tgt.fx[Bouclier]; sh.left > 0 && sh.power > 0 {
+		take := min(n, sh.power)
+		sh.power -= take
+		n -= take
+		if sh.power <= 0 {
+			*sh = effect{}
+		}
+		tgt.dirty = true
+		if n <= 0 {
+			ev.Flags |= FlagBlock
+			a.emit(ev)
+			return 0
+		}
+	}
 	tgt.HP -= n
 	tgt.dirty = true
 	ev.Value = n
@@ -431,14 +447,22 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 		}
 	}
 	if tgt.Hero != nil {
-		gain := 5.0
-		if ev.Flags&FlagBlock != 0 {
-			gain = 8
+		gain := tgt.Hero.Class.Res.OnTaken
+		if ev.Flags&FlagBlock != 0 && gain > 0 {
+			gain += 3
 		}
-		tgt.Hero.Ferveur = math.Min(MaxFerveur, tgt.Hero.Ferveur+gain)
+		a.gainRes(tgt, gain)
+	}
+	if tgt.Mon != nil && tgt.Has(Charme) {
+		tgt.fx[Charme] = effect{} // un coup réveille le charmé
 	}
 	if tgt.Mon != nil && src.Hero != nil {
-		a.addThreat(tgt, src, float64(n)*threat)
+		a.addThreat(tgt, src, float64(n)*threat*src.Hero.Stats.Threat)
+	}
+	if src.Hero != nil && src.Hero.Stats.Lifelink > 0 {
+		if o := a.mostHurt(src); o != nil {
+			a.heal(src, o, int(math.Round(float64(n)*src.Hero.Stats.Lifelink)), skill)
+		}
 	}
 	if tgt.HP <= 0 && !a.duelBlow(src, tgt) {
 		a.kill(tgt, src)
@@ -446,11 +470,28 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 	return n
 }
 
+// mostHurt : l'allié le plus blessé autour du héros (lui compris).
+func (a *Arena) mostHurt(h *Fighter) *Fighter {
+	var best *Fighter
+	for _, o := range a.Heroes {
+		if o.Dead || dist(h, o) > GroupRadius+2 || a.foe(h, o) {
+			continue
+		}
+		if o.HP < o.MaxHP && (best == nil || o.Pct() < best.Pct()) {
+			best = o
+		}
+	}
+	return best
+}
+
 func (a *Arena) heal(src, tgt *Fighter, n, skill int) {
-	if tgt.Dead {
+	if tgt.Dead || n <= 0 {
 		return
 	}
 	n = min(n, tgt.MaxHP-tgt.HP)
+	if n <= 0 {
+		return
+	}
 	tgt.HP += n
 	tgt.dirty = true
 	a.emit(Event{Kind: EvHit, Src: src.SID, Tgt: tgt.SID, Value: n, Flags: FlagHeal, Skill: skill, Elem: Lumiere})
@@ -494,6 +535,7 @@ func (a *Arena) kill(f, killer *Fighter) {
 		}
 		a.emit(ev)
 		a.reward(f)
+		a.soulHarvest(f)
 		mo.threat = nil
 		mo.respawn = RespawnTime
 		if mo.Kind.Respawn > 0 {
@@ -506,6 +548,10 @@ func (a *Arena) kill(f, killer *Fighter) {
 	hs := f.Hero
 	a.interrupt(f)
 	hs.Blocking = false
+	if hs.Hardcore {
+		// Hardcore : une seule vie. Le match efface le héros.
+		ev.Flags |= FlagHardcore
+	}
 	hs.respawn = RespawnHero
 	f.Body.Stop()
 	f.Body.Frozen = true
@@ -544,14 +590,45 @@ func (a *Arena) GainXP(h *Fighter, xp int) {
 	for hs.XP >= XPForLevel(h.Level) {
 		hs.XP -= XPForLevel(h.Level)
 		h.Level++
-		h.MaxHP = HeroMaxHP(h.Level)
+		h.Restat()
 		if !h.Dead {
 			h.HP = h.MaxHP
 		}
-		h.dirty = true
 		a.emit(Event{Kind: EvLevel, Src: h.SID, Value: h.Level})
+		if h.Level == SpecLevel && hs.Spec < 0 {
+			a.emit(Event{Kind: EvVoie, Tgt: h.SID, Text: "quete", Value: hs.Quest})
+		}
 	}
 	hs.me = true
+}
+
+// soulHarvest : les Âmes des nécromanciens proches, et l'épreuve de la voie.
+func (a *Arena) soulHarvest(m *Fighter) {
+	for _, h := range a.Heroes {
+		if h.Dead || dist(h, m) > 10 {
+			continue
+		}
+		if r := h.Hero.Class.Res.OnKill; r > 0 {
+			a.gainRes(h, r)
+		}
+	}
+	effaced := m.Mon.Kind.Elem == Ombre
+	if !effaced {
+		return
+	}
+	for sid := range m.Mon.threat {
+		h := a.Heroes[sid]
+		if h == nil || h.Level < SpecLevel || h.Hero.Spec >= 0 || h.Hero.Quest >= VoieQuest {
+			continue
+		}
+		h.Hero.Quest++
+		h.Hero.me = true
+		text := "progres"
+		if h.Hero.Quest >= VoieQuest {
+			text = "pret"
+		}
+		a.emit(Event{Kind: EvVoie, Tgt: h.SID, Text: text, Value: h.Hero.Quest})
+	}
 }
 
 // --- Le temps qui passe -------------------------------------------------------------
@@ -584,7 +661,8 @@ func (a *Arena) tickEffects(f *Fighter, dt float64) {
 			continue
 		}
 		x.left -= dt
-		if e == Brulure || e == Poison {
+		switch e {
+		case Brulure, Poison, Saignement, Regen:
 			x.tick -= dt
 			if x.tick <= 1e-6 {
 				x.tick += 1
@@ -592,10 +670,11 @@ func (a *Arena) tickEffects(f *Fighter, dt float64) {
 				if src == nil {
 					src = f
 				}
-				elem := Feu
-				if e == Poison {
-					elem = Terre
+				if e == Regen {
+					a.heal(src, f, x.power, SkillDot)
+					break
 				}
+				elem := map[Effect]Element{Brulure: Feu, Poison: Terre, Saignement: Physique}[e]
 				a.hit(src, f, float64(x.power), elem, SkillDot, 0, 1)
 				if f.Dead {
 					return
@@ -607,31 +686,60 @@ func (a *Arena) tickEffects(f *Fighter, dt float64) {
 			f.dirty = true
 		}
 	}
-	f.Body.Frozen = f.Dead || f.Has(Etourdi)
+	f.Body.Frozen = f.Dead || f.Has(Etourdi) || f.Has(Gel)
 	mul := 1.0
 	if f.Has(Ralenti) {
 		mul *= RalentiMul
 	}
 	if f.Hero != nil {
+		if f.Has(Hate) {
+			mul *= HateMul
+		}
 		if f.Hero.Blocking {
 			mul *= BlockSlow
 		}
-		f.Body.Mul = mul // la vitesse d'un monstre est réglée par son humeur (think)
+		f.Body.Mul = mul * f.Hero.Stats.Speed // la vitesse d'un monstre est réglée par son humeur (think)
 	}
+}
+
+// gainRes ajoute (ou retire) de la ressource, dans ses limites.
+func (a *Arena) gainRes(h *Fighter, v float64) {
+	hs := h.Hero
+	r := hs.Class.Res
+	if v > 0 && r.LowHP && h.Pct() < 0.5 {
+		v *= 2
+	}
+	hs.Res = math.Max(0, math.Min(r.Max, hs.Res+v))
+}
+
+// petPower : la force du compagnon du héros (0 : pas de compagnon).
+func (h *Fighter) petPower() float64 {
+	hs := h.Hero
+	p := 0.0
+	if h.Has(Compagnon) {
+		p = float64(h.fx[Compagnon].power)
+	}
+	if hs.Spec >= 0 {
+		if perm := hs.Class.Specs[hs.Spec].Mods.PermanentPet; perm > 0 {
+			p = math.Max(p, h.Weapon()*perm*hs.Stats.Pet)
+		}
+	}
+	return p
 }
 
 func (a *Arena) tickHero(h *Fighter, dt float64) {
 	hs := h.Hero
 	if h.Dead {
 		hs.respawn -= dt
-		if hs.respawn <= 0 {
+		if hs.respawn <= 0 && !hs.Hardcore {
 			h.Dead = false
 			h.HP = h.MaxHP
 			h.Body.Frozen = false
 			x, y := spotNear(a.M, a.Temple[0], a.Temple[1], 1.5, a.rng)
 			h.Body.Teleport(x, y)
 			h.Apply(Faiblesse, FaiblesseTime, 0, h.SID)
-			hs.Ferveur = 0
+			hs.Res = hs.Class.Res.Start
+			hs.lastX, hs.lastY = x, y
 			h.dirty = true
 			hs.me = true
 			a.emit(Event{Kind: EvRespawn, Src: h.SID})
@@ -644,36 +752,66 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 	hs.GCD = math.Max(0, hs.GCD-dt)
 	hs.PotionCD = math.Max(0, hs.PotionCD-dt)
 	hs.autoCD = math.Max(0, hs.autoCD-dt)
+	hs.overheat = math.Max(0, hs.overheat-dt)
 	hs.Endurance = math.Min(MaxEndurance, hs.Endurance+dt/EnduranceTime)
 	hs.combat += dt
+
+	// La ressource de la classe.
+	r := hs.Class.Res
+	moved := math.Hypot(h.Body.X-hs.lastX, h.Body.Y-hs.lastY)
+	hs.lastX, hs.lastY = h.Body.X, h.Body.Y
+	if r.Heat {
+		hs.Res = math.Max(0, hs.Res-r.Regen*dt)
+	} else if r.Regen > 0 {
+		a.gainRes(h, r.Regen*dt)
+	}
+	if r.OnMove != 0 && moved > 0 && moved < 2 {
+		a.gainRes(h, r.OnMove*moved)
+	}
+	if r.Still > 0 && !h.Body.Moving() {
+		a.gainRes(h, r.Still*dt)
+	}
+	if hs.combat >= CombatTime && r.Decay > 0 {
+		hs.Res = math.Max(0, hs.Res-r.Decay*dt)
+	}
 
 	// Incantation : bouger ou être étourdi l'interrompt.
 	if hs.Cast != 0 {
 		if h.Body.Moving() || h.Has(Etourdi) {
 			a.interrupt(h)
 		} else if hs.CastLeft -= dt; hs.CastLeft <= 0 {
+			k := hs.Cast
 			hs.Cast = 0
-			if on := a.Heroes[hs.castOn]; on != nil && !on.Dead && dist(h, on) <= Skills[3].Range+2 && hs.Ferveur >= Skills[3].Cost {
-				hs.Ferveur -= Skills[3].Cost
-				hs.CD[3] = Skills[3].CD
-				hs.me = true
-				a.heal(h, on, int(math.Round(float64(on.MaxHP)*0.3)), 3)
-				a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "sort"})
+			sk := hs.Class.Skill(k, hs.Spec)
+			if t := a.Get(hs.castOn); sk != nil && a.castTargetOK(h, sk, t) && a.canPay(h, sk, false) {
+				a.execute(h, k, sk, t)
+			} else {
+				a.emit(Event{Kind: EvCast, Src: h.SID, Skill: 0})
 			}
 		}
 	}
 
 	// L'attaque de base tourne toute seule sur la cible, à portée.
 	if t := a.Get(hs.Target); a.foe(h, t) && hs.autoCD <= 0 && hs.Cast == 0 && !hs.Blocking &&
-		a.canAct(h) && dist(h, t) <= reachOf(t) {
+		a.canAct(h) && dist(h, t) <= a.autoReach(h, t) {
 		hs.autoCD = AutoEvery
 		h.Body.Face(t.Body.X, t.Body.Y)
-		a.hit(h, t, HeroWeapon(h.Level), Physique, SkillAuto, HeroCrit, 1)
-		hs.Ferveur = math.Min(MaxFerveur, hs.Ferveur+8)
-		a.emit(Event{Kind: EvAnim, Src: h.SID, Text: "attaque"})
+		c := hs.Class
+		a.hit(h, t, h.Power(c.Magic)*a.championMul(h, t), c.Elem, SkillAuto, hs.Stats.Crit, 1)
+		a.gainRes(h, c.Res.OnDeal)
+		a.emit(Event{Kind: EvAnim, Src: h.SID, Text: c.Anim})
 	}
 
-	// Hors combat : on souffle, la vie remonte et la Ferveur retombe.
+	// Le compagnon frappe la cible du héros.
+	if p := h.petPower(); p > 0 {
+		hs.petCD -= dt
+		if t := a.Get(hs.Target); hs.petCD <= 0 && a.foe(h, t) && dist(h, t) <= CompagnonReach {
+			hs.petCD = CompagnonEvery
+			a.hit(h, t, p, Physique, SkillPet, MonsterCrit, 1)
+		}
+	}
+
+	// Hors combat : on souffle et la vie remonte.
 	if hs.combat >= CombatTime {
 		if h.HP < h.MaxHP {
 			hs.regen += dt * 0.04 * float64(h.MaxHP)
@@ -684,18 +822,41 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 				h.dirty = true
 			}
 		}
-		hs.Ferveur = math.Max(0, hs.Ferveur-4*dt)
 		// Au village, Sœur Clémence remplit la besace.
 		if hs.Potions < MaxPotions && math.Hypot(h.Body.X-a.Village[0], h.Body.Y-a.Village[1]) < VillageRadius {
 			hs.Potions = MaxPotions
 			a.emit(Event{Kind: EvError, Tgt: h.SID, Text: "Sœur Clémence remplit ta besace : 5 potions de soin !"})
 		}
 	}
-	shown := [3]int{int(hs.Ferveur), int(hs.Endurance * 10), hs.Potions}
+	shown := [3]int{int(hs.Res * 10), int(hs.Endurance * 10), hs.Potions}
 	if shown != hs.shown {
 		hs.shown = shown
 		hs.me = true
 	}
+}
+
+// autoReach : la portée de l'attaque de base.
+func (a *Arena) autoReach(h *Fighter, t *Fighter) float64 {
+	hs := h.Hero
+	rng := hs.Class.Range
+	if hs.Class.ID == "lancier" && hs.Spec == 1 {
+		rng = 7 // Javelinier
+	}
+	if hs.Class.ID == "chaman" && hs.Spec == 2 {
+		rng = 0 // Marcheur des esprits : au corps à corps
+	}
+	if rng > 0 {
+		return rng
+	}
+	return reachOf(t)
+}
+
+// championMul : le Champion frappe 20 % plus fort les élites et les boss.
+func (a *Arena) championMul(h, t *Fighter) float64 {
+	if h.Hero.Class.ID == "guerrier" && h.Hero.Spec == 2 && t.Mon != nil && (t.Mon.Kind.Elite || t.Mon.Kind.Boss) {
+		return 1.2
+	}
+	return 1
 }
 
 // TakeMe dit si l'état privé du héros doit être renvoyé, et remet le drapeau à zéro.
@@ -758,6 +919,24 @@ func (a *Arena) think(f *Fighter, dt float64) {
 		f.Body.Stop()
 		return
 	}
+	if f.Has(Charme) {
+		// Charmé : il oublie le combat le temps du charme.
+		f.Body.Stop()
+		return
+	}
+	if f.Has(Peur) {
+		// Il fuit celui qui lui a fait peur.
+		if src := a.Get(f.fx[Peur].src); src != nil {
+			dx, dy := f.Body.X-src.Body.X, f.Body.Y-src.Body.Y
+			if l := math.Hypot(dx, dy); l > 1e-6 {
+				f.Body.Mul = k.Speed / WalkSpeed
+				f.Body.SetInput(dx/l, dy/l)
+				return
+			}
+		}
+		f.Body.Stop()
+		return
+	}
 	f.Body.Mul = k.Speed / WalkSpeed
 	if f.Has(Ralenti) {
 		f.Body.Mul *= RalentiMul
@@ -812,6 +991,11 @@ func (a *Arena) think(f *Fighter, dt float64) {
 	if _, ok := mo.threat[mo.target]; !ok || bestV > cur*1.1 {
 		mo.target = best
 	}
+	if f.Has(Provoque) {
+		if p := a.Heroes[f.fx[Provoque].src]; p != nil && !p.Dead {
+			mo.target = p.SID
+		}
+	}
 	t := a.Heroes[mo.target]
 	if t == nil {
 		if engaged || f.HP < f.MaxHP {
@@ -829,6 +1013,10 @@ func (a *Arena) think(f *Fighter, dt float64) {
 		return
 	}
 	d := dist(f, t)
+	if d > k.Reach && f.Has(Gel) {
+		f.Body.Stop()
+		return
+	}
 	if d > k.Reach {
 		dx, dy := t.Body.X-f.Body.X, t.Body.Y-f.Body.Y
 		f.Body.SetInput(dx/d, dy/d)
@@ -859,7 +1047,7 @@ func (a *Arena) lookAround(f *Fighter, dt float64) {
 	var near *Fighter
 	nd := reach
 	for _, h := range a.Heroes {
-		if h.Dead {
+		if h.Dead || h.Has(Furtif) {
 			continue
 		}
 		if d := dist(f, h); d < nd {
