@@ -1,0 +1,536 @@
+<title>Le Conseil des Héros</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une salle d'armes nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Ombre sans visage<small id="lvlnext">75 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/40</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte IV, les héros</div>
+    <h1>Le Conseil des Héros</h1>
+    <p class="lead">Le Grand Sanglier est tombé, les duels ont désigné leurs premiers vainqueurs… mais tout le monde a encore la même tête de Paladin humain. Place aux 15 peuples, aux 17 classes et à leurs 51 voies ! Braise et moi avons 40 questions pour toi, en 7 chapitres : le miroir de création, les quinze peuples, l'ordre des classes, trois chapitres de voies (les spécialisations), puis le premier souffle. Pour les voies, une seule question par classe : mon trio ⭐ ou un autre, et 📝 pour mélanger. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Salut, héros ! J'ai sorti mes plus beaux crayons : quinze peuples, dix-sept classes, ça fait beaucoup de pixels. Réponds, je commente.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "corps", icon: "🪞", title: "Le miroir de création", sub: "Ce qu'on choisit en créant son héros. Le script veut une personnalisation très poussée : voici jusqu'où on va.",
+    chest: { title: "Fragment XVI : le miroir de Solenn", lore: "Dans le temple de Bourg-Lanterne, un miroir d'argent est tourné contre le mur. Sœur Clémence dit qu'il montre les héros tels qu'ils voudraient être. Elle le retourne une fois par an, et ce jour-là, personne ne se coiffe de la même façon." },
+    qs: [
+      { id: "genre", t: "Homme, femme ou autre : comment s'accordent les textes ?", why: "Le script veut « homme, femme ou autre, textes accordés ». En français, chaque phrase de PNJ (« Tu es prêt / prête ») doit le savoir.", rec: 0, o: [
+        ["Homme, femme ou autre ; pour « autre », on choisit ses accords (masculin, féminin ou tournures neutres)", "Les PNJ et Braise accordent tout. Les tournures neutres évitent les mots inventés (« Te voilà de retour » plutôt que « tu es revenu·e »)."],
+        ["Homme ou femme seulement", "Plus simple à écrire, mais le script demande « autre »."],
+        ["Pas de genre : tous les textes à la forme neutre", "Aucun accord à gérer, mais les PNJ parlent de façon un peu raide."] ] },
+      { id: "silhouette", t: "Jusqu'où va la silhouette ?", why: "Nos héros sont en pixel art 32 × 32, dessinés par code : chaque variante est recalculée en 8 directions et pour chaque animation. Franchement, c'est le poste qui coûte le plus en dessins.", rec: 0, o: [
+        ["Taille (5 crans) + carrure (mince, normale, costaud)", "15 silhouettes par race, toutes lisibles en petit. Les armures s'ajustent à chaque carrure."],
+        ["Curseurs libres (taille, épaules, ventre, jambes)", "Plus de liberté, mais en 32 pixels beaucoup de réglages ne se voient presque pas."],
+        ["La taille seulement", "Le plus rapide ; tout le monde a la même allure."] ] },
+      { id: "visage", t: "Visage, peau et yeux : combien de choix ?", why: "Le visage fait 8 pixels de large : on joue surtout sur la forme, les couleurs et les marques.", rec: 0, o: [
+        ["8 visages par race, 12 couleurs d'yeux, 8 teintes de peau propres à la race, et des marques (cicatrices, taches, peintures)", "Un Golem choisit sa pierre, un Lumin la couleur de son cristal, un Drakéide ses écailles."],
+        ["4 visages et 6 teintes par race", "Deux fois moins de dessins, moins de héros uniques."],
+        ["Le maximum : 16 visages, 24 teintes, marques en couches", "Très riche, mais les menus deviennent longs sur téléphone."] ] },
+      { id: "cheveux", t: "Combien de coupes et de couleurs de cheveux ?", why: "Aujourd'hui : 2 coupes, 6 couleurs, tirées du nom. Les races sans cheveux (Golems, Lumins) ont d'autres choses sur la tête : cristaux, mousse, crêtes.", rec: 0, o: [
+        ["12 coupes, 16 couleurs, + barbes et moustaches", "Assez pour se reconnaître de loin entre amis."],
+        ["6 coupes, 8 couleurs", "Le minimum honnête."],
+        ["20 coupes, 24 couleurs", "Le grand salon de coiffure ; deux fois plus long à dessiner."] ] },
+      { id: "miroir", t: "Peut-on changer d'apparence plus tard ?", why: "Le script : « on change d'apparence plus tard, jamais de race ». Il faut savoir où et à quel prix.", rec: 0, o: [
+        ["Oui, au Miroir de Solenn (temple) : la 1ʳᵉ fois gratuite, ensuite quelques pièces d'or", "Tout sauf la race. L'or reste un petit puits pour l'économie (Acte V)."],
+        ["Oui, toujours gratuit", "Le plus généreux ; on change de tête tous les jours."],
+        ["Oui, contre des Éclats (la monnaie de la boutique)", "Rapporte un peu, mais fait payer une chose très attendue."] ] },
+    ] },
+  { id: "peuples", icon: "🧝", title: "Les quinze peuples", sub: "Les 15 races de la bible prennent corps. La race reste surtout une affaire d'allure (1/5).",
+    chest: { title: "Fragment XVII : le recensement de Médiolane", lore: "Le premier recensement de Médiolane a duré onze ans. Les greffiers ont abandonné le jour où une Fée a demandé à être comptée « une et demie, à cause des ailes », et qu'un Golem a répondu qu'il était, lui, « quatre cailloux qui s'entendent bien »." },
+    qs: [
+      { id: "races_quand", t: "Les 15 races arrivent-elles toutes d'un coup ?", why: "Chaque race demande un corps, une tête et ses traits (oreilles, cornes, queue, ailes) en 8 directions et pour chaque animation. Avec la forge par code, c'est surtout du temps de calcul et de réglage.", rec: 0, o: [
+        ["Toutes les 15 dans la V0.4", "Le script les veut « dès le départ » ; les classes, elles, arrivent par vagues (chapitre suivant)."],
+        ["5 races par version (une faction à la fois)", "Plus vite pour la première version, mais tes amis attendent leur peuple."],
+        ["Les Humains + 4 races, le reste plus tard", "Le plus léger, loin du script."] ] },
+      { id: "tailles", t: "Les peuples ont-ils des tailles différentes ?", why: "Halfelins, Gnomes et Fées sont petits, Orques et Golems grands. Le serveur garde la même zone de collision pour tous, donc c'est juste visuel.", rec: 0, o: [
+        ["Oui, de 70 % (Fées, Gnomes) à 120 % (Golems, Orques)", "On reconnaît un peuple de loin, et la taille choisie à la création s'ajoute par-dessus."],
+        ["Petite différence seulement (90 % à 110 %)", "Plus sage, plus uniforme."],
+        ["Tout le monde à la même taille", "Le plus lisible, le moins vivant."] ] },
+      { id: "fees", t: "Les ailes des Fées, ça fait quoi ?", why: "Le vol (montures volantes) arrive à l'Acte VIII. Il ne faut pas qu'une Fée passe au-dessus des murs dès la V0.4.", rec: 0, o: [
+        ["Elles battent des ailes en marchant et planent un instant pendant la roulade", "Joli et juste : aucun avantage de déplacement."],
+        ["Elles flottent toujours un peu au-dessus du sol", "Très féerique, mais elles semblent ne jamais toucher terre."],
+        ["Ailes repliées, juste décoratives", "Le plus simple."] ] },
+      { id: "sirenes", t: "Sirènes et tritons sur la terre ferme ?", why: "La nage et la plongée arrivent avec la mer (Acte IX). Les héros commencent tous dans le Val de Glennmor.", rec: 0, o: [
+        ["Des jambes sur terre, la queue revient dans l'eau", "Ils marchent comme tout le monde ; nageoires aux chevilles et écailles sur la peau en attendant."],
+        ["Une queue partout, ils glissent sur le sol", "Original, mais une animation de plus pour tout."],
+        ["Toujours des jambes", "Simple, on perd le côté sirène."] ] },
+      { id: "revenants", t: "Comment dessiner les Revenants, en restant familial ?", why: "La bible : « des esprits revenus, pas des zombies effrayants ».", rec: 0, o: [
+        ["Peau pâle bleutée, yeux qui luisent doucement, de petites flammes d'âme qui flottent autour", "Mélancolique et beau, jamais gore."],
+        ["De petits squelettes mignons", "Rigolo, mais plus proche du monstre."],
+        ["Des fantômes à demi transparents", "Très joli, mais on voit mal leur armure."] ] },
+      { id: "faction", t: "La faction se voit-elle dès l'Acte IV ?", why: "La race décide de la faction (bible). Les guerres ouvertes et le PvP de faction arrivent à l'Acte VI.", rec: 0, o: [
+        ["Oui : un petit blason à côté du nom, mais le Val de Glennmor reste neutre et tout le monde s'entraide", "On sent son camp sans casser le jeu entre amis de factions différentes."],
+        ["Pas avant l'Acte VI", "Plus calme, la faction ne veut rien dire pour l'instant."],
+        ["Oui, et les factions ne se parlent plus que par gestes", "Façon WoW ; dur entre amis."] ] },
+    ] },
+  { id: "classes", icon: "⚔️", title: "L'ordre des classes", sub: "17 classes, chacune avec sa ressource, ses armes et ses compétences. La question, c'est comment on y arrive.",
+    chest: { title: "Fragment XVIII : les dix-sept bannières", lore: "Sur la grande place de Médiolane flottent dix-sept bannières, une par voie d'armes. Une dix-huitième hampe reste vide. Les gardes disent qu'elle attend une classe qui n'existe pas encore. Les plus vieux disent qu'elle a existé." },
+    qs: [
+      { id: "vagues", t: "Comment les 17 classes arrivent-elles ?", why: "Franchement, c'est le plus gros chantier depuis le début : 17 classes, c'est 17 armes, 17 jeux d'animations, une centaine de compétences et autant d'équilibrage. Le Paladin seul a pris l'Acte III.", rec: 0, o: [
+        ["Par vagues de 4 classes, une version chacune, toutes les 17 avant la fin de l'Acte IV", "On joue vite les premières, et chaque vague profite de tes retours."],
+        ["Toutes les 17 d'un coup", "Une seule grosse livraison, mais plusieurs semaines sans rien de neuf."],
+        ["6 classes à l'Acte IV, les autres plus tard", "Plus rapide, loin du script."] ] },
+      { id: "vague1", t: "Quelle première vague, à côté du Paladin ?", why: "Elle doit couvrir les rôles : un tank existe déjà (Paladin). Il faut de la distance, de la magie et un vrai soigneur.", rec: 0, o: [
+        ["Guerrier, Mage, Archer, Prêtre", "Les 4 piliers : mêlée, magie, distance, soin. Tout le reste s'appuie dessus."],
+        ["Voleur, Druide, Nécromancien, Chevalier-dragon", "Les plus originales d'abord ; on teste les formes, les invocations et le dragonneau."],
+        ["Guerrier, Mage, Druide, Barde", "Plus de soutien, moins de distance."] ] },
+      { id: "nb_comp", t: "Combien de compétences par classe à l'Acte IV ?", why: "Le script en veut 15 à 20, dont une ultime. Le Paladin en a 5 aujourd'hui.", rec: 0, o: [
+        ["8 par classe, dont une ultime au niveau 10 ; les autres s'ajoutent avec les niveaux des régions suivantes", "Assez pour sentir chaque classe et sa spécialisation, sans noyer le val."],
+        ["5 par classe, comme le Paladin", "Rapide, mais les spécialisations n'ont presque rien à elles."],
+        ["Les 15 à 20 tout de suite", "Complet, mais le val (niveaux 1 à 10) ne les mérite pas toutes."] ] },
+      { id: "ressources", t: "Une ressource propre à chaque classe ?", why: "Le script : « une ressource par classe ». Tu vois le nom de chacune dans les chapitres des voies.", rec: 0, o: [
+        ["Oui, 17 ressources avec chacune son geste (la Rage monte quand on prend des coups, l'Harmonie quand on enchaîne les chants…)", "Chaque classe se joue vraiment autrement."],
+        ["4 familles partagées : mana, rage, énergie, ferveur", "Plus facile à apprendre et à équilibrer, moins de caractère."] ] },
+      { id: "spe_quand", t: "Quand choisit-on sa spécialisation ?", why: "3 voies par classe. On ne change jamais de classe (script) ; la spécialisation, à voir.", rec: 0, o: [
+        ["Au niveau 10, après une petite quête de classe ; on peut en changer plus tard au temple, contre de l'or", "On découvre d'abord la classe, puis on choisit en connaissance de cause."],
+        ["Dès la création", "Clair tout de suite, mais on choisit à l'aveugle."],
+        ["Au niveau 10, pour toujours", "Plus de poids au choix, plus de regrets aussi."] ] },
+      { id: "attributs", t: "Les 9 attributs : comment les répartir ?", why: "Le script : points d'attributs à chaque niveau. Force, Intelligence, Agilité, Vitesse, Esquive, Vitalité, Chance, Endurance, Précision.", rec: 0, o: [
+        ["5 points par niveau à placer, avec un bouton « Répartition conseillée » et une remise à zéro gratuite jusqu'au niveau 10", "Libre sans piège pour les débutants."],
+        ["Tout automatique selon la classe", "Aucun risque, aucune décision."],
+        ["5 points par niveau, sans conseil ni remise à zéro", "Plus exigeant, des héros ratés possibles."] ] },
+      { id: "talents", t: "L'arbre de talents arrive quand ?", why: "Un arbre par spécialisation, c'est 51 arbres à écrire et à équilibrer.", rec: 0, o: [
+        ["À la fin de l'Acte IV, une fois les 17 classes en place", "On équilibre les classes d'abord, les talents ensuite."],
+        ["Avec chaque vague de classes", "Plus riche tout de suite, chaque vague prend plus longtemps."],
+        ["À l'Acte V, avec les runes et les gemmes", "Tout ce qui modifie les compétences arrive ensemble."] ] },
+    ] },
+  { id: "voies1", icon: "🗡️", title: "Les voies des armes", sub: "Les 51 spécialisations, 3 par classe. Pour chaque classe : mon trio ⭐, ou une autre idée. Le 📝 sert à mélanger (« garde les deux premières, remplace la troisième par… »). 🛡️ tank · 💚 soin · ⚔️ dégâts · 🎺 soutien.",
+    chest: { title: "Fragment XIX : le livre des voies", lore: "Doran garde sous son enclume un livre où chaque héros de passage écrit le nom de sa voie. Les premières pages sont en runes naines. Les dernières sont en écriture d'enfant : Tam et Tilda y ont inventé une voie du « Lanceur de cailloux », et Doran n'a pas eu le cœur de l'effacer." },
+    qs: [
+      { id: "v_guerrier", t: "⚔️ Les voies du Guerrier", why: "Ressource : la Rage, qui monte quand il frappe et quand il encaisse. Armes : épée, hache, masse, à une ou deux mains.", rec: 0, o: [
+        ["Rempart 🛡️ · Maître d'armes ⚔️ · Seigneur de guerre 🎺", "Le mur au bouclier ; la grande arme à deux mains ; le chef qui lance des cris de guerre au groupe."],
+        ["Protecteur 🛡️ · Gladiateur ⚔️ · Champion ⚔️", "Deux épées pour le Gladiateur, le Champion qui provoque en duel les élites."] ] },
+      { id: "v_berserker", t: "🪓 Les voies du Berserker", why: "Ressource : la Furie, qui monte quand sa vie descend. Armes : haches et marteaux.", rec: 0, o: [
+        ["Furie ⚔️ · Indomptable 🛡️ · Hurleur 🎺", "Deux haches et aucune prudence ; plus il est blessé, plus il tient ; ses hurlements galvanisent les alliés."],
+        ["Sang-bête ⚔️ · Briseur ⚔️ · Inébranlable 🛡️", "Une forme bestiale, un marteau qui brise les armures, et un tank."] ] },
+      { id: "v_lancier", t: "🔱 Les voies du Lancier", why: "Ressource : l'Élan, qui monte en se déplaçant et en touchant de loin. Armes : lances, hallebardes, javelots.", rec: 0, o: [
+        ["Phalange 🛡️ · Danse-lance ⚔️ · Plongeur céleste ⚔️", "Lance et grand bouclier ; une lance qui tournoie ; des sauts qui retombent du ciel."],
+        ["Hallebardier ⚔️ · Javelinier ⚔️ · Sentinelle 🛡️", "Les grandes zones, les lancers à distance, et un gardien de passage."] ] },
+      { id: "v_chevalier", t: "🐲 Les voies du Chevalier-dragon", why: "Ressource : le Souffle draconique. Armes : lance ou épée longue, et un dragonneau à ses côtés (ton rêve du script !).", rec: 0, o: [
+        ["Écaille 🛡️ · Souffle ⚔️ · Lien du dragonneau ⚔️", "Une armure d'écailles qui encaisse ; il crache les éléments ; il se bat en duo avec son dragonneau, qui grandit avec lui."],
+        ["Sang-draconique ⚔️ · Gardien des nids 🛡️ · Chevalier des nuées 🎺", "Il se transforme à moitié en dragon ; il protège ; il porte la bannière du ciel."] ] },
+      { id: "v_paladin", t: "🛡️ Les voies du Paladin", why: "Ta classe préférée, soignée en priorité. Ressource : la Ferveur (déjà en jeu). Armes : épée ou masse et écu.", rec: 0, o: [
+        ["Gardien du Serment 🛡️ · Lanterne sacrée 💚 · Justicier ⚔️", "Le tank de Solenn ; le soigneur, héritier des premiers allumeurs de lanternes ; la lumière qui frappe fort. Chaque voie garde le soin et les auras."],
+        ["Bouclier de l'Aube 🛡️ · Héraut 🎺 · Croisé ⚔️", "Le Héraut renforce tout le groupe par ses auras, le Croisé prend une arme à deux mains."] ] },
+      { id: "v_moine", t: "👊 Les voies du Moine", why: "Ressource : le Souffle intérieur, qui monte en enchaînant les coups. Armes : poings, bâton.", rec: 0, o: [
+        ["Poing de vent ⚔️ · Brume sereine 💚 · Pilier 🛡️", "Combos très rapides ; soins par la brume et le toucher ; il encaisse en restant immobile comme une montagne."],
+        ["Danse-vent ⚔️ · Sage 💚 · Roc ⚔️", "Les mêmes rôles, en version plus acrobatique pour les dégâts."] ] },
+    ] },
+  { id: "voies2", icon: "🔮", title: "Les voies des arcanes", sub: "Magiciens, invocateurs et faiseurs de potions. Même règle : mon trio ⭐, une autre idée, ou un mélange en 📝.",
+    chest: { title: "Fragment XX : l'école sans toit", lore: "L'école de magie de Médiolane n'a pas de toit. Le premier maître disait qu'un sort raté doit pouvoir s'envoler. Le deuxième maître a fait poser des filets. Le troisième a fait installer un parapluie au-dessus du bureau du deuxième." },
+    qs: [
+      { id: "v_mage", t: "🔥 Les voies du Mage", why: "Ressource : le Mana. Armes : bâton, ou baguette et grimoire. Il touche 3 des 6 éléments.", rec: 0, o: [
+        ["Pyromancien ⚔️ · Givremage ⚔️ · Tempêtier ⚔️", "Le feu qui brûle en zone ; la glace qui gèle et ralentit ; la foudre de l'air, rapide et précise."],
+        ["Arcaniste ⚔️ · Chronomancien 🎺 · Géomancien 🛡️", "La magie pure, le maître du temps qui accélère les alliés, et un mage de pierre qui encaisse."] ] },
+      { id: "v_necro", t: "💀 Les voies du Nécromancien", why: "Ressource : les Âmes, récoltées sur les ennemis tombés. Armes : faux, bâton d'os. Toujours familial : des esprits, pas d'horreur.", rec: 0, o: [
+        ["Maître des Os ⚔️ · Moissonneur ⚔️ · Passeur 💚", "Une petite armée de squelettes ; la faux qui draine la vie ; le gardien des esprits, qui soigne avec eux."],
+        ["Chuchoteur ⚔️ · Spectre ⚔️ · Gardien des tombes 🛡️", "Malédictions et peur ; une forme fantôme ; une armure d'os qui encaisse."] ] },
+      { id: "v_invocateur", t: "🌀 Les voies de l'Invocateur", why: "Ressource : le Lien, qui se partage entre ses créatures. Armes : orbe, tome de sceaux.", rec: 0, o: [
+        ["Lieur d'élémentaires ⚔️ · Appeleur d'esprits 💚 · Maître des colosses 🛡️", "Il invoque les éléments ; des esprits qui soignent le groupe ; un golem géant qui prend les coups à sa place."],
+        ["Démoniste ⚔️ · Dresseur de chimères ⚔️ · Portailliste 🎺", "Des démons tenus en laisse, des bêtes magiques, et des portails qui déplacent le groupe."] ] },
+      { id: "v_alchimiste", t: "⚗️ Les voies de l'Alchimiste", why: "Ressource : les Réactifs, qui se rechargent et se mélangent. Armes : fioles et bombes, lance-potions.", rec: 0, o: [
+        ["Apothicaire 💚 · Artificier ⚔️ · Colosse alchimique 🛡️", "Il lance des potions de soin ; des bombes en zone ; il boit ses mixtures et devient énorme et dur comme la pierre."],
+        ["Transmutateur ⚔️ · Empoisonneur ⚔️ · Médecin 💚", "Il change l'élément des ennemis, maîtrise les poisons, et un soigneur plus classique."] ] },
+      { id: "v_ingenieur", t: "⚙️ Les voies de l'Ingénieur", why: "Ressource : la Vapeur, qui chauffe et qu'il faut laisser refroidir. Armes : arquebuse, clé géante, tourelles. Les Gnomes vont adorer.", rec: 0, o: [
+        ["Artilleur ⚔️ · Bâtisseur de tourelles ⚔️ · Pilote d'armure 🛡️", "Le canon à distance ; des tourelles posées au sol ; une armure à vapeur qui encaisse au contact."],
+        ["Mécano de campagne 💚 · Saboteur ⚔️ · Horloger 🎺", "Des drones qui réparent les alliés, des pièges, et un maître des rouages qui ralentit les ennemis."] ] },
+    ] },
+  { id: "voies3", icon: "🎶", title: "Les voies des âmes", sub: "Les soigneurs, les chanteurs, et ceux qui parlent aux bêtes et aux esprits.",
+    chest: { title: "Fragment XXI : la chanson des six", lore: "Les bardes de Caelia connaissent une chanson à six couplets, un par dieu. Ils jurent qu'il en existe un septième, mais personne ne l'a jamais chanté jusqu'au bout. Ceux qui essaient perdent la mélodie au même endroit, et ne savent jamais dire pourquoi." },
+    qs: [
+      { id: "v_pretre", t: "✨ Les voies du Prêtre", why: "Ressource : la Grâce. Armes : masse légère, sceptre. Le vrai soigneur du jeu.", rec: 0, o: [
+        ["Oracle 💚 · Veilleur 💚 · Ombre de Seren ⚔️", "Les gros soins ; les boucliers posés avant les coups ; le prêtre de l'ombre qui frappe."],
+        ["Pèlerin 💚 · Inquisiteur ⚔️ · Prêtre du Silence 🎺", "Un soigneur en mouvement, un juge de lumière, et un prêtre des dieux disparus qui coupe les sorts ennemis."] ] },
+      { id: "v_druide", t: "🌿 Les voies du Druide", why: "Ressource : la Sève. Armes : bâton, serpe. Des formes animales, comme le script le veut. Fidèle de Cernos, le dieu disparu.", rec: 0, o: [
+        ["Forme d'ours 🛡️ · Forme de lynx ⚔️ · Cœur de la forêt 💚", "Il encaisse en ours ; il chasse en lynx ; il soigne avec les racines et les fleurs."],
+        ["Forme de cerf 🎺 · Tempête verte ⚔️ · Gardien des bois 🛡️", "Le cerf de Cernos qui porte le groupe, les sorts de nature à distance, et un gardien d'écorce."] ] },
+      { id: "v_chaman", t: "🌩️ Les voies du Chaman", why: "Ressource : les Esprits des éléments, appelés par les totems. Armes : hache, bâton à totem.", rec: 0, o: [
+        ["Voix des orages ⚔️ · Source vive 💚 · Marcheur des esprits ⚔️", "La foudre et la terre à distance ; des soins par l'eau et les totems ; le corps-à-corps avec un loup-esprit."],
+        ["Gardien des totems 🎺 · Tambour ancestral 💚 · Brise-terre 🛡️", "Les totems qui renforcent, un soigneur au tambour, et un tank de pierre."] ] },
+      { id: "v_barde", t: "🎻 Les voies du Barde", why: "Ressource : l'Harmonie, qui monte quand on enchaîne les chants dans le bon ordre. Armes : luth, flûte, rapière.", rec: 0, o: [
+        ["Ménestrel 💚 · Chantelame ⚔️ · Héraut de guerre 🎺", "Il soigne en chantant ; il se bat en rythme à la rapière ; ses tambours renforcent tout le groupe."],
+        ["Conteur 🎺 · Virtuose ⚔️ · Troubadour 💚", "Le Conteur endort et charme les ennemis, le Virtuose frappe à distance par le son."] ] },
+      { id: "v_voleur", t: "🗝️ Les voies du Voleur / assassin", why: "Ressource : l'Énergie, qui remonte vite. Armes : dagues, lames courtes, arbalète de poing.", rec: 0, o: [
+        ["Assassin ⚔️ · Bretteur ⚔️ · Ombrelame ⚔️", "Furtivité et poisons ; deux lames et les esquives ; il se téléporte d'ombre en ombre."],
+        ["Corsaire ⚔️ · Espion 🎺 · Acrobate 🛡️", "Pistolets et coups bas, l'aveuglement et le vol d'effets, et un esquiveur qui tient les monstres."] ] },
+      { id: "v_archer", t: "🏹 Les voies de l'Archer", why: "Ressource : la Concentration, qui monte en restant immobile. Armes : arcs, arbalètes.", rec: 0, o: [
+        ["Tireur d'élite ⚔️ · Rôdeur ⚔️ · Trappeur ⚔️", "Les tirs de très loin ; il chasse avec un compagnon (loup ou faucon) ; pièges et ralentissements."],
+        ["Archer élémentaire ⚔️ · Éclaireur 🎺 · Chasseur de primes ⚔️", "Des flèches de feu ou de glace, un éclaireur rapide qui marque les cibles, et un traqueur d'élites."] ] },
+    ] },
+  { id: "souffle", icon: "🌟", title: "Le premier souffle", sub: "Ce qui arrive aux héros d'aujourd'hui, et quelques touches de gloire.",
+    chest: { title: "Fragment XXII : le mémorial de Bourg-Lanterne", lore: "Derrière le temple, Corbin entretient une petite stèle sans nom. Chaque soir, il y allume une lanterne de plus. Quand on lui demande pour qui, il répond : « Pour ceux qui n'ont eu qu'une seule chance, et qui l'ont prise. »" },
+    qs: [
+      { id: "anciens", t: "Que deviennent les héros déjà créés ?", why: "Aujourd'hui, ce sont tous des Humains Paladins, avec leur niveau, leur or et leurs trophées.", rec: 0, o: [
+        ["Ils restent Humains Paladins, mais passent une fois gratuitement devant le Miroir de création, et choisissent leur voie au niveau 10", "Rien n'est perdu, et l'apparence se refait."],
+        ["Ils peuvent tout rechoisir une fois (race et classe), en gardant niveau et or", "Généreux, mais va contre « on ne change jamais de race ni de classe »."],
+        ["On efface tout, nouveau départ pour tous", "Propre, mais tes amis perdent leur progression."] ] },
+      { id: "hardcore", t: "Mode hardcore : que se passe-t-il quand on meurt ?", why: "Décidé à l'Acte III : une case « Hardcore » à la création. Reste à décider de la mort. Le jeu est familial, et 3 emplacements seulement.", rec: 0, o: [
+        ["Le héros perd sa flamme rouge et redevient un héros normal ; son exploit est gravé au mémorial du temple", "La mort compte (on perd le titre et le prestige), sans perdre des heures de jeu."],
+        ["Le héros est figé pour toujours : visible au mémorial, plus jouable", "Le vrai hardcore, très dur avec 3 emplacements."],
+        ["Le héros est supprimé", "Le plus brutal."] ] },
+      { id: "dieu", t: "Quand choisit-on le dieu qu'on sert ?", why: "Le script : « le joueur choisit lequel servir ». Les six dieux actifs et les trois Silencieux sont dans la bible.", rec: 0, o: [
+        ["À la création, pour l'allure et les textes (la couleur de l'aura, ce que disent les prêtres) ; les vrais effets viendront avec l'histoire", "Ça donne une âme au héros tout de suite, sans équilibrage à faire."],
+        ["Au niveau 5, au temple, avec une petite quête", "Plus de cérémonie, un peu plus tard."],
+        ["Plus tard, avec l'histoire de l'Acte VII", "On garde la surprise."] ] },
+      { id: "aura", t: "L'aura qui grandit avec le niveau, dès maintenant ?", why: "Le script veut une aura qui grandit avec le niveau. Il n'y a pas de niveau maximum.", rec: 0, o: [
+        ["Oui, discrète : une lueur aux pieds au niveau 10, des particules au niveau 20, et ainsi de suite", "On voit les vétérans sans que le val devienne un feu d'artifice."],
+        ["Oui, bien visible dès le niveau 5", "Spectaculaire, chargé quand 20 héros sont sur la place."],
+        ["Plus tard, avec les cosmétiques", "Rien ne change à l'écran pour l'instant."] ] },
+      { id: "fiche", t: "La fiche publique du héros, dès l'Acte IV ?", why: "Le script la veut en jeu, sur Discord et sur le site. Discord et le site arrivent à l'Acte IX.", rec: 0, o: [
+        ["Oui, en jeu : touche un héros pour voir sa race, sa classe, sa voie, son niveau, son dieu et sa faction", "Utile tout de suite pour former des groupes entre amis."],
+        ["Plus tard, avec Discord et le site", "Tout d'un coup à l'Acte IX."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const STEP = 75;
+const LEVELS = ["Ombre sans visage", "Silhouette au miroir", "Héros nommé", "Apprenti d'une voie", "Porteur de bannière", "Maître des voies", "Gardien des quinze peuples", "Légende d'Erydor"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, certifié sans bug (pour l'instant).", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou.", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté.", "Un mélange de voies ? J'adore les mélanges. Sauf la soupe de navets."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et je file dessiner quinze peuples. Ça va me prendre un moment.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / STEP) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? STEP : x % STEP;
+  document.getElementById("xpfill").style.width = (inLevel / STEP * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte IV)" : `${STEP - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Nouveau fragment pour le Grimoire d'Erydor, à valider comme les autres. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les ${TOTAL} réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, puis je lance la forge des héros, et ton Paladin pourra enfin se regarder dans un miroir.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil-acte4", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil-acte4") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>

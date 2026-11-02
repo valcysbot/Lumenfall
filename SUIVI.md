@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte IV, les héros (à lancer)
+**Version actuelle :** V0.3.2 « Premier sang » (30 octobre 2026) · **Acte en cours :** Acte IV, les héros
 
 ---
 
@@ -13,7 +13,7 @@
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
-| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ○ |
+| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ en cours |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
 | VII | Donjons, raids, quêtes et histoire | ○ |
@@ -115,6 +115,54 @@
 - **Jeu trop ancien** : le serveur demande au moins la v0.3.0. La v0.3.1 n'ajoute que le tutoriel : une v0.3.0 peut toujours jouer.
 - **Le ralenti** n'existe que sur ton écran (le monde est partagé) : il ne dure qu'une demi-seconde, sur le coup fatal d'un élite ou d'un boss.
 
+## 🧝 Acte IV, les héros
+
+### ✓ Quêtes accomplies
+
+- ✓ **Le Conseil des Héros** : 40 questions en 7 chapitres, toutes répondues le 2 novembre 2026 ([archive](docs/conseil-des-heros.html)).
+
+### ✱ Quêtes en cours
+
+- ✱ **La forge des peuples** : les 15 races dessinées par code, chacune avec sa silhouette et sa taille (de 60 % à 120 %), 16 visages, 24 teintes de peau, 12 couleurs d'yeux et des marques en couches, 20 coupes et 24 couleurs de cheveux, barbes et moustaches.
+- ○ **Le miroir de création** : homme, femme ou autre (avec ses accords), taille (5 crans) et carrure (3), dieu servi, blason de faction, case Hardcore.
+- ○ **Les 17 classes, toutes d'un coup** : une ressource et des armes propres à chacune, 8 compétences dont une ultime au niveau 10, et les 51 voies à choisir au niveau 10 après une quête de classe.
+- ○ **Les 9 attributs** : 5 points par niveau, répartition conseillée, remise à zéro gratuite jusqu'au niveau 10.
+- ○ **La gloire** : aura qui grandit tous les 10 niveaux, fiche publique en jeu.
+- ○ **Nouveau départ** : tous les héros actuels sont effacés à l'arrivée de la V0.4 (choix d'Elowan).
+- ○ **Les talents** : à la fin de l'Acte IV, une fois les 17 classes en place.
+
+### 🗡️ Les 51 voies
+
+| Classe | Ressource | Voies |
+|---|---|---|
+| Guerrier | Rage | Rempart 🛡️ · Gladiateur ⚔️ · Champion ⚔️ |
+| Berserker | Furie | Sang-bête ⚔️ · Briseur ⚔️ · Inébranlable 🛡️ |
+| Lancier | Élan | Hallebardier ⚔️ · Javelinier ⚔️ · Sentinelle 🛡️ |
+| Chevalier-dragon | Souffle draconique | Écaille 🛡️ · Souffle ⚔️ · Lien du dragonneau ⚔️ |
+| Paladin | Ferveur | Bouclier de l'Aube 🛡️ · Héraut 🎺 · Croisé ⚔️ |
+| Moine | Souffle intérieur | Poing de vent ⚔️ · Brume sereine 💚 · Pilier 🛡️ |
+| Mage | Mana | Pyromancien ⚔️ · Givremage ⚔️ · Tempêtier ⚔️ |
+| Nécromancien | Âmes | Maître des Os ⚔️ · Moissonneur ⚔️ · Passeur 💚 |
+| Invocateur | Lien | Démoniste ⚔️ · Dresseur de chimères ⚔️ · Lieur d'éléments ⚔️ |
+| Alchimiste | Réactifs | Apothicaire 💚 · Artificier ⚔️ · Empoisonneur ⚔️ |
+| Ingénieur | Vapeur | Artilleur ⚔️ · Bâtisseur de tourelles ⚔️ · Pilote d'armure 🛡️ |
+| Prêtre | Grâce | Oracle 💚 · Veilleur 💚 · Prêtre du Silence 🎺 |
+| Druide | Sève | Forme d'ours 🛡️ · Forme de lynx ⚔️ · Cœur de la forêt 💚 |
+| Chaman | Esprits | Voix des orages ⚔️ · Source vive 💚 · Marcheur des esprits ⚔️ |
+| Barde | Harmonie | Conteur 🎺 · Virtuose ⚔️ · Troubadour 💚 |
+| Voleur / assassin | Énergie | Assassin ⚔️ · Bretteur ⚔️ · Ombrelame ⚔️ |
+| Archer | Concentration | Tireur d'élite ⚔️ · Rôdeur ⚔️ · Trappeur ⚔️ |
+
+🛡️ tank · 💚 soin · ⚔️ dégâts · 🎺 soutien. Bilan : 8 voies de tank, 8 de soin, 4 de soutien, 31 de dégâts.
+
+### ⚠️ Points d'attention
+
+- **Une seule grosse livraison** (choix d'Elowan) : les 17 classes et les 15 races arrivent ensemble dans la V0.4. Il faudra donc plus de temps qu'entre les versions précédentes avant de pouvoir jouer, et le premier équilibrage portera sur 17 classes d'un coup.
+- **Le Paladin n'a plus de voie de soin** : avec Bouclier de l'Aube, Héraut et Croisé, chaque voie garde Lumière de Solenn (le soin) et l'aura, mais aucune n'est spécialisée dans le soin du groupe.
+- **Hardcore sans filet** (choix d'Elowan) : un héros hardcore qui meurt est supprimé pour de bon.
+- **Beaucoup de dessins** : 16 visages × 24 teintes × 20 coupes × 24 couleurs par race. La forge par code les fabrique pièce par pièce (les couleurs sont des teintures de palette), mais les planches devront être découpées pour tenir sous 4 096 pixels sur téléphone.
+- **Fées très petites** : à 60 %, une Fée fait environ 19 pixels de haut ; son nom et son cercle de sélection restent à la taille normale pour qu'on puisse la viser.
+
 ---
 
 ## ⚖️ Décisions prises
@@ -199,6 +247,29 @@
 | 30/10/2026 | Mode hardcore | À l'Acte IV, avec la création du héros ⭐ |
 | 30/10/2026 | Combat jugé « un peu compliqué » : ce qui manque | « On ne comprend pas quoi faire » → tutoriel de Braise au premier monstre ⭐ |
 | 30/10/2026 | Publication des versions | Claude lance lui-même la publication (onglet Actions) après chaque fusion |
+| 02/11/2026 | Genre | Homme, femme ou autre, avec choix des accords ⭐ |
+| 02/11/2026 | Silhouette | Taille (5 crans) + carrure (3) ⭐ |
+| 02/11/2026 | Visage, peau, yeux | **16 visages, 24 teintes, marques en couches** (choix d'Elowan) |
+| 02/11/2026 | Cheveux | **20 coupes, 24 couleurs, barbes et moustaches** (choix d'Elowan) |
+| 02/11/2026 | Changer d'apparence | Miroir de Solenn : 1ʳᵉ fois gratuite, puis un peu d'or ⭐ |
+| 02/11/2026 | Races dans la V0.4 | Les 15 ⭐ |
+| 02/11/2026 | Tailles des peuples | De 70 % à 120 %, **et même 60 %** (précision d'Elowan) ⭐ |
+| 02/11/2026 | Ailes des Fées | **Elles flottent toujours un peu au-dessus du sol** (choix d'Elowan) |
+| 02/11/2026 | Sirènes et tritons | Jambes sur terre, queue dans l'eau ⭐ |
+| 02/11/2026 | Revenants | Peau pâle bleutée, yeux qui luisent, flammes d'âme ⭐ |
+| 02/11/2026 | Faction | Blason à côté du nom, le val reste neutre ⭐ |
+| 02/11/2026 | Arrivée des classes | **Les 17 d'un coup** (choix d'Elowan) |
+| 02/11/2026 | Compétences | 8 par classe, dont une ultime au niveau 10 ⭐ |
+| 02/11/2026 | Ressources | Une par classe, 17 en tout ⭐ |
+| 02/11/2026 | Spécialisation | Au niveau 10 après une quête de classe, changeable au temple contre de l'or ⭐ |
+| 02/11/2026 | Attributs | 5 points par niveau, répartition conseillée, remise à zéro gratuite jusqu'au niveau 10 ⭐ |
+| 02/11/2026 | Talents | À la fin de l'Acte IV ⭐ |
+| 02/11/2026 | Les 51 voies | Voir le tableau de l'Acte IV : 7 trios ⭐, 10 trios choisis ou retouchés par Elowan |
+| 02/11/2026 | Héros existants | **Tout est effacé, nouveau départ pour tous** (choix d'Elowan) |
+| 02/11/2026 | Mort en hardcore | **Le héros est supprimé** (choix d'Elowan) |
+| 02/11/2026 | Dieu servi | À la création, pour l'allure et les textes ⭐ |
+| 02/11/2026 | Aura | Discrète, grandit tous les 10 niveaux ⭐ |
+| 02/11/2026 | Fiche du héros | En jeu dès l'Acte IV ⭐ |
 
 ⭐ = recommandation de Claude suivie.
 
