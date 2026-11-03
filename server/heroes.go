@@ -346,7 +346,7 @@ type heroPos struct {
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
 // À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
 // afficher (une nouvelle région, par exemple).
-const minClientVersion = "0.4.0"
+const minClientVersion = "0.5.0"
 
 // versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
 // illisible compte comme trop ancienne.

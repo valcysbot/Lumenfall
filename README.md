@@ -57,12 +57,14 @@ Les planches des peuples n'ont pas de couleurs : le rouge de chaque pixel code u
 
 - Les 17 classes, leurs compétences et leurs 51 voies : `server/world/classes.go` (des données) ; le moteur qui les fait tourner : `server/world/skills.go` ; attributs, peuples et dieux : `server/world/stats.go`.
 - Le client lit une copie : `client/data/heros/classes.json`. Après avoir touché aux classes : `cd server && LF_ECRIRE=1 go test ./world -run DonneesDuClient` (un test vérifie que la copie est à jour).
+- Les talents : les arbres sont construits par `server/world/talents.go` à partir des compétences de chaque classe ; la force de chaque voie est réglée dans `server/world/talents_echelle.go`, que l'on recalcule avec `cd server && LF_ECRIRE=1 go test ./world -run EchelleDesTalents` (environ 1 minute 30) quand on touche aux classes ou aux talents. Capture de l'onglet : `--capture=world --fiche=talents --defile=330`.
+- Les formes de combat (ours, lynx, armure à vapeur) sont des bêtes de `tools/sprites/forge_betes.py`, nommées par la clé `forme` de la voie.
 - Capture du miroir : `--capture=create --race=elfe --classe=druide --onglet=allure` ; d'un héros : `--capture=world --race=drakeide --classe=guerrier --fiche=voie`.
 
 ## Les habitants
 
 - Où ils travaillent, où ils dorment, s'ils sortent la nuit : `server/world/maps/glennmor.pnj.json` (le serveur vérifie au démarrage que ces lieux sont praticables et reliés).
-- Leur tenue, leurs bulles et leurs dialogues : `client/data/pnj/glennmor.json`. Un dialogue est une suite de nœuds `{texte, choix: [{texte, vers}]}` qui commence à `debut` ; `vers` vide termine la conversation. `{nom}` est remplacé par le nom du héros.
+- Leur allure, leurs bulles et leurs dialogues : `client/data/pnj/glennmor.json`. L'allure (clé `peuple`) prend les mêmes réglages que le miroir (`k` carrure, `p` peau, `y` yeux, `hc` couleur et `h` coupe de cheveux, `b` barbe, `v` visage, `tu` tunique), plus `robe`, `taille`, les pièces en plus (`tablier`, `gants`, `cape`, `chapeau`, `casque`, `arme_…`) et leurs `couleurs`. Un dialogue est une suite de nœuds `{texte, choix: [{texte, vers}]}` qui commence à `debut` ; `vers` vide termine la conversation. `{nom}` est remplacé par le nom du héros.
 
 ## Le combat et les monstres
 
