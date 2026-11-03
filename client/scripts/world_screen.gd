@@ -47,6 +47,7 @@ var combat: CombatHud
 var fx_layer: Node2D
 var tele_layer: Node2D
 var target_sid := 0
+var _assaillants := {}       # sid → dernière fois qu'il t'a frappé
 var _hunt := 0              # monstre vers qui l'on marche pour le frapper
 var _hunt_t := 0.0
 var _shake := 0.0
@@ -71,6 +72,9 @@ var toast: Label
 var sheet: HeroSheet        # la fiche du héros ouverte (C), ou nil
 var miroir_btn: Button
 var _me := {}               # le dernier état privé du héros (opMe)
+var objectif: Label          # « 🎯 la prochaine étape », sous les boutons
+var _fleche: Node2D          # la flèche autour du héros, vers la prochaine étape
+var _vers = null             # le lieu de la prochaine étape (cases), ou null
 var sheet_btn: Button       # « 📜 Héros » : un point lumineux quand des talents attendent
 var _miroir: Miroir
 const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
@@ -106,6 +110,9 @@ func _ready() -> void:
 	fx_layer = Node2D.new()
 	fx_layer.z_index = 50
 	add_child(fx_layer)
+	_fleche = Node2D.new()
+	_fleche.draw.connect(_draw_fleche)
+	fx_layer.add_child(_fleche)
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
@@ -143,6 +150,20 @@ func _build_hud() -> void:
 	info.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top.add_child(info)
 	root.add_child(top)
+
+	# La prochaine étape : quoi faire, et une flèche autour du héros pour y aller.
+	var obj := PanelContainer.new()
+	obj.add_theme_stylebox_override("panel", UI.box(Color(UI.NIGHT, 0.7), Color(UI.LINE, 0.8), 12, 1, 8))
+	obj.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 14)
+	obj.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	obj.position.y += 64
+	obj.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	objectif = UI.label("", 15, UI.PARCH)
+	objectif.custom_minimum_size = Vector2(0, 0)
+	objectif.autowrap_mode = TextServer.AUTOWRAP_OFF
+	obj.add_child(objectif)
+	obj.visible = false
+	root.add_child(obj)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 8)
@@ -296,6 +317,14 @@ func _build_settings(root: Control) -> void:
 		_fluidite = on
 		_update_info())
 	col.add_child(fl)
+	var keys := UI.button("⌨ Changer mes touches")
+	keys.focus_mode = Control.FOCUS_NONE
+	keys.pressed.connect(func():
+		settings.visible = false
+		var p := preload("res://scripts/touches_panel.gd").new()
+		p.changed.connect(combat.refresh_keys)
+		settings.get_parent().add_child(p))
+	col.add_child(keys)
 	var tuto := UI.button("🐉 Revoir le tutoriel de combat")
 	tuto.focus_mode = Control.FOCUS_NONE
 	tuto.pressed.connect(func():
@@ -434,6 +463,7 @@ func _on_state(op: int, d: Dictionary) -> void:
 				pawns[sid].queue_free()
 				pawns.erase(sid)
 				buffers.erase(sid)
+				_assaillants.erase(sid)
 				_update_info()
 		Net.OP_DELTA:
 			if _dernier_delta >= 0.0 and _clock - _dernier_delta < 0.5:   # sinon, rien ne bougeait
@@ -518,6 +548,8 @@ func _on_state(op: int, d: Dictionary) -> void:
 			t.r = float(d.r) / 100.0
 			t.total = float(d.ms) / 1000.0
 			tele_layer.add_child(t)
+			if str(d.get("n", "")) != "":
+				_float(int(d.s), str(d.n), Color("ff8a3c"), true)   # « Charge ! » : le coup qui arrive
 
 
 func _add_pawn(p: Dictionary) -> void:
@@ -594,9 +626,12 @@ func _process(delta: float) -> void:
 		_info_t = 0.0
 		miroir_btn.visible = _near_npc("clemence", MIROIR_REACH)
 		_update_info()
+		_update_objectif()
 		_maybe_tutorial()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
+		_fleche.position = pawns[my_sid].position + Vector2(0, -20)
+		_fleche.queue_redraw()
 	# Un coup critique fait trembler l'écran ; le coup fatal d'un élite ralentit le temps (sur ton écran seulement).
 	if _shake > 0:
 		_shake = maxf(0, _shake - delta / maxf(0.05, Engine.time_scale))
@@ -653,10 +688,10 @@ func _interpolate() -> void:
 func _read_direction() -> void:
 	var d := Vector2.ZERO
 	if not chat_edit.has_focus():
-		if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP): d.y -= 1
-		if Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN): d.y += 1
-		if Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): d.x -= 1
-		if Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): d.x += 1
+		if Input.is_physical_key_pressed(Touches.key("haut")) or Input.is_key_pressed(KEY_UP): d.y -= 1
+		if Input.is_physical_key_pressed(Touches.key("bas")) or Input.is_key_pressed(KEY_DOWN): d.y += 1
+		if Input.is_physical_key_pressed(Touches.key("gauche")) or Input.is_key_pressed(KEY_LEFT): d.x -= 1
+		if Input.is_physical_key_pressed(Touches.key("droite")) or Input.is_key_pressed(KEY_RIGHT): d.x += 1
 	if joystick != null and joystick.value.length() > 0.2:
 		d = joystick.value
 	var w := Iso.screen_dir_to_world(d.normalized() if d.length() > 1 else d)
@@ -684,7 +719,7 @@ func _through_door() -> void:
 
 
 func _running() -> bool:
-	return _run_toggle or (not chat_edit.has_focus() and Input.is_key_pressed(KEY_SHIFT))
+	return _run_toggle or (not chat_edit.has_focus() and Input.is_physical_key_pressed(Touches.key("courir")))
 
 
 func _wave() -> void:
@@ -705,7 +740,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_ESCAPE and chat_edit.visible:
 			chat_edit.visible = false
 			chat_edit.release_focus()
-		elif event.physical_keycode == KEY_H and not chat_edit.has_focus():
+		elif event.physical_keycode == Touches.key("saluer") and not chat_edit.has_focus():
 			_wave()
 		elif not chat_edit.has_focus() and _combat_key(event):
 			get_viewport().set_input_as_handled()
@@ -902,25 +937,26 @@ func _set_tuto_done(on: bool) -> void:
 	cfg.set_value("jeu", "tuto_combat", on)
 	cfg.save(WorldSky.SETTINGS)
 
-## Les touches de combat : 1 à 8, R (potion), Espace (roulade), Tab, Échap, C (ta fiche).
+## Les touches de combat (par défaut 1 à 8, R, Espace, Tab, C ; à changer dans ⌨ Touches) et Échap.
 func _combat_key(event: InputEventKey) -> bool:
 	if dialogue.visible:
 		return false   # 1 à 4 choisissent une réponse
 	var k := event.physical_keycode
-	if k >= KEY_1 and k <= KEY_8:
-		_use_skill(k - KEY_1 + 1)
+	var act := Touches.action_for(k)
+	if act.begins_with("comp_"):
+		_use_skill(int(act.substr(5)))
 	elif k >= KEY_KP_1 and k <= KEY_KP_8:
 		_use_skill(k - KEY_KP_1 + 1)
-	elif k == KEY_C:
+	elif act == "fiche":
 		if sheet != null:
 			_close_sheet()
 		else:
 			_open_sheet()
-	elif k == KEY_R:
+	elif act == "potion":
 		_potion()
-	elif k == KEY_SPACE:
+	elif act == "roulade":
 		_roll()
-	elif k == KEY_TAB:
+	elif act == "cible":
 		_next_target()
 	elif k == KEY_ESCAPE and target_sid != 0 and not dialogue.visible:
 		_set_target(0)
@@ -1081,6 +1117,11 @@ func _on_hit(src: int, tgt: int, value: int, flags: int, skill: int) -> void:
 	_float(tgt, txt, color, crit)
 	if src == my_sid or tgt == my_sid:
 		_fight_t = _clock
+	if tgt == my_sid and _hostile(src):
+		# Celui qui te frappe devient ta cible, si tu n'en avais pas.
+		_assaillants[src] = _clock
+		if not _hostile(target_sid):
+			_set_target(src)
 	if crit and (src == my_sid or tgt == my_sid):
 		_shake = 0.25
 	if tgt == my_sid and braise != null and randf() < 0.06:
@@ -1112,8 +1153,9 @@ func _on_death(sid: int, killer: int, flags: int) -> void:
 		return
 	var p: Pawn = pawns[sid]
 	p.die()
+	_assaillants.erase(sid)
 	if sid == target_sid and p.kind != "":
-		_set_target(0)
+		_set_target(_prochain_assaillant())
 	if flags & 32 and (killer == my_sid or _near(sid, 12)):
 		_slowmo = 0.6
 		_shake = 0.3
@@ -1167,6 +1209,17 @@ func _on_loot(d: Dictionary) -> void:
 # --- Les duels ------------------------------------------------------------------
 
 ## Un monstre, ou ton adversaire en duel : on peut lui courir dessus et le frapper.
+## Le monstre qui t'a frappé le plus récemment (ces 6 dernières secondes), ou 0.
+func _prochain_assaillant() -> int:
+	var best := 0
+	var quand := _clock - 6.0
+	for sid in _assaillants:
+		if _assaillants[sid] > quand and _hostile(sid):
+			best = sid
+			quand = _assaillants[sid]
+	return best
+
+
 func _hostile(sid: int) -> bool:
 	return pawns.has(sid) and not pawns[sid].dead and (pawns[sid].kind != "" or sid == _duel_foe)
 
@@ -1280,6 +1333,55 @@ func _open_sheet() -> void:
 	sheet.talents.connect(func(t): Net.send(Net.OP_TALENTS, {"t": t}))
 	sheet.closed.connect(func(): sheet = null)
 	hud.get_child(0).add_child(sheet)
+
+
+## La prochaine étape conseillée (res://data/objectifs/<carte>.json).
+func _update_objectif() -> void:
+	var path := "res://data/objectifs/%s.json" % map_id
+	var data: Dictionary = {}
+	if FileAccess.file_exists(path):
+		data = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var texte := ""
+	_vers = null
+	if not data.is_empty() and not _me.is_empty():
+		var lv := int(_me.get("lv", 1))
+		var v := int(_me.get("v", -1))
+		var etape: Dictionary = {}
+		if lv >= int(Heros.data().voie):
+			if v < 0 and int(_me.get("q", 0)) < int(_me.get("qm", 5)):
+				etape = data.epreuve
+				texte = str(etape.texte) % [int(_me.get("q", 0)), int(_me.get("qm", 5))]
+			elif v < 0:
+				etape = data.voie
+			else:
+				etape = data.boss
+		else:
+			for e in data.etapes:
+				if lv <= int(e.jusqu_au):
+					etape = e
+					break
+		if texte == "" and etape.has("texte"):
+			texte = str(etape.texte)
+		if etape.has("vers"):
+			_vers = Vector2(etape.vers[0], etape.vers[1])
+	objectif.text = "🎯 " + texte
+	objectif.get_parent().visible = texte != ""
+
+
+## La flèche dorée autour du héros, vers la prochaine étape (cachée quand on y est).
+func _draw_fleche() -> void:
+	if _vers == null or not pawns.has(my_sid) or dialogue.visible:
+		return
+	var me: Pawn = pawns[my_sid]
+	if Iso.to_world(me.position).distance_to(_vers) < 14.0:
+		return
+	var d: Vector2 = (Iso.to_screen(_vers) - me.position).normalized()
+	var p := d * (62.0 + 4.0 * sin(_clock * 4.0))
+	var n := Vector2(-d.y, d.x)
+	var pts := PackedVector2Array([p + d * 22, p + n * 13, p - d * 2, p - n * 13])
+	_fleche.draw_colored_polygon(pts, Color(UI.LUMEN, 0.95))
+	pts.append(pts[0])
+	_fleche.draw_polyline(pts, Color(0, 0, 0, 0.7), 2.0, true)
 
 
 ## Le point lumineux sur « 📜 Héros » : des points de talent attendent d'être placés.

@@ -194,14 +194,14 @@ func _build_bar() -> void:
 	bar.add_theme_constant_override("separation", 6)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for k in range(1, NSKILLS + 1):
-		bar.add_child(_make(k, "", str(k), 56, false, ""))
-	bar.add_child(_make("potion", "🧪", "R", 56, false, "Potion de soin (R)\nRend 40 % de ta vie. Recharge 30 s."))
-	bar.add_child(_make("roulade", "💨", "Esp.", 56, false, "Roulade (Espace)\nTu esquives tout pendant la roulade. Deux d'affilée, puis tu souffles."))
+		bar.add_child(_make(k, "", Touches.label("comp_%d" % k), 56, false, ""))
+	bar.add_child(_make("potion", "🧪", Touches.label("potion"), 56, false, "Potion de soin\nRend 40 % de ta vie. Recharge 30 s."))
+	bar.add_child(_make("roulade", "💨", Touches.label("roulade"), 56, false, "Roulade\nTu esquives tout pendant la roulade. Deux d'affilée, puis tu souffles."))
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 14)
 	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(bar)
-	_tip = UI.label("Clic : viser · Tab : cible suivante · C : ton héros", 13, UI.MUTED)
+	_tip = UI.label("", 13, UI.MUTED)
 	_tip.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_tip.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 82)
 	_tip.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -209,6 +209,22 @@ func _build_bar() -> void:
 	_tip.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_tip.add_theme_constant_override("outline_size", 4)
 	add_child(_tip)
+	refresh_keys()
+
+
+## Après un changement dans ⌨ Touches : les lettres sur les boutons suivent.
+func refresh_keys() -> void:
+	if touch:
+		return
+	for id in buttons:
+		var b: SkillButton = buttons[id]
+		if id is int:
+			b.key = Touches.label("comp_%d" % id)
+		elif id == "potion" or id == "roulade":
+			b.key = Touches.label(id)
+		b.queue_redraw()
+	if _tip != null:
+		_tip.text = "Clic : viser · %s : cible suivante · %s : ton héros" % [Touches.label("cible"), Touches.label("fiche")]
 
 
 ## Sur téléphone : un éventail sous le pouce droit, la roulade au centre.

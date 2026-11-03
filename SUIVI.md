@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.5.1 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
+**Version actuelle :** V0.5.2 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
 
 ---
 
@@ -324,6 +324,19 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.5.2 · « Mille chemins » (3 novembre 2026)
+
+Les retours de la première soirée de jeu entre amis :
+
+- 🎯 **La prochaine étape** : sous les boutons, le jeu te dit quoi faire selon ton niveau (sangliers, loups, Lisière Grise, épreuve de la voie, Grand Sanglier), et une flèche dorée autour de ton héros montre la direction.
+- 🐗 **Des monstres plus vivants** : le sanglier charge, les loups bondissent sur leur proie, les corbeaux effacés piquent du ciel. Chaque coup s'annonce au sol et en toutes lettres (« Charge ! ») : roule pour l'éviter. Entre deux morsures, les loups et les corbeaux tournent autour de toi au lieu de rester plantés.
+- ⚔️ **Face à face** : les héros et les monstres se tournent vers leur cible quand ils frappent. Le serveur le faisait déjà, mais ne l'envoyait pas quand personne ne bougeait : les coups semblaient partir de dos.
+- 🎯 **La cible toute seule** : un monstre qui t'attaque devient ta cible si tu n'en avais pas, et quand elle tombe, tu passes à celui qui te frappe encore.
+- ⌨ **Tes touches** : ⚙ Réglages → « Changer mes touches ». Si une touche était déjà prise, les deux actions échangent. Les flèches marchent toujours.
+- 🐛 **Les boutons + et Valider** de la fiche ne répondaient plus quand ta vie ou ta ressource bougeait (la fiche se redessinait sous ton doigt, et les talents placés s'effaçaient). Corrigé.
+
+Captures : [la prochaine étape](docs/captures/v0.5.2/prochaine-etape.png) · [la flèche](docs/captures/v0.5.2/fleche.png) · [les touches](docs/captures/v0.5.2/touches.png).
 
 ### V0.5.1 · « Mille chemins » (3 novembre 2026)
 

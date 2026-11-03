@@ -51,7 +51,7 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 			if t := a.Tele(e.Value); t != nil {
 				_ = d.BroadcastMessage(opTele, mustJSON(map[string]interface{}{
 					"s": t.Src, "l": t.Line, "a": [2]int{cent(t.X), cent(t.Y)}, "b": [2]int{cent(t.X2), cent(t.Y2)},
-					"r": cent(t.R), "ms": int(t.Left * 1000),
+					"r": cent(t.R), "ms": int(t.Left * 1000), "n": t.Name,
 				}), nil, nil, true)
 			}
 		case world.EvPhase:
