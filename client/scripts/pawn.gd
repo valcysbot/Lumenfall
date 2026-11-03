@@ -18,6 +18,7 @@ const FX_COMPAGNON := 1 << 21
 const FX_GARDE := 1 << 24
 const FX_INCANTE := 1 << 25
 const FX_PHASE2 := 1 << 26
+const FX_FORME := 1 << 27   # un héros dans sa forme de combat (ours, lynx, armure à vapeur)
 ## La couleur de l'aura, d'après le dieu du héros.
 const AURA_DIEUX := {"solenn": Color("f2d94e"), "maelis": Color("4fb3d9"), "brannoc": Color("c98a4a"),
 	"caelia": Color("bfe8f0"), "fergal": Color("f08a3c"), "seren": Color("8a6ad8"), "aurel": Color("f4f4f4"),
@@ -53,6 +54,7 @@ var foe := false        # ton adversaire en duel
 var sprite: Node2D     # PeupleSprite (héros) ou HeroSprite (habitants)
 var _floats := false   # les fées flottent
 var mon: MonsterSprite
+var forme: MonsterSprite   # la forme de combat d'un héros, quand sa voie en a une
 var torch: PointLight2D   # allumée par le ciel quand il fait nuit
 var _name_label: Label
 var _bubble: PanelContainer
@@ -86,6 +88,7 @@ func _ready() -> void:
 		sprite.dir = dir
 		sprite.scale = Vector2(stature, stature)
 	_hp_shown = _pct()
+	_update_forme(false)
 
 	_name_label = Label.new()
 	_name_label.add_theme_font_size_override("font_size", 15)
@@ -163,6 +166,7 @@ func set_vitals(new_hp: int, new_max: int, new_fx: int, new_level: int) -> void:
 	if new_level != level:
 		level = new_level
 		_refresh_name()
+	_update_forme(true)
 	if sprite != null and not dead:
 		if fx & FX_GARDE:
 			sprite.stance = "garde"
@@ -178,7 +182,49 @@ func flash() -> void:
 	_show_bar = 6.0
 
 
+## La forme de combat : l'ours, le lynx ou l'armure à vapeur remplace le héros
+## tant qu'il se bat (le serveur pose FX_FORME), puis le héros revient.
+func _update_forme(animate: bool) -> void:
+	if race == "" or sprite == null:
+		return
+	var want := ""
+	if fx & FX_FORME and not dead and voie >= 0 and voie < 3:
+		want = str(Heros.classe(classe).voies[voie].get("forme", ""))
+	if want != "" and not MonsterSprite.has_kind(want):
+		want = ""
+	var shown := forme != null and forme.visible
+	if want == "":
+		if shown:
+			forme.visible = false
+			sprite.visible = true
+			if animate:
+				_puff(sprite)
+		return
+	if forme == null:
+		forme = MonsterSprite.new()
+		add_child(forme)
+		forme.setup(want)
+	else:
+		forme.set_kind(want)
+	if not shown:
+		forme.visible = true
+		sprite.visible = false
+		if animate:
+			_puff(forme)
+
+
+## Un petit « pouf » quand on change de forme.
+func _puff(node: Node2D) -> void:
+	node.scale = Vector2(0.6, 0.6) * (stature if node == sprite else 1.0)
+	var tw := create_tween()
+	tw.tween_property(node, "scale", Vector2.ONE * (stature if node == sprite else 1.0), 0.25).set_trans(Tween.TRANS_BACK)
+
+
 func play(anim: String) -> void:
+	if forme != null and forme.visible:
+		if anim in ["attaque", "tir", "sort", "bouclier", "incante"]:
+			forme.play_once("attaque")
+		return
 	if mon != null:
 		mon.play_once(anim)
 	elif sprite != null:
@@ -196,6 +242,7 @@ func die() -> void:
 		tw.tween_property(self, "modulate:a", 0.0, 0.7)
 	elif sprite != null:
 		sprite.stance = "mort"
+		_update_forme(false)
 
 
 func revive() -> void:
@@ -234,6 +281,10 @@ static func _wrap(text: String, width: int) -> String:
 func _process(delta: float) -> void:
 	_t += delta
 	var body: Node2D = mon if mon != null else sprite
+	if forme != null and forme.visible:
+		body = forme
+		forme.dir = dir
+		forme.set_motion(walking and not dead, running)
 	if mon != null:
 		mon.dir = dir
 		mon.set_motion(walking, running)

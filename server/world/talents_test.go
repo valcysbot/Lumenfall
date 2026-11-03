@@ -203,3 +203,24 @@ func TestPlacerSesTalents(t *testing.T) {
 		t.Fatalf("reprise au temple : %v, or %d", err, h.Hero.Gold)
 	}
 }
+
+// TestLaFormeDeCombat : le druide ours ne prend sa forme qu'en combat.
+func TestLaFormeDeCombat(t *testing.T) {
+	a, _ := arene(t)
+	in := heros(ClassByID("druide"), 12, 0)
+	h := a.AddHero(6, "Ursa", &Body{X: a.Temple[0], Y: a.Temple[1]}, in)
+	if h.Bits()&BitForme != 0 {
+		t.Fatal("en forme d'ours hors combat")
+	}
+	m := premier(a, "sanglier")
+	a.hit(h, m, 1, Physique, 0, 0, 1)
+	if h.Bits()&BitForme == 0 {
+		t.Fatal("pas de forme d'ours en combat")
+	}
+	for i := 0; i < 70; i++ {
+		a.Tick(0.1)
+	}
+	if h.Bits()&BitForme != 0 && !h.Hero.InCombat() {
+		t.Fatal("toujours ours après le combat")
+	}
+}

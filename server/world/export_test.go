@@ -108,7 +108,7 @@ func donneesClient() []byte {
 				tiers = append(tiers, tierJSON(&sp.Tiers[i]))
 			}
 			specs = append(specs, map[string]any{"id": sp.ID, "nom": sp.Name, "aide": sp.Desc, "role": string(sp.Role),
-				"ultime": skillJSON(&sp.Ultime), "paliers": tiers, "etoile": StyleNames[StarStyle(sp.Role)]})
+				"ultime": skillJSON(&sp.Ultime), "paliers": tiers, "etoile": StyleNames[StarStyle(sp.Role)], "forme": sp.Forme})
 		}
 		r := c.Res
 		classes = append(classes, map[string]any{

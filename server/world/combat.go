@@ -77,6 +77,7 @@ const (
 	BitGarde   = 1 << 24 // bouclier levé
 	BitIncante = 1 << 25 // incantation en cours
 	BitPhase2  = 1 << 26 // un boss dans sa deuxième phase
+	BitForme   = 1 << 27 // un héros dans sa forme de combat (ours, lynx, armure à vapeur)
 )
 
 // Durées et forces des effets.
@@ -148,6 +149,9 @@ func (f *Fighter) Bits() int {
 	}
 	if f.Mon != nil && f.Mon.Phase == 2 {
 		n |= BitPhase2
+	}
+	if f.Hero != nil && f.Hero.InCombat() && f.Hero.Forme() != "" {
+		n |= BitForme
 	}
 	return n
 }

@@ -459,6 +459,9 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 	a.emit(ev)
 	for _, f := range []*Fighter{src, tgt} {
 		if f.Hero != nil {
+			if f.Hero.combat >= CombatTime && f.Hero.Forme() != "" {
+				f.dirty = true // il prend sa forme de combat
+			}
 			f.Hero.combat = 0
 		}
 	}
@@ -770,6 +773,9 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 	hs.autoCD = math.Max(0, hs.autoCD-dt)
 	hs.overheat = math.Max(0, hs.overheat-dt)
 	hs.Endurance = math.Min(MaxEndurance, hs.Endurance+dt/EnduranceTime)
+	if hs.combat < CombatTime && hs.combat+dt >= CombatTime && hs.Forme() != "" {
+		h.dirty = true // il reprend son allure
+	}
 	hs.combat += dt
 
 	// La ressource de la classe.
@@ -1141,6 +1147,14 @@ func (a *Arena) goTo(f *Fighter, x, y float64) bool {
 	}
 	f.Body.SetPath(p)
 	return true
+}
+
+// Forme : l'allure de combat de la voie du héros (ours, lynx, armure à vapeur), ou "".
+func (h *HeroState) Forme() string {
+	if h.Spec < 0 || h.Spec > 2 {
+		return ""
+	}
+	return h.Class.Specs[h.Spec].Forme
 }
 
 // InCombat dit si le héros s'est battu il y a peu.

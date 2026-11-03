@@ -46,6 +46,9 @@
   "loup",
   "loup_efface",
   "corbeau_efface",
+  "ours",
+  "lynx",
+  "armure_vapeur",
   "grand_sanglier",
   "grand_sanglier_efface"
  ],
@@ -68,6 +71,26 @@
    "ancre": [
     76,
     96
+   ]
+  },
+  "ours": {
+   "image": [
+    80,
+    60
+   ],
+   "ancre": [
+    40,
+    50
+   ]
+  },
+  "armure_vapeur": {
+   "image": [
+    72,
+    84
+   ],
+   "ancre": [
+    36,
+    74
    ]
   }
  }

@@ -211,6 +211,7 @@
     {
      "aide": "Le mur au bouclier : plus de vie, moins de dégâts reçus, beaucoup de menace.",
      "etoile": "seul",
+     "forme": "",
      "id": "rempart",
      "nom": "Rempart",
      "paliers": [
@@ -526,6 +527,7 @@
     {
      "aide": "Deux lames, des coups critiques plus fréquents.",
      "etoile": "seul",
+     "forme": "",
      "id": "gladiateur",
      "nom": "Gladiateur",
      "paliers": [
@@ -841,6 +843,7 @@
     {
      "aide": "Il provoque les plus forts : 20 % de dégâts en plus contre les élites et les boss.",
      "etoile": "seul",
+     "forme": "",
      "id": "champion",
      "nom": "Champion",
      "paliers": [
@@ -1352,6 +1355,7 @@
     {
      "aide": "La bête prend le dessus : plus fort et plus rapide.",
      "etoile": "seul",
+     "forme": "",
      "id": "sang_bete",
      "nom": "Sang-bête",
      "paliers": [
@@ -1667,6 +1671,7 @@
     {
      "aide": "Des coups qui brisent les armures, et des critiques plus lourds.",
      "etoile": "seul",
+     "forme": "",
      "id": "briseur",
      "nom": "Briseur",
      "paliers": [
@@ -1982,6 +1987,7 @@
     {
      "aide": "Plus il est blessé, plus il tient.",
      "etoile": "seul",
+     "forme": "",
      "id": "inebranlable",
      "nom": "Inébranlable",
      "paliers": [
@@ -2493,6 +2499,7 @@
     {
      "aide": "Les grandes zones : chaque coup compte double quand ils sont nombreux.",
      "etoile": "seul",
+     "forme": "",
      "id": "hallebardier",
      "nom": "Hallebardier",
      "paliers": [
@@ -2808,6 +2815,7 @@
     {
      "aide": "Les lancers : ton attaque de base porte à 7 cases.",
      "etoile": "seul",
+     "forme": "",
      "id": "javelinier",
      "nom": "Javelinier",
      "paliers": [
@@ -3123,6 +3131,7 @@
     {
      "aide": "Le gardien du passage.",
      "etoile": "seul",
+     "forme": "",
      "id": "sentinelle",
      "nom": "Sentinelle",
      "paliers": [
@@ -3634,6 +3643,7 @@
     {
      "aide": "Une armure d'écailles qui encaisse tout.",
      "etoile": "seul",
+     "forme": "",
      "id": "ecaille",
      "nom": "Écaille",
      "paliers": [
@@ -3949,6 +3959,7 @@
     {
      "aide": "Le feu des dragons : 15 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "souffle",
      "nom": "Souffle",
      "paliers": [
@@ -4264,6 +4275,7 @@
     {
      "aide": "Ton dragonneau ne te quitte plus et se bat toujours avec toi.",
      "etoile": "seul",
+     "forme": "",
      "id": "lien_du_dragonneau",
      "nom": "Lien du dragonneau",
      "paliers": [
@@ -4776,6 +4788,7 @@
     {
      "aide": "Le tank de Solenn : ton bouclier bloque encore mieux.",
      "etoile": "seul",
+     "forme": "",
      "id": "bouclier_de_l_aube",
      "nom": "Bouclier de l'Aube",
      "paliers": [
@@ -5091,6 +5104,7 @@
     {
      "aide": "La voix de Solenn : tes soins et tes auras portent plus loin.",
      "etoile": "groupe",
+     "forme": "",
      "id": "heraut",
      "nom": "Héraut",
      "paliers": [
@@ -5406,6 +5420,7 @@
     {
      "aide": "La lumière qui frappe : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "croise",
      "nom": "Croisé",
      "paliers": [
@@ -5917,6 +5932,7 @@
     {
      "aide": "Des combos d'une vitesse folle.",
      "etoile": "seul",
+     "forme": "",
      "id": "poing_de_vent",
      "nom": "Poing de vent",
      "paliers": [
@@ -6232,6 +6248,7 @@
     {
      "aide": "Soins par la brume et le toucher.",
      "etoile": "groupe",
+     "forme": "",
      "id": "brume_sereine",
      "nom": "Brume sereine",
      "paliers": [
@@ -6547,6 +6564,7 @@
     {
      "aide": "Immobile comme une montagne.",
      "etoile": "seul",
+     "forme": "",
      "id": "pilier",
      "nom": "Pilier",
      "paliers": [
@@ -7058,6 +7076,7 @@
     {
      "aide": "Le feu qui brûle en zone : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "pyromancien",
      "nom": "Pyromancien",
      "paliers": [
@@ -7373,6 +7392,7 @@
     {
      "aide": "La glace qui gèle et protège : un peu moins de dégâts reçus.",
      "etoile": "seul",
+     "forme": "",
      "id": "givremage",
      "nom": "Givremage",
      "paliers": [
@@ -7688,6 +7708,7 @@
     {
      "aide": "La foudre, rapide et précise : plus de coups critiques.",
      "etoile": "seul",
+     "forme": "",
      "id": "tempetier",
      "nom": "Tempêtier",
      "paliers": [
@@ -8199,6 +8220,7 @@
     {
      "aide": "Une petite armée : tes squelettes frappent deux fois plus fort.",
      "etoile": "seul",
+     "forme": "",
      "id": "maitre_des_os",
      "nom": "Maître des Os",
      "paliers": [
@@ -8514,6 +8536,7 @@
     {
      "aide": "La faux qui draine la vie : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "moissonneur",
      "nom": "Moissonneur",
      "paliers": [
@@ -8829,6 +8852,7 @@
     {
      "aide": "Le gardien des esprits : tes coups soignent l'allié le plus blessé.",
      "etoile": "groupe",
+     "forme": "",
      "id": "passeur",
      "nom": "Passeur",
      "paliers": [
@@ -9340,6 +9364,7 @@
     {
      "aide": "Des démons tenus en laisse : 15 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "demoniste",
      "nom": "Démoniste",
      "paliers": [
@@ -9655,6 +9680,7 @@
     {
      "aide": "Des bêtes magiques : tes créatures frappent 50 % plus fort.",
      "etoile": "seul",
+     "forme": "",
      "id": "dresseur_de_chimeres",
      "nom": "Dresseur de chimères",
      "paliers": [
@@ -9970,6 +9996,7 @@
     {
      "aide": "Il invoque les éléments eux-mêmes : 15 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "lieur_d_elements",
      "nom": "Lieur d'éléments",
      "paliers": [
@@ -10481,6 +10508,7 @@
     {
      "aide": "Des potions de soin plus fortes.",
      "etoile": "groupe",
+     "forme": "",
      "id": "apothicaire",
      "nom": "Apothicaire",
      "paliers": [
@@ -10796,6 +10824,7 @@
     {
      "aide": "Les bombes : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "artificier",
      "nom": "Artificier",
      "paliers": [
@@ -11111,6 +11140,7 @@
     {
      "aide": "Le maître des poisons.",
      "etoile": "seul",
+     "forme": "",
      "id": "empoisonneur",
      "nom": "Empoisonneur",
      "paliers": [
@@ -11622,6 +11652,7 @@
     {
      "aide": "Le canon : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "artilleur",
      "nom": "Artilleur",
      "paliers": [
@@ -11937,6 +11968,7 @@
     {
      "aide": "Des tourelles qui tirent 50 % plus fort.",
      "etoile": "seul",
+     "forme": "",
      "id": "batisseur_de_tourelles",
      "nom": "Bâtisseur de tourelles",
      "paliers": [
@@ -12250,8 +12282,9 @@
      }
     },
     {
-     "aide": "Une armure à vapeur qui encaisse au contact.",
+     "aide": "En combat, tu montes dans ton armure à vapeur : elle encaisse tout au contact.",
      "etoile": "seul",
+     "forme": "armure_vapeur",
      "id": "pilote_d_armure",
      "nom": "Pilote d'armure",
      "paliers": [
@@ -12763,6 +12796,7 @@
     {
      "aide": "Les gros soins.",
      "etoile": "groupe",
+     "forme": "",
      "id": "oracle",
      "nom": "Oracle",
      "paliers": [
@@ -13078,6 +13112,7 @@
     {
      "aide": "Les boucliers posés avant les coups : 50 % plus solides.",
      "etoile": "groupe",
+     "forme": "",
      "id": "veilleur",
      "nom": "Veilleur",
      "paliers": [
@@ -13393,6 +13428,7 @@
     {
      "aide": "Le prêtre des dieux disparus : il coupe les sorts ennemis et inspire le groupe.",
      "etoile": "groupe",
+     "forme": "",
      "id": "pretre_du_silence",
      "nom": "Prêtre du Silence",
      "paliers": [
@@ -13902,8 +13938,9 @@
    },
    "voies": [
     {
-     "aide": "Tu encaisses comme un ours.",
+     "aide": "En combat, tu deviens un ours : tu encaisses comme lui.",
      "etoile": "seul",
+     "forme": "ours",
      "id": "forme_d_ours",
      "nom": "Forme d'ours",
      "paliers": [
@@ -14217,8 +14254,9 @@
      }
     },
     {
-     "aide": "Tu chasses comme un lynx : plus fort, plus de critiques.",
+     "aide": "En combat, tu deviens un lynx : plus fort, plus de critiques.",
      "etoile": "seul",
+     "forme": "lynx",
      "id": "forme_de_lynx",
      "nom": "Forme de lynx",
      "paliers": [
@@ -14534,6 +14572,7 @@
     {
      "aide": "Les racines et les fleurs soignent plus fort.",
      "etoile": "groupe",
+     "forme": "",
      "id": "coeur_de_la_foret",
      "nom": "Cœur de la forêt",
      "paliers": [
@@ -15045,6 +15084,7 @@
     {
      "aide": "La foudre et la terre : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "voix_des_orages",
      "nom": "Voix des orages",
      "paliers": [
@@ -15360,6 +15400,7 @@
     {
      "aide": "L'eau et les totems soignent plus fort.",
      "etoile": "groupe",
+     "forme": "",
      "id": "source_vive",
      "nom": "Source vive",
      "paliers": [
@@ -15675,6 +15716,7 @@
     {
      "aide": "Au corps à corps avec un loup-esprit.",
      "etoile": "seul",
+     "forme": "",
      "id": "marcheur_des_esprits",
      "nom": "Marcheur des esprits",
      "paliers": [
@@ -16187,6 +16229,7 @@
     {
      "aide": "Il endort et charme : tes chants de groupe durent plus longtemps.",
      "etoile": "groupe",
+     "forme": "",
      "id": "conteur",
      "nom": "Conteur",
      "paliers": [
@@ -16502,6 +16545,7 @@
     {
      "aide": "Il frappe à distance par le son : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "virtuose",
      "nom": "Virtuose",
      "paliers": [
@@ -16817,6 +16861,7 @@
     {
      "aide": "Ses chansons soignent.",
      "etoile": "groupe",
+     "forme": "",
      "id": "troubadour",
      "nom": "Troubadour",
      "paliers": [
@@ -17328,6 +17373,7 @@
     {
      "aide": "Furtivité et poisons : 20 % de dégâts en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "assassin",
      "nom": "Assassin",
      "paliers": [
@@ -17643,6 +17689,7 @@
     {
      "aide": "Deux lames et des esquives : 10 % d'esquive en plus.",
      "etoile": "seul",
+     "forme": "",
      "id": "bretteur",
      "nom": "Bretteur",
      "paliers": [
@@ -17958,6 +18005,7 @@
     {
      "aide": "Il saute d'ombre en ombre.",
      "etoile": "seul",
+     "forme": "",
      "id": "ombrelame",
      "nom": "Ombrelame",
      "paliers": [
@@ -18470,6 +18518,7 @@
     {
      "aide": "Les tirs de très loin : plus fort, plus de critiques.",
      "etoile": "seul",
+     "forme": "",
      "id": "tireur_d_elite",
      "nom": "Tireur d'élite",
      "paliers": [
@@ -18785,6 +18834,7 @@
     {
      "aide": "Il chasse avec un compagnon qui ne le quitte jamais.",
      "etoile": "seul",
+     "forme": "",
      "id": "rodeur",
      "nom": "Rôdeur",
      "paliers": [
@@ -19100,6 +19150,7 @@
     {
      "aide": "Pièges et ralentissements.",
      "etoile": "seul",
+     "forme": "",
      "id": "trappeur",
      "nom": "Trappeur",
      "paliers": [
