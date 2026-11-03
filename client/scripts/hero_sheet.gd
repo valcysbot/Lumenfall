@@ -86,21 +86,29 @@ func close() -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event.pressed and (event.physical_keycode == KEY_ESCAPE or event.physical_keycode == KEY_C):
+	if event.pressed and (event.physical_keycode == KEY_ESCAPE or event.physical_keycode == Touches.key("fiche")):
 		get_viewport().set_input_as_handled()
 		close()
 
 
 ## L'état privé a changé (niveau, points, épreuve…).
+## Le serveur l'envoie souvent (ressource, vie, recharges…) : on ne redessine la
+## fiche que si ce qu'elle montre a changé. Sinon, chaque envoi effaçait les
+## boutons sous le doigt, et le + ou « Valider » ne répondait plus.
+const VUS := ["lv", "pt", "at", "ta", "tp", "cl", "v", "q", "qm", "or"]
 func update_me(d: Dictionary) -> void:
-	var before: Array = me.get("at", [])
+	var avant := me
 	me = d
-	if (d.get("at", []) as Array) != before:
+	if str(d.get("at", [])) != str(avant.get("at", [])):
 		_draft = _ints(d.get("at", []))
-	if d.has("ta"):
-		_tdraft = Heros.talents_ints(d.ta)
-	if is_inside_tree():
-		_render()
+	if str(d.get("ta", [])) != str(avant.get("ta", [])):
+		_tdraft = Heros.talents_ints(d.get("ta", []))
+	if not is_inside_tree():
+		return
+	for k in VUS:
+		if str(d.get(k)) != str(avant.get(k)):
+			_render()
+			return
 
 
 func _line(text: String, size: int = 16, color: Color = UI.PARCH) -> Label:
@@ -109,9 +117,15 @@ func _line(text: String, size: int = 16, color: Color = UI.PARCH) -> Label:
 	return l
 
 
+var _rendu_tab := ""
 func _render() -> void:
+	# Même onglet : on garde la fiche là où elle était (sinon chaque + la remontait).
+	var sc := _body.get_parent() as ScrollContainer
+	var y := sc.scroll_vertical if _rendu_tab == _tab else 0
+	_rendu_tab = _tab
 	for c in _body.get_children():
 		c.queue_free()
+	_garde_defilement.call_deferred(sc, y)
 	if not public.is_empty():
 		_render_public()
 	elif _tab == "attributs":
@@ -120,6 +134,12 @@ func _render() -> void:
 		_render_talents()
 	else:
 		_render_voie()
+
+
+func _garde_defilement(sc: ScrollContainer, y: int) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(sc):
+		sc.scroll_vertical = y
 
 
 func _who(race: String, cl: String, a: int, lv: int, d: String) -> String:

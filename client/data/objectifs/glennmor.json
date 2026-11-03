@@ -1,0 +1,11 @@
+{
+ "_note": "La prochaine étape conseillée dans le Val de Glennmor, selon le niveau du héros (retour de la soirée de jeu de la V0.5 : « on ne comprend pas ce que l'on fait »). « vers » : le lieu, en cases ; une flèche le montre autour du héros. Les camps sont dans server/world/maps/glennmor.monstres.json.",
+ "etapes": [
+  {"jusqu_au": 3, "texte": "Chasse les sangliers, pas loin du village", "vers": [70, 135]},
+  {"jusqu_au": 5, "texte": "Les loups rôdent dans les bois du nord", "vers": [60, 62]},
+  {"jusqu_au": 9, "texte": "Ose la Lisière Grise : loups et corbeaux effacés", "vers": [178, 100]}
+ ],
+ "epreuve": {"texte": "Ton épreuve de voie : vaincs des Effacés à la Lisière Grise (%d/%d)", "vers": [178, 100]},
+ "voie": {"texte": "Choisis ta voie dans ta fiche (touche C)"},
+ "boss": {"texte": "Le Grand Sanglier de Mabon t'attend au bout de la Lisière. À plusieurs, c'est mieux !", "vers": [181.5, 182.5]}
+}

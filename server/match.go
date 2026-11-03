@@ -128,6 +128,7 @@ type player struct {
 	body      world.Body
 	fighter   *world.Fighter
 	seen      [2]float64 // dernière position envoyée
+	seenDir   int        // et la dernière direction
 	lastChat  int64
 	lastPath  int64
 	lastEmote int64
@@ -314,13 +315,14 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	s.arena.Night = world.IsNight(time.Now())
 	s.arena.Tick(dt)
 	for _, pl := range s.players {
-		if pl.body.X != pl.seen[0] || pl.body.Y != pl.seen[1] {
-			changed[pl] = true // retour au temple après une chute
+		if pl.body.X != pl.seen[0] || pl.body.Y != pl.seen[1] || pl.body.Dir != pl.seenDir {
+			changed[pl] = true // retour au temple après une chute, ou tourné vers sa cible
 		}
 	}
 	moved := make([][4]int, 0, len(changed)+len(s.arena.Moved))
 	for pl := range changed {
 		pl.seen = [2]float64{pl.body.X, pl.body.Y}
+		pl.seenDir = pl.body.Dir
 		moved = append(moved, [4]int{pl.sid, cent(pl.body.X), cent(pl.body.Y), pl.body.Dir})
 	}
 	for _, m := range s.arena.Moved {

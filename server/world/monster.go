@@ -38,20 +38,24 @@ type MonsterKind struct {
 	Lifetime float64 // secondes avant de disparaître tout seul (0 : jamais)
 	Boss     bool    // a ses propres attaques annoncées au sol (boss.go)
 	Respawn  float64 // secondes avant de revenir (0 : RespawnTime)
+	Special  string  // son coup annoncé au sol (monstres.go) : "charge", "bond", "pique"
+	Dance    bool    // entre deux coups, il tourne autour de sa proie
 }
 
 // MonsterKinds : le bestiaire de l'Acte III.
 var MonsterKinds = map[string]*MonsterKind{
 	"sanglier": {ID: "sanglier", Name: "Sanglier", HP: 40, HPLv: 18, Dmg: 4, DmgLv: 1.6, Every: 2.2, Reach: 1.5, Speed: 4.6,
-		Aggro: 4, XPMul: 1, Gold: [2]int{1, 4}, Trophy: "Défense de sanglier", TrophyP: 0.06, Radius: 0.55},
+		Aggro: 4, XPMul: 1, Gold: [2]int{1, 4}, Trophy: "Défense de sanglier", TrophyP: 0.06, Radius: 0.55,
+		Special: "charge"},
 	"loup": {ID: "loup", Name: "Loup", HP: 35, HPLv: 13, Dmg: 4.5, DmgLv: 1.5, Every: 1.8, Reach: 1.5, Speed: 5.0,
-		Aggro: 5.5, Pack: true, XPMul: 1, Gold: [2]int{2, 6}, Trophy: "Croc de loup", TrophyP: 0.06, Radius: 0.5},
+		Aggro: 5.5, Pack: true, XPMul: 1, Gold: [2]int{2, 6}, Trophy: "Croc de loup", TrophyP: 0.06, Radius: 0.5,
+		Special: "bond", Dance: true},
 	"loup_efface": {ID: "loup_efface", Name: "Loup effacé", HP: 50, HPLv: 15, Dmg: 5, DmgLv: 1.5, Every: 1.8, Reach: 1.5, Speed: 5.2,
 		Aggro: 6, Elem: Ombre, Pack: true, XPMul: 1.1, Gold: [2]int{4, 10}, Trophy: "Croc sans couleur", TrophyP: 0.05,
-		OnHit: Ralenti, OnHitP: 0.3, OnHitDur: 3, Radius: 0.5},
+		OnHit: Ralenti, OnHitP: 0.3, OnHitDur: 3, Radius: 0.5, Special: "bond", Dance: true},
 	"corbeau_efface": {ID: "corbeau_efface", Name: "Corbeau effacé", HP: 35, HPLv: 12, Dmg: 5, DmgLv: 1.5, Every: 1.6, Reach: 1.6, Speed: 5.5,
 		Aggro: 7, Elem: Ombre, XPMul: 1.1, Gold: [2]int{4, 10}, Trophy: "Plume grise", TrophyP: 0.05,
-		OnHit: Poison, OnHitP: 0.35, OnHitDur: 6, OnHitPow: 0.6, Radius: 0.4},
+		OnHit: Poison, OnHitP: 0.35, OnHitDur: 6, OnHitPow: 0.6, Radius: 0.4, Special: "pique", Dance: true},
 	"sanglier_dore": {ID: "sanglier_dore", Name: "Sanglier doré", HP: 120, HPLv: 0, Dmg: 0, Every: 99, Reach: 0, Speed: 5.0,
 		Aggro: 6, Flee: true, XPMul: 3, Gold: [2]int{50, 80}, Trophy: "Défense dorée", TrophyP: 1, Elite: true, Radius: 0.55,
 		Lifetime: 180},
@@ -106,6 +110,11 @@ type Monster struct {
 	stompCD  float64
 	shardCD  float64
 	windup   float64 // il prépare une attaque annoncée : il ne bouge plus
+
+	// Les petits monstres (monstres.go).
+	specialCD float64
+	dance     float64 // secondes de pas de côté restantes
+	danceSide float64 // +1 ou -1 : à gauche ou à droite de sa proie
 }
 
 // LoadCamps lit les camps de monstres d'une carte. Pas de fichier : pas de monstres.

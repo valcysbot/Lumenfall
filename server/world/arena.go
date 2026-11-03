@@ -662,9 +662,12 @@ func (a *Arena) Tick(dt float64) {
 		a.tickHero(h, dt)
 	}
 	for _, m := range a.Monsters {
+		dir := m.Body.Dir
 		a.tickEffects(m, dt)
 		a.think(m, dt)
-		if !m.Dead && m.Body.Moving() && m.Body.Step(a.M, dt) {
+		moved := !m.Dead && m.Body.Moving() && m.Body.Step(a.M, dt)
+		// Un monstre qui se retourne vers sa cible sans bouger doit aussi être montré.
+		if moved || (!m.Dead && m.Body.Dir != dir) {
 			a.Moved = append(a.Moved, m)
 		}
 	}
@@ -915,6 +918,7 @@ func (a *Arena) spawn(f *Fighter, announce bool) {
 	mo.threat, mo.target, mo.evading, mo.gone, mo.age = nil, 0, false, false, 0
 	mo.attackCD, mo.wander = 0, 1+a.rng.Float64()*4
 	mo.Phase, mo.chargeCD, mo.stompCD, mo.shardCD, mo.windup = 1, 4, 8, 6, 0
+	mo.specialCD, mo.dance = 3+float64(f.SID%4), 0 // sans tirer au sort : les simulations gardent leurs dés
 	if announce {
 		a.emit(Event{Kind: EvSpawn, Src: f.SID})
 	}
@@ -1034,9 +1038,15 @@ func (a *Arena) think(f *Fighter, dt float64) {
 	if k.Boss && a.bossThink(f, t, dt) {
 		return
 	}
+	if !k.Boss && a.specialThink(f, t, dt) {
+		return
+	}
 	d := dist(f, t)
 	if d > k.Reach && f.Has(Gel) {
 		f.Body.Stop()
+		return
+	}
+	if mo.attackCD > 0 && a.danceStep(f, t, dt) {
 		return
 	}
 	if d > k.Reach {
@@ -1055,6 +1065,7 @@ func (a *Arena) think(f *Fighter, dt float64) {
 		if a.hit(f, t, monsterDmg(k, f.Level), k.Elem, SkillAuto, MonsterCrit, 1) > 0 && k.OnHitP > 0 && a.rng.Float64() < k.OnHitP {
 			t.Apply(k.OnHit, k.OnHitDur, int(math.Max(1, math.Round(k.OnHitPow*float64(f.Level)))), f.SID)
 		}
+		a.afterBite(f)
 	}
 }
 
@@ -1134,6 +1145,9 @@ func (a *Arena) evade(f *Fighter) {
 	mo.evading = true
 	if mo.Kind.Boss {
 		a.resetBoss(f)
+	} else {
+		a.cancelTeles(f.SID)
+		mo.windup, mo.dance = 0, 0
 	}
 	f.Clear()
 	f.Body.Stop()

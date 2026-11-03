@@ -25,7 +25,8 @@ type Telegraph struct {
 	Fx     Effect
 	FxDur  float64
 	FxPow  int
-	Charge bool // le boss fonce le long de la ligne à l'impact
+	Charge bool   // le monstre fonce le long de la ligne (ou vers le cercle) à l'impact
+	Name   string // annoncé au-dessus du monstre (« Charge ! »)
 }
 
 // Réglages du Grand Sanglier.

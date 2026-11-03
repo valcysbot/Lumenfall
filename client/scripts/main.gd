@@ -4,7 +4,7 @@ extends Node
 ## Mode capture (captures d'écran automatiques, sans joueur) :
 ##   godot --path client -- --capture=world --out=/chemin/capture.png
 ##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier
-##    --gigue=ms (réseau irrégulier) --mesure=s --trajet=x,y (fluidité) --fluidite
+##    --gigue=ms (réseau irrégulier) --mesure=s --trajet=x,y (fluidité) --fluidite --touches
 ##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s
 ##    --capture=heroes --effacer --confirmer)
 
@@ -196,6 +196,9 @@ func _capture() -> void:
 			await get_tree().process_frame
 			var sc: ScrollContainer = current.sheet.find_children("*", "ScrollContainer", true, false)[0]
 			sc.scroll_vertical = int(args.defile)
+	if args.has("touches"):
+		var p := preload("res://scripts/touches_panel.gd").new()
+		current.settings.get_parent().add_child(p)
 	if args.has("reste"):
 		await get_tree().create_timer(float(args.reste)).timeout
 	if args.has("mesure"):
