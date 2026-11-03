@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.5 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
+**Version actuelle :** V0.5.1 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
 
 ---
 
@@ -181,6 +181,7 @@
 - **Des talents chiffrés tout petits** : 15 % répartis sur 46 points, ça fait peu par point. Pour 9 voies, les bonus chiffrés sont tombés au plancher (+1 % par point) et ce sont surtout les talents qui changent les compétences (cibles en plus, effets, ultime transformé) qui pèsent. Si vous trouvez les talents fades, on peut monter la cible à 20 ou 25 %.
 - **La survie n'est pas mesurée** : l'équilibrage compte les dégâts et les soins, pas la vie gagnée ni les dégâts évités. Les talents de tank et utilitaires sont réglés à l'œil.
 - **La Forme d'ours de dos** ressemble à une grosse silhouette brune : lisible, mais c'est l'angle le moins réussi des trois formes.
+- **Fluidité, retour d'Elowan (V0.5)** : « ça bug, ce n'est pas aussi fluide que voulu ». Le serveur va bien (0,9 ms par tick avec 30 faux joueurs, sur 100 ms). La V0.5.1 rend les mouvements plus réguliers et ajoute le compteur de fluidité ; reste à savoir sur quel appareil ça saccade (le Val compte environ 7 000 décors, plus lourds pour un téléphone).
 - **Il faut la v0.5.0** pour entrer dans le monde : les anciens jeux ne savent pas afficher les talents.
 - **Effacer, c'est pour toujours** : il n'y a pas de corbeille. Si le héros est encore en jeu sur un autre appareil, il continue jusqu'à sa déconnexion, puis disparaît.
 - **Hardcore** : l'effacement est testé dans les simulations et sur un serveur local, pas encore avec une vraie mort sur le serveur de test.
@@ -323,6 +324,12 @@
 ---
 
 ## 📦 Notes de version
+
+### V0.5.1 · « Mille chemins » (3 novembre 2026)
+
+- 🧥 **La cape dans le dos** : vue de dos, la cape passe enfin devant le corps, au lieu de faire un bavoir. Pareil pour la queue des Drakéides et des Félins, les ailes des Fées et les nageoires.
+- 🏃 **Des héros plus fluides** : le jeu replace les nouvelles du serveur à intervalles réguliers, et garde un peu plus d'avance (0,17 s au lieu de 0,11 s). Un message en retard ne fait plus s'arrêter puis sauter les héros. Sur un réseau irrégulier simulé, les à-coups passent d'environ 30 % à 20 %.
+- 📶 **⚙ Réglages → « Afficher la fluidité »** : les images par seconde de ton écran et la régularité du réseau, à côté de l'heure. Pratique pour me dire ce qui coince.
 
 ### V0.5 · « Mille chemins » (3 novembre 2026)
 

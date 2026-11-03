@@ -37,6 +37,14 @@ var _t := 0.0
 var _once := ""
 var _t_once := 0.0
 var _layers: Array[Sprite2D] = []
+var _dos: Array[Sprite2D] = []   # cape, queue, ailes, nageoires : dans le dos
+var _devant := 0                 # où les glisser quand le héros nous tourne le dos
+var _de_dos := false
+
+
+## Les directions où l'on voit le héros de dos (il marche vers le haut de l'écran).
+const DE_DOS := [4, 5, 6]
+const PIECES_DU_DOS := ["cape_", "trait_queue", "trait_ailes", "trait_nageoires"]
 
 
 static func meta() -> Dictionary:
@@ -82,10 +90,14 @@ func dress(couches: Array) -> void:
 	for l in _layers:
 		l.queue_free()
 	_layers.clear()
+	_dos.clear()
+	_devant = 0
+	_de_dos = false
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
 	var m := meta()
+	var visage := false
 	for c in couches:
 		var piece: String = c[0]
 		if not m.pieces.has(piece):
@@ -102,7 +114,28 @@ func dress(couches: Array) -> void:
 		s.material = mat
 		add_child(s)
 		_layers.append(s)
+		if PIECES_DU_DOS.any(func(p): return piece.begins_with(p)):
+			_dos.append(s)
+		elif piece.begins_with("visage_"):
+			visage = true
+		elif not visage:
+			# Juste après le corps et les habits, sous le visage et les cheveux.
+			_devant = _layers.size()
 	_apply()
+
+
+## Vu de dos, la cape et la queue passent devant le corps ; sinon derrière.
+func _range_le_dos() -> void:
+	var de_dos := DE_DOS.has(dir)
+	if de_dos == _de_dos or _dos.is_empty():
+		return
+	_de_dos = de_dos
+	if de_dos:
+		for l in _dos:
+			move_child(l, _devant - 1)
+	else:
+		for i in range(_dos.size() - 1, -1, -1):
+			move_child(_dos[i], 0)
 
 
 func play_once(which: String) -> void:
@@ -134,6 +167,7 @@ func _process(delta: float) -> void:
 func _apply() -> void:
 	if _layers.is_empty():
 		return
+	_range_le_dos()
 	var m := meta()
 	var which := _once if _once != "" else anim
 	if not m.anims.has(which):
