@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.4 « Mille visages » (2 novembre 2026) · **Acte en cours :** Acte IV, les héros
+**Version actuelle :** V0.5 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
 
 ---
 
@@ -13,7 +13,7 @@
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
-| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ V0.4 livrée, talents à venir |
+| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ V0.5 livrée, validation après une soirée de jeu entre amis |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
 | VII | Donjons, raids, quêtes et histoire | ○ |
@@ -132,9 +132,16 @@
 - ✓ **Effacer un héros** (V0.4.1, demande d'Elowan) : un bouton 🗑️ « Effacer » sous chaque héros. Pour confirmer, on retape son nom ; le serveur le vérifie aussi. L'emplacement et le nom redeviennent libres.
 - ✓ **L'équilibrage simulé des 17 classes** (`server/world/equilibre_test.go`) : 10 combats automatiques par camp et par classe ; chaque classe bat ses sangliers au niveau 1 au moins 8 fois sur 10, et les loups, loups effacés et corbeaux effacés aux bons niveaux.
 
+- ✓ **Le Conseil des Talents** : 27 questions en 5 chapitres, toutes répondues le 2 novembre 2026 ([archive](docs/conseil-des-talents.html)).
+- ✓ **Les talents** (V0.5, `server/world/talents.go`) : un arbre par voie, 10 rangées (niveaux 5, 10, 15… 50), 3 talents par rangée (seul, groupe, utilitaire), jusqu'à 3 points par talent, 1 point par niveau dès le niveau 5 (46 points au niveau 50). La rangée du niveau 5 est commune aux 3 voies de la classe ; celle du niveau 10 transforme l'ultime. 1 428 talents en tout, chacun avec sa phrase, ses chiffres exacts et son émoji. Placer un point est gratuit ; les reprendre se fait au temple, contre 10 or par niveau. Changer de voie ne vide que la partie de la voie.
+- ✓ **L'onglet 🌳 Talents** dans la fiche du héros, le bouton ⭐ « Talents conseillés » et une ⭐ par rangée. Quand une rangée s'ouvre, Braise le dit et le bouton de la fiche s'allume (✦) jusqu'au choix. Les talents se voient sur la fiche publique et comptent tels quels en duel.
+- ✓ **L'équilibrage simulé des talents** (`server/world/talents_test.go`) : pour chaque voie, un héros niveau 50 avec les talents conseillés frappe un mannequin pendant 60 s ; la force de chaque arbre est réglée (`talents_echelle.go`) pour que les talents donnent environ +15 %. Les 51 voies tombent entre +13 % et +21 %.
+- ✓ **Les formes de combat** : en combat, le Druide de la voie Forme d'ours devient un ours, celui de la Forme de lynx un lynx, et l'Ingénieur Pilote d'armure monte dans son armure à vapeur (8 directions, `tools/sprites/forge_betes.py`). Hors combat, le héros revient.
+- ✓ **Les habitants redessinés** avec la forge des peuples : chacun a son allure (carrure, peau, coupe, barbe, visage) et ses pièces (tablier, cape, casque, chapeau de paille, armes), en jeu et dans le portrait du dialogue.
+
 ### ✱ Quêtes en cours
 
-- ○ **Les talents** : à la fin de l'Acte IV, une fois les 17 classes essayées en vrai.
+- ✱ **La soirée de jeu entre amis** avec les talents, puis les retours corrigés (écris-les-moi ici). L'Acte IV sera validé ensuite, et le fil de l'Acte V s'ouvrira tout seul.
 
 ### 🗡️ Les 51 voies
 
@@ -170,8 +177,11 @@
 - **Équilibrage à l'aveugle, puissance 17** : les chiffres viennent des combats simulés, pas de vraies parties. Seul contre le Grand Sanglier, les classes qui se soignent ou se drainent (Paladin, Prêtre, Druide, Nécromancien, Alchimiste, Moine) gagnent presque toujours, alors que la plupart des classes de dégâts perdent : c'est voulu pour un boss de groupe, mais dis-moi ce que vous en pensez.
 - **Deux retouches après les simulations** : la Frappe héroïque du Guerrier rend 40 % de ses dégâts en vie, et la Lumière de Solenn du Paladin s'apprend dès le niveau 1 (le Coup de bouclier passe au niveau 2). Sans ça, ces deux classes perdaient trop souvent contre les sangliers.
 - **Homme, femme, autre** : le choix change les accords du jeu (« tombé », « tombée », « tombé·e ») et les noms (Guerrière, Elfe noire…), pas encore la silhouette ; les carrures et les coupes font la différence à l'écran.
-- **Formes et compagnons simplifiés** : la Forme d'ours ou de lynx du Druide et le Pilote d'armure changent les chiffres, pas encore le dessin. Les compagnons sont une petite créature qui tourne autour du héros, pas encore un monstre à part entière.
-- **Les habitants** gardent leurs anciennes planches (dessinées pour l'Acte II).
+- **Compagnons simplifiés** : les compagnons sont une petite créature qui tourne autour du héros, pas encore un monstre à part entière.
+- **Des talents chiffrés tout petits** : 15 % répartis sur 46 points, ça fait peu par point. Pour 9 voies, les bonus chiffrés sont tombés au plancher (+1 % par point) et ce sont surtout les talents qui changent les compétences (cibles en plus, effets, ultime transformé) qui pèsent. Si vous trouvez les talents fades, on peut monter la cible à 20 ou 25 %.
+- **La survie n'est pas mesurée** : l'équilibrage compte les dégâts et les soins, pas la vie gagnée ni les dégâts évités. Les talents de tank et utilitaires sont réglés à l'œil.
+- **La Forme d'ours de dos** ressemble à une grosse silhouette brune : lisible, mais c'est l'angle le moins réussi des trois formes.
+- **Il faut la v0.5.0** pour entrer dans le monde : les anciens jeux ne savent pas afficher les talents.
 - **Effacer, c'est pour toujours** : il n'y a pas de corbeille. Si le héros est encore en jeu sur un autre appareil, il continue jusqu'à sa déconnexion, puis disparaît.
 - **Hardcore** : l'effacement est testé dans les simulations et sur un serveur local, pas encore avec une vraie mort sur le serveur de test.
 
@@ -259,6 +269,7 @@
 | 30/10/2026 | Mode hardcore | À l'Acte IV, avec la création du héros ⭐ |
 | 30/10/2026 | Combat jugé « un peu compliqué » : ce qui manque | « On ne comprend pas quoi faire » → tutoriel de Braise au premier monstre ⭐ |
 | 30/10/2026 | Publication des versions | Claude lance lui-même la publication (onglet Actions) après chaque fusion |
+| 03/11/2026 | Acte suivant | Dès qu'un acte est clos, Claude ouvre tout seul le fil de l'acte suivant |
 | 02/11/2026 | Genre | Homme, femme ou autre, avec choix des accords ⭐ |
 | 02/11/2026 | Silhouette | Taille (5 crans) + carrure (3) ⭐ |
 | 02/11/2026 | Visage, peau, yeux | **16 visages, 24 teintes, marques en couches** (choix d'Elowan) |
@@ -282,12 +293,52 @@
 | 02/11/2026 | Dieu servi | À la création, pour l'allure et les textes ⭐ |
 | 02/11/2026 | Aura | Discrète, grandit tous les 10 niveaux ⭐ |
 | 02/11/2026 | Fiche du héros | En jeu dès l'Acte IV ⭐ |
+| 02/11/2026 | Forme des talents | **Un arbre par voie, avec des points à répartir** (choix d'Elowan) |
+| 02/11/2026 | Ouverture | Une rangée tous les 5 niveaux, dès le niveau 5 ⭐ |
+| 02/11/2026 | Rangées | **10 rangées, niveaux 5 à 50** (choix d'Elowan) |
+| 02/11/2026 | Changer ses talents | **Contre de l'or au temple** (choix d'Elowan) |
+| 02/11/2026 | Jeux de talents | **Un seul** (choix d'Elowan) |
+| 02/11/2026 | Changer de voie | Seule la partie de la voie se vide ⭐ |
+| 02/11/2026 | Ce que font les talents | Ils changent les compétences, avec quelques bonus chiffrés ⭐ |
+| 02/11/2026 | Poids des talents | Environ +15 % ⭐ |
+| 02/11/2026 | Les 3 choix d'une rangée | Seul, groupe, utilitaire ⭐ |
+| 02/11/2026 | Ultime | La rangée de la voie transforme l'ultime ⭐ |
+| 02/11/2026 | Nouveau bouton | Non, les 8 compétences restent ⭐ |
+| 02/11/2026 | Talents en duel | **Tels quels** (choix d'Elowan) |
+| 02/11/2026 | Talents visibles | Sur la fiche publique ⭐ |
+| 02/11/2026 | Écran | 3ᵉ onglet 🌳 Talents ⭐, ⭐ Talents conseillés ⭐, phrase et chiffres exacts ⭐, émojis ⭐ |
+| 02/11/2026 | Rangée qui s'ouvre | Braise le dit et la fiche s'allume ⭐ |
+| 02/11/2026 | Équilibrage des talents | Simulations, puis vos impressions en jeu ⭐ |
+| 02/11/2026 | Vos retours | **Tu me les écris ici** (choix d'Elowan) |
+| 02/11/2026 | Paladin sans voie de soin | **On garde : le Prêtre et le Druide soignent** (choix d'Elowan) |
+| 02/11/2026 | Formes de combat | Ours, lynx, armure à vapeur dessinés en 8 directions ⭐ |
+| 02/11/2026 | Habitants | Redessinés avec la forge des peuples ⭐ |
+| 02/11/2026 | Livraison | Les talents des 17 classes dans la V0.5 ⭐ |
+| 02/11/2026 | Mort hardcore | **Déjà vérifiée par Elowan : « c'est niquel »** |
+| 02/11/2026 | Validation de l'Acte IV | Après une soirée de jeu entre amis et les retours corrigés ⭐ |
+| 02/11/2026 | Nom de la V0.5 | « Mille chemins » ⭐ |
 
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.5 · « Mille chemins » (3 novembre 2026)
+
+- 🆕 **Les talents !** Dès le niveau 5, chaque niveau te donne un point de talent. Ouvre ta fiche (touche C), onglet 🌳 **Talents** : 10 rangées, une tous les 5 niveaux, 3 talents par rangée et jusqu'à 3 points par talent. Un talent pour jouer seul, un pour le groupe, un pour bouger ou survivre.
+- 🆕 **Ton ultime change** : la rangée du niveau 10 le transforme à ta façon.
+- 🆕 **⭐ Talents conseillés** : un bouton qui place tes points pour toi, et une ⭐ sur le talent conseillé de chaque rangée.
+- 🆕 Quand une rangée s'ouvre, **Braise te prévient** et le bouton de ta fiche s'allume (✦).
+- 🆕 Placer un point est gratuit ; pour en reprendre, passe au **temple de Solenn** (10 or par niveau).
+- 🐻 **Les formes de combat** : en combat, le Druide devient ours ou lynx, et l'Ingénieur monte dans son armure à vapeur.
+- ✨ **Les habitants ont une nouvelle allure**, dessinés comme vos héros : le tablier de Mabon, le casque du Capitaine Bréval, le chapeau de paille de Gwenn…
+- 📜 Les talents se voient sur la fiche publique des autres héros.
+- ⚠️ Il faut la v0.5.0 pour entrer dans le monde.
+
+![L'onglet des talents](docs/captures/v0.5/talents.png)
+
+Captures : [la forme d'ours](docs/captures/v0.5/forme-d-ours.png) · [l'ours, le lynx et l'armure à vapeur](docs/captures/v0.5/les-formes.png) · [les habitants sur la place](docs/captures/v0.5/les-habitants.png) · [Aëlis dans son nouveau portrait](docs/captures/v0.5/aelis.png).
 
 ### V0.4.1 · « Mille visages » (2 novembre 2026)
 

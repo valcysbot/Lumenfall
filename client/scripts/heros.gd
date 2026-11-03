@@ -104,6 +104,75 @@ static func competence(cl: String, k: int, voie: int) -> Dictionary:
 	return {}
 
 
+## L'arbre de talents : le palier commun de la classe, puis ceux de la voie (s'il y en a une).
+static func arbre(cl: String, voie: int) -> Array:
+	var c := classe(cl)
+	var out: Array = [c.commun]
+	if voie >= 0 and voie < 3:
+		out.append_array(c.voies[voie].paliers)
+	return out
+
+
+## Les points de talent gagnés à ce niveau (1 par niveau à partir du 5).
+static func points_de_talent(lv: int) -> int:
+	return maxi(0, lv - int(data().talents.premier) + 1)
+
+
+## Le style ⭐ d'une voie (ou « seul » avant la voie).
+static func etoile(cl: String, voie: int) -> String:
+	if voie < 0 or voie > 2:
+		return "seul"
+	return str(classe(cl).voies[voie].etoile)
+
+
+## Les talents conseillés : comme le serveur (talents.go, RecommendTalents).
+static func talents_conseilles(cl: String, voie: int, lv: int) -> Array:
+	var tree := arbre(cl, voie)
+	var out := vide_talents()
+	var styles := ["seul", "groupe", "utile"]
+	var first := styles.find(etoile(cl, voie))
+	var left := points_de_talent(lv)
+	for s in 3:
+		var j := (first + s) % 3
+		for i in tree.size():
+			if lv < int(tree[i].niveau):
+				break
+			var n := mini(left, int(tree[i].talents[j].max) - int(out[i][j]))
+			out[i][j] += n
+			left -= n
+	return out
+
+
+static func vide_talents() -> Array:
+	var out := []
+	for i in 10:
+		out.append([0, 0, 0])
+	return out
+
+
+static func talents_ints(a) -> Array:
+	var out := vide_talents()
+	if a is Array:
+		for i in mini(10, a.size()):
+			for j in mini(3, (a[i] as Array).size()):
+				out[i][j] = int(a[i][j])
+	return out
+
+
+static func points_places(t: Array) -> int:
+	var n := 0
+	for row in t:
+		for v in row:
+			n += int(v)
+	return n
+
+
+## Un palier s'ouvre-t-il à ce niveau ?
+static func palier_au_niveau(lv: int) -> bool:
+	var first := int(data().talents.premier)
+	return lv >= first and (lv - first) % int(data().talents.pas) == 0 and lv <= first + 9 * int(data().talents.pas)
+
+
 static func faction_of(race: String) -> Dictionary:
 	return FACTIONS.get(str(peuple(race).get("faction", "concorde")), FACTIONS.concorde)
 
@@ -162,6 +231,36 @@ static func couches(race: String, cl: String, lk: Dictionary) -> Array:
 	if cl != "":
 		for w in classe(cl).armes:
 			out.append(["arme_" + w, cs])
+	return out
+
+
+## Les couches d'un habitant (res://data/pnj/<carte>.json, clé « peuple ») : un
+## héros sans classe, avec sa robe ou sa tunique, et ses pièces en plus
+## (tablier, gants, cape, chapeau, casque, arme_…) dans leurs couleurs.
+static func habitant(pe: Dictionary) -> Array:
+	var race: String = pe.get("race", "humain")
+	var carr: String = CARRURES[clampi(int(pe.get("k", 1)), 0, 2)]
+	var plus: Array = pe.get("plus", [])
+	var out := couches(race, "", pe)
+	var cs: Dictionary = {}
+	var at := 0
+	for i in out.size():
+		var e: Array = out[i]
+		if e[0] == "tunique_" + carr:
+			cs = e[1]
+			at = i
+			if pe.get("robe", false):
+				e[0] = "robe_" + carr
+	cs.merge(pe.get("couleurs", {}), true)
+	for p in ["gants", "tablier"]:   # au-dessus de la tunique
+		if plus.has(p):
+			out.insert(at + 1, [p + "_" + carr, cs])
+	if plus.has("cape"):   # derrière le corps
+		var corps := out.map(func(e): return e[0]).find("corps_%s_%s" % [peuple(race).forme, carr])
+		out.insert(maxi(corps, 0), ["cape_" + carr, cs])
+	for p in plus:
+		if p == "chapeau" or p == "casque" or str(p).begins_with("arme_"):
+			out.append([p, cs])
 	return out
 
 

@@ -89,6 +89,8 @@ type Spec struct {
 	Role           Role
 	Mods           Mods
 	Ultime         SkillDef
+	Tiers          [NTiers - 1]Tier // l'arbre de talents de la voie (après le palier commun)
+	Forme          string           // l'allure prise en combat (planche de client/assets/betes), ou rien
 }
 
 // Resource : la ressource d'une classe.
@@ -120,6 +122,7 @@ type Class struct {
 	Attr    [9]int   // répartition conseillée (poids par attribut)
 	Skills  [7]SkillDef
 	Specs   [3]Spec
+	Common  Tier // le premier palier de talents, commun aux trois voies
 }
 
 // Le niveau où l'on choisit sa voie, et où l'ultime arrive.
@@ -418,7 +421,7 @@ var Classes = []*Class{
 				Ultime: SkillDef{ID: "grand_canon", Name: "Grand canon", Desc: "Un boulet énorme qui étourdit toute la zone.", Level: SpecLevel, CD: 60, Cost: 40, Range: 10, Radius: 3, Power: 5.0, Elem: Feu, Apply: []Apply{a(Etourdi, 1.5, 0, WZone)}, Anim: "tir"}},
 			{ID: "batisseur_de_tourelles", Name: "Bâtisseur de tourelles", Role: Degats, Desc: "Des tourelles qui tirent 50 % plus fort.", Mods: Mods{Pet: 1.5, Dmg: 1.05},
 				Ultime: SkillDef{ID: "batterie", Name: "Batterie", Desc: "Toute une batterie de tourelles pendant 20 s.", Level: SpecLevel, CD: 90, Cost: 40, Target: TSelf, Apply: []Apply{a(Compagnon, 20, 2.0, WSoi)}, Anim: "salut"}},
-			{ID: "pilote_d_armure", Name: "Pilote d'armure", Role: Tank, Desc: "Une armure à vapeur qui encaisse au contact.", Mods: Mods{Taken: 0.8, Threat: 1.5, HP: 1.2},
+			{ID: "pilote_d_armure", Name: "Pilote d'armure", Role: Tank, Forme: "armure_vapeur", Desc: "En combat, tu montes dans ton armure à vapeur : elle encaisse tout au contact.", Mods: Mods{Taken: 0.8, Threat: 1.5, HP: 1.2},
 				Ultime: ultTank("armure_pleine_vapeur", "Armure à pleine vapeur", "L'armure siffle : protection, bouclier, et tous les ennemis proches sur toi.")},
 		},
 	},
@@ -461,9 +464,9 @@ var Classes = []*Class{
 			{ID: "floraison", Name: "Floraison", Desc: "Tout fleurit : soigne le groupe et continue 8 s.", Level: 9, CD: 20, Cost: 30, Target: TSelf, GroupHeal: 0.18, Magic: true, Elem: Terre, Apply: []Apply{a(Regen, 8, 0.3, WGroupe)}, Anim: "incante"},
 		},
 		Specs: [3]Spec{
-			{ID: "forme_d_ours", Name: "Forme d'ours", Role: Tank, Desc: "Tu encaisses comme un ours.", Mods: Mods{Taken: 0.8, Threat: 1.6, HP: 1.2},
+			{ID: "forme_d_ours", Name: "Forme d'ours", Role: Tank, Forme: "ours", Desc: "En combat, tu deviens un ours : tu encaisses comme lui.", Mods: Mods{Taken: 0.8, Threat: 1.6, HP: 1.2},
 				Ultime: ultTank("colere_de_l_ours", "Colère de l'ours", "Un rugissement d'ours : protection, bouclier, et les ennemis proches sur toi.")},
-			{ID: "forme_de_lynx", Name: "Forme de lynx", Role: Degats, Desc: "Tu chasses comme un lynx : plus fort, plus de critiques.", Mods: Mods{Dmg: 1.2, Crit: 0.05},
+			{ID: "forme_de_lynx", Name: "Forme de lynx", Role: Degats, Forme: "lynx", Desc: "En combat, tu deviens un lynx : plus fort, plus de critiques.", Mods: Mods{Dmg: 1.2, Crit: 0.05},
 				Ultime: SkillDef{ID: "bond_du_lynx", Name: "Bond du lynx", Desc: "Bondit sur la proie et la lacère.", Level: SpecLevel, CD: 60, Range: 8, Dash: 8, Power: 4.0, Apply: []Apply{a(Saignement, 8, 0.5, WCible)}, Anim: "attaque"}},
 			{ID: "coeur_de_la_foret", Name: "Cœur de la forêt", Role: Soin, Desc: "Les racines et les fleurs soignent plus fort.", Mods: modsSoin,
 				Ultime: ultGroupHeal("bosquet_sacre", "Bosquet sacré", "Un bosquet pousse et soigne tout le groupe de 45 %.", 0.45)},

@@ -1,0 +1,479 @@
+<title>Le Conseil des Talents</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une salle d'armes nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Ombre sans visage<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/27</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte IV, les héros</div>
+    <h1>Le Conseil des Talents</h1>
+    <p class="lead">Quinze peuples et dix-sept classes arpentent Erydor, chacun sur sa voie. Il manque la dernière quête de l'Acte IV : les talents, ces petits choix qui font qu'aucun Mage ne joue tout à fait comme un autre. Braise et moi avons 27 questions pour toi, en 5 chapitres : la forme des talents, ce qu'ils font, l'écran pour les choisir, l'équilibrage avec vos retours, et la clôture de l'acte. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Re-salut, héros ! J'ai planté une graine dans la Clairière. Si tu réponds bien, ça fera un arbre. Si tu réponds mal… ça fera quand même un arbre, mais plus tordu.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "forme", icon: "🌳", title: "La forme des talents", sub: "Comment on gagne et on choisit ses talents. Le Conseil des Héros parlait d'un arbre par voie : 51 arbres. Voici des formes plus légères à équilibrer.",
+    chest: { title: "Fragment XXIII : l'arbre de la Clairière", lore: "Au milieu de la Clairière pousse un chêne que personne n'a planté. Chaque fois qu'un héros d'Erydor apprend quelque chose de vrai, une feuille y pousse. Mabon jure qu'il y en a une à son nom, « tout en bas, la plus grosse »." },
+    qs: [
+      { id: "forme", t: "Quelle forme pour les talents ?", why: "Tout compte : un arbre de 12 talents par voie, c'est 612 talents à écrire et à équilibrer. Des rangées communes à la classe, c'est environ 3 fois moins.", rec: 0, o: [
+        ["Des rangées de choix : à chaque rangée, 1 talent parmi 3. Les rangées sont communes à la classe, la dernière est propre à la voie", "Environ 21 talents par classe (357 en tout). Chaque choix compte, et c'est clair sur téléphone."],
+        ["Un arbre par voie, avec des points à répartir", "Le plus classique et le plus riche (51 arbres), mais trois fois plus long, et facile à rater (un seul « bon » chemin)."],
+        ["Une grande toile commune à la classe, où l'on trace son chemin", "Très libre et très joli, mais le plus dur à équilibrer et à lire sur un petit écran."] ] },
+      { id: "debut", t: "Quand s'ouvrent les talents ?", why: "La voie arrive au niveau 10. Les talents peuvent l'accompagner, ou commencer plus tôt pour qu'un nouveau héros ait vite quelque chose à choisir.", rec: 0, o: [
+        ["Une rangée tous les 5 niveaux, à partir du niveau 5", "Une première rangée de classe avant la voie, puis le rythme régulier."],
+        ["À partir du niveau 10, avec la voie", "Tout arrive en même temps : la voie et les premiers talents."],
+        ["Une rangée tous les 3 niveaux", "Plus de choix, plus souvent, mais plus de talents à écrire."] ] },
+      { id: "rangees", t: "Combien de rangées pour commencer ?", why: "Le jeu n'a pas de niveau maximum. On peut ouvrir quelques rangées maintenant et en ajouter avec les prochains actes.", rec: 0, o: [
+        ["7 rangées (niveaux 5 à 35), la 7ᵉ propre à la voie", "Assez pour des héros très différents, et de la place pour plus tard."],
+        ["5 rangées (niveaux 5 à 25)", "Plus vite livré, on ajoute ensuite."],
+        ["10 rangées (niveaux 5 à 50)", "Tout de suite très complet, mais beaucoup de talents qu'on ne verra pas avant longtemps."] ] },
+      { id: "changer", t: "Peut-on changer ses talents ?", why: "Avec des rangées de choix, on a envie d'essayer. Changer de voie coûte déjà de l'or au temple.", rec: 0, o: [
+        ["Oui, gratuitement, n'importe où hors combat", "On expérimente sans peur, et on s'adapte à chaque donjon."],
+        ["Oui, gratuitement, mais seulement en ville", "Un peu de préparation avant l'aventure."],
+        ["Oui, contre de l'or au temple", "Un choix plus engageant, et un petit puits d'or pour l'économie."] ] },
+      { id: "preset", t: "Peut-on garder plusieurs jeux de talents ?", why: "Un même héros peut jouer seul et en groupe, avec des talents différents.", rec: 0, o: [
+        ["Oui, 2 jeux enregistrés (par exemple « seul » et « groupe »)", "On passe de l'un à l'autre d'un clic, hors combat."],
+        ["Oui, 3 jeux", "Plus de souplesse, un menu un peu plus chargé."],
+        ["Non, un seul", "Le plus simple."] ] },
+      { id: "voie_change", t: "Quand on change de voie, que deviennent les talents ?", why: "La dernière rangée est propre à la voie.", rec: 0, o: [
+        ["Seule la rangée de la voie se vide ; le reste est gardé", "On choisit juste son nouveau talent de voie."],
+        ["Tout se vide", "Une vraie page blanche, un peu sévère."] ] },
+    ] },
+  { id: "effets", icon: "⚡", title: "Ce que font les talents", sub: "Le cœur de la question : des chiffres, ou des compétences qui changent de visage ?",
+    chest: { title: "Fragment XXIV : le carnet de Doran", lore: "Doran affirme qu'une épée n'a pas de talent, seulement le bras qui la tient. Puis il passe trois heures à expliquer pourquoi son marteau, lui, en a beaucoup." },
+    qs: [
+      { id: "nature", t: "Que font les talents ?", why: "Un « +5 % de dégâts » ne se voit pas à l'écran. Un talent qui change une compétence se voit et se sent.", rec: 0, o: [
+        ["Surtout, ils changent les compétences (la Frappe héroïque touche 2 ennemis, la Boule de feu laisse le sol en flammes), avec quelques bonus chiffrés", "Chaque héros joue vraiment différemment."],
+        ["Surtout des bonus chiffrés (dégâts, vie, critique)", "Plus simple à équilibrer, mais tous les Mages jouent pareil."],
+        ["Ils donnent de nouvelles compétences", "Très riche, mais il faut des boutons en plus."] ] },
+      { id: "puissance", t: "Quel poids dans la force du héros ?", why: "C'est la différence entre un héros sans talents et un héros qui les a tous, au même niveau.", rec: 0, o: [
+        ["Environ 15 % de force en plus", "On sent ses talents, mais un héros mal réglé reste jouable."],
+        ["Environ 5 %", "Presque décoratif."],
+        ["Environ 30 %", "Les talents deviennent essentiels, et un mauvais choix se paie cher."] ] },
+      { id: "trio", t: "Dans une rangée, à quoi ressemblent les 3 choix ?", why: "Si les 3 talents font la même chose en plus ou moins fort, tout le monde prend le même.", rec: 0, o: [
+        ["Un pour jouer seul, un pour le groupe, un utilitaire (vitesse, contrôle, survie)", "Aucun « meilleur » choix, tout dépend de la sortie du jour."],
+        ["Trois façons de faire des dégâts (ou de soigner, ou de tenir)", "Des choix de style à l'intérieur du rôle."],
+        ["Libre, rangée par rangée", "Je choisis au cas par cas."] ] },
+      { id: "ultime", t: "La rangée de la voie touche-t-elle l'ultime ?", why: "L'ultime (touche 8) est le moment fort de chaque voie.", rec: 0, o: [
+        ["Oui : chacun des 3 talents de voie transforme l'ultime à sa façon", "153 versions d'ultime, la fierté de chaque héros."],
+        ["Non : un bonus permanent pour la voie", "Plus discret, plus facile à écrire."] ] },
+      { id: "bouton", t: "Un talent peut-il ajouter un bouton ?", why: "Il y a 8 compétences sur la barre, et l'éventail du téléphone est déjà bien rempli.", rec: 0, o: [
+        ["Non : les talents changent les 8 compétences, sans en ajouter", "L'écran reste lisible, même sur téléphone."],
+        ["Oui, un 9ᵉ bouton pour certains talents", "Plus de possibilités, un écran plus chargé."] ] },
+      { id: "duel", t: "En duel, les talents comptent-ils ?", why: "Un talent fort contre les monstres peut être injuste contre un autre héros (un étourdissement trop long, par exemple).", rec: 0, o: [
+        ["Oui, mais les contrôles (étourdir, geler, peur) durent moitié moins en duel", "Les talents comptent, sans duel à sens unique."],
+        ["Oui, tels quels", "Le plus simple, au risque de déséquilibres."],
+        ["Non, les duels se jouent sans talents", "Le plus juste, mais on perd une partie de son héros."] ] },
+      { id: "public", t: "Les autres voient-ils mes talents ?", why: "La fiche publique montre déjà la voie et les attributs.", rec: 0, o: [
+        ["Oui, sur la fiche publique", "Pratique pour former un groupe, et on apprend des autres."],
+        ["Non, c'est un secret", "Un peu de mystère dans les duels."] ] },
+    ] },
+  { id: "ecran", icon: "📜", title: "L'écran des talents", sub: "Où et comment on les choisit, sur PC comme sur téléphone.",
+    chest: { title: "Fragment XXV : la page blanche", lore: "Le premier livre de talents de Médiolane ne contenait qu'une phrase : « Essaie, et tu verras. » Les érudits ont mis quatre siècles à trouver ça profond." },
+    qs: [
+      { id: "ou", t: "Où choisit-on ses talents ?", why: "La fiche du héros (touche C) a déjà deux onglets : Attributs et Voie.", rec: 0, o: [
+        ["Un 3ᵉ onglet 🌳 Talents dans la fiche du héros", "Tout le héros au même endroit."],
+        ["Un écran à part (touche N, bouton dédié)", "Plus de place, un bouton de plus."] ] },
+      { id: "conseil", t: "Un ⭐ choix conseillé ?", why: "Les attributs ont déjà leur « Répartition conseillée ».", rec: 0, o: [
+        ["Oui : un bouton ⭐ « Talents conseillés » selon la voie, et une ⭐ sur un talent par rangée", "On peut jouer sans y réfléchir."],
+        ["Non, on découvre seul", "Plus de surprise, plus de risques de mal choisir."] ] },
+      { id: "texte", t: "Que montre un talent ?", why: "Les compétences montrent déjà leurs chiffres exacts dans les bulles d'aide.", rec: 0, o: [
+        ["Une phrase claire et les chiffres exacts (« +1 cible, 60 % des dégâts »)", "Pas de mystère, on compare facilement."],
+        ["Une phrase seulement", "Plus joli, moins précis."] ] },
+      { id: "icones", t: "Les icônes des talents ?", why: "Les compétences utilisent aujourd'hui des émojis choisis par le serveur.", rec: 0, o: [
+        ["Des émojis, comme les compétences", "Tout de suite, et cohérent avec la barre."],
+        ["Des icônes en pixel art dessinées par la forge", "Plus beau, mais 357 icônes, et une version plus tardive."] ] },
+      { id: "annonce", t: "Quand une rangée s'ouvre ?", why: "Il faut que le joueur le remarque, sans l'interrompre en plein combat.", rec: 0, o: [
+        ["Braise le dit, et un point lumineux s'allume sur le bouton de la fiche jusqu'au choix", "Visible, sans bloquer."],
+        ["Une fenêtre s'ouvre à la fin du combat", "Impossible à rater, un peu envahissant."] ] },
+    ] },
+  { id: "retours", icon: "⚖️", title: "Équilibrage et retours", sub: "Les talents s'équilibrent mieux avec de vraies parties. Et quelques points restés ouverts dans la V0.4.",
+    chest: { title: "Fragment XXVI : la balance de Clémence", lore: "Sœur Clémence pèse les offrandes du temple sur une vieille balance qui penche toujours un peu à gauche. Elle dit que c'est voulu : « Solenn aime ceux qui donnent un peu plus qu'il ne faut »." },
+    qs: [
+      { id: "simu", t: "Comment j'équilibre les talents ?", why: "Pour la V0.4, 10 combats simulés par classe et par voie ont réglé les chiffres.", rec: 0, o: [
+        ["Simulations pour chaque talent (contre les monstres et en duel), puis vos impressions en jeu", "Aucun talent inutile ou écrasant au départ, et vos retours affinent."],
+        ["Simulations seulement", "Plus rapide, à l'aveugle sur le ressenti."] ] },
+      { id: "retour", t: "Comment me donner vos impressions en jeu ?", why: "Aujourd'hui, il faut me les écrire ici après avoir joué.", rec: 0, o: [
+        ["Une commande /retour dans le chat : votre message est enregistré avec votre classe, votre niveau et l'endroit, et je le lis", "Le plus simple pour toi et tes amis, sur le moment."],
+        ["Un salon Discord dédié", "Tout le monde voit les retours des autres, mais le bot Discord arrive à l'Acte IX."],
+        ["Tu me les écris ici", "Rien à construire."] ] },
+      { id: "paladin", t: "Le Paladin sans voie de soin : on corrige ?", why: "Ses voies sont Bouclier de l'Aube 🛡️, Héraut 🎺 et Croisé ⚔️. Chacune garde la Lumière de Solenn, mais aucune ne soigne le groupe.", rec: 0, o: [
+        ["Le Héraut devient une voie de soin et de soutien 💚 (soins de groupe + auras)", "Le Paladin retrouve son rôle classique de soigneur en armure."],
+        ["On garde : le Prêtre et le Druide soignent", "Moins de travail, le Paladin reste un combattant."] ] },
+      { id: "formes", t: "Formes du Druide et armure de l'Ingénieur : on les dessine ?", why: "Aujourd'hui, la Forme d'ours, la Forme de lynx et le Pilote d'armure changent les chiffres, pas le dessin.", rec: 0, o: [
+        ["Oui, dans cette version : ours, lynx et armure à vapeur, en 8 directions", "Ces voies prennent enfin leur allure."],
+        ["Plus tard, avec les montures (Acte VIII)", "Plus vite livré."] ] },
+      { id: "habitants", t: "Les habitants avec les nouveaux peuples ?", why: "Mabon, Doran, Clémence et les autres ont encore leurs dessins de l'Acte II.", rec: 0, o: [
+        ["Oui : je les redessine avec la forge des peuples (chacun reçoit son peuple et sa tenue)", "Le village ressemble enfin à Erydor."],
+        ["Plus tard, avec les quêtes (Acte VII)", "Rien ne change au village pour l'instant."] ] },
+    ] },
+  { id: "fin", icon: "🏁", title: "Clore l'Acte IV", sub: "La livraison, et ce qu'il faut pour dire « Acte IV validé ».",
+    chest: { title: "Fragment XXVII : le dernier feuillet", lore: "Le livre des voies de Doran se termine par une page arrachée. Tam jure que ce n'est pas lui. Tilda jure que c'est Tam. Le dragonneau de Doran, lui, a l'air très content de son déjeuner." },
+    qs: [
+      { id: "livraison", t: "Les talents des 17 classes arrivent-ils ensemble ?", why: "Pour la V0.4, tout est arrivé d'un coup (ton choix).", rec: 0, o: [
+        ["Oui, les 17 classes dans la V0.5", "Personne n'attend son tour."],
+        ["Par vagues de 6 classes", "Les premiers talents arrivent plus vite, les autres classes attendent."] ] },
+      { id: "hardcore", t: "La mort hardcore, je la vérifie comment ?", why: "Elle a été testée en simulation et sur un serveur local, jamais sur le serveur de test.", rec: 0, o: [
+        ["Je la teste moi-même sur le serveur de test avec un héros robot, avant la livraison", "Aucun de vos héros ne risque rien."],
+        ["Vous l'essayez avec un héros jetable", "Un vrai test, avec un peu de suspense."] ] },
+      { id: "validation", t: "Quand l'Acte IV est-il validé ?", why: "Les actes I à III ont été validés par toi après avoir joué.", rec: 0, o: [
+        ["Après une soirée de jeu entre amis avec les talents, et les retours corrigés", "On ferme l'acte sur du solide."],
+        ["Dès la livraison de la V0.5", "On file vers l'Acte V."] ] },
+      { id: "nom", t: "Le nom de la V0.5 ?", why: "Chaque version a son nom. La V0.4 s'appelait « Mille visages ».", rec: 0, o: [
+        ["« Mille chemins »", "Après les visages, les chemins."],
+        ["« Les racines »", "Comme l'arbre de la Clairière."],
+        ["« Le serment »", "Le héros jure fidélité à sa voie."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const STEP = 50;
+const LEVELS = ["Graine", "Pousse", "Jeune rameau", "Branche solide", "Tronc noueux", "Chêne de la Clairière", "Gardien des racines", "Légende d'Erydor"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, certifié sans bug (pour l'instant).", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou.", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté.", "Un mélange ? J'adore les mélanges. Sauf la soupe de navets."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et je file écrire les talents des 17 classes. Ça va faire beaucoup de feuilles.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / STEP) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? STEP : x % STEP;
+  document.getElementById("xpfill").style.width = (inLevel / STEP * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte IV)" : `${STEP - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Nouveau fragment pour le Grimoire d'Erydor, à valider comme les autres. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les ${TOTAL} réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, puis je lance la forge des héros, et ton Paladin pourra enfin se regarder dans un miroir.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil-talents", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil-talents") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>

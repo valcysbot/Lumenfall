@@ -303,9 +303,12 @@ func set_me(d: Dictionary) -> void:
 		hp_max = int(d.hpm)
 	var gcd := float(d.get("gcd", 0)) / 1000.0
 	var cds: Array = d.get("cd", [])
+	var cdt: Array = d.get("cdt", [])  # les recharges avec les talents
 	for k in range(1, NSKILLS + 1):
 		var left := float(cds[k - 1]) / 1000.0 if k - 1 < cds.size() else 0.0
 		var total: float = float(skills[k].get("cd", 1.0)) if k < skills.size() else 1.0
+		if k - 1 < cdt.size() and int(cdt[k - 1]) > 0:
+			total = float(cdt[k - 1]) / 1000.0
 		if gcd > left:
 			left = gcd
 			total = 1.0

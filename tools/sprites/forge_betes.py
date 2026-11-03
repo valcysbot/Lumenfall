@@ -5,7 +5,8 @@ Même méthode que les héros (forge_heros.py) : un modèle 3D en formes simples
 photographié dans la vraie vue du jeu pour les 8 directions et chaque image
 d'animation. Une seule planche par monstre (pas de couches) : les loups, les
 sangliers, leurs cousins effacés par la Flétrissure, le corbeau effacé et le
-sanglier doré.
+sanglier doré. Et, pour l'Acte IV, les formes de combat des héros : l'ours et le
+lynx du druide, l'armure à vapeur de l'ingénieur.
 
     python3 tools/sprites/forge_betes.py              # écrit client/assets/betes/
     python3 tools/sprites/forge_betes.py loup corbeau_efface
@@ -39,6 +40,10 @@ def cadre(w, h, ancre):
 
 LOUP = dict(long=10.5, larg=4.2, haut=5.0, garrot=13.5, patte=1.5, tete=3.6, museau=4.2, oreille="pointue",
             queue="touffue", defenses=False, criniere=False)
+OURS = dict(long=10.0, larg=6.8, haut=7.6, garrot=13.0, patte=2.4, tete=4.6, museau=2.8, oreille="ronde",
+            queue="fine", defenses=False, criniere=True)
+LYNX = dict(long=9.5, larg=3.6, haut=4.4, garrot=12.0, patte=1.4, tete=3.4, museau=2.2, oreille="touffe",
+            queue="courte", defenses=False, criniere=False)
 SANGLIER = dict(long=10.0, larg=5.6, haut=6.4, garrot=12.0, patte=1.7, tete=4.2, museau=3.6, oreille="ronde",
                 queue="fine", defenses=True, criniere=True)
 
@@ -88,6 +93,10 @@ def quadrupede(forme, d, anim, i, n):
                                [0.9, 0.8, 0.9]), "yeux"))
         if G["oreille"] == "pointue":
             out.append((capsule(tete - td * 0.8 + R * k * 2.0 + Z * 2.4, tete - td * 1.6 + R * k * 2.4 + Z * 6.0, 0.9), "poil"))
+        elif G["oreille"] == "touffe":
+            # Le lynx : de grandes oreilles et leur pinceau noir.
+            out.append((capsule(tete - td * 0.6 + R * k * 1.8 + Z * 2.2, tete - td * 1.0 + R * k * 2.2 + Z * 5.4, 1.0), "poil"))
+            out.append((capsule(tete - td * 1.0 + R * k * 2.2 + Z * 5.4, tete - td * 1.1 + R * k * 2.3 + Z * 7.4, 0.45), "criniere"))
         else:
             out.append((ellipsoide(tete - td * 1.0 + R * k * 3.4 + Z * 2.4, [td, R, Z], [1.0, 1.8, 1.3]), "poil"))
         if G["defenses"]:
@@ -111,6 +120,10 @@ def quadrupede(forme, d, anim, i, n):
         bout_q = arr - F * 6.0 - Z * 4.5 + R * rem
         out.append((capsule(arr, bout_q, 1.8), "poil"))
         out.append((ellipsoide(bout_q - Z * 0.4, [F, R, Z], [1.6, 1.6, 1.6]), "ventre"))
+    elif G["queue"] == "courte":
+        bout_q = arr - F * 2.6 + Z * 0.8 + R * 0.5 * math.sin(ph)
+        out.append((capsule(arr, bout_q, 1.0), "poil"))
+        out.append((ellipsoide(bout_q, [F, R, Z], [0.9, 0.9, 0.9]), "criniere"))
     else:
         out.append((capsule(arr, arr - F * 2.5 + Z * 1.0 + R * 0.6 * math.sin(ph), 0.6), "poil"))
     if anim == "mort":
@@ -119,6 +132,63 @@ def quadrupede(forme, d, anim, i, n):
         centre = Z * 0.0 + R * Wd
         out = [(tourne(f, centre, F, -k * math.pi / 2 * 0.95), m) for f, m in out]
         out = [((lambda f: lambda p: f(p + Z * (Wd * 0.2 * k)))(f), m) for f, m in out]
+    return out
+
+
+# --- L'armure à vapeur -----------------------------------------------------------
+
+def armure(d, anim, i, n):
+    """Un grand scaphandre de bronze sur deux jambes, cheminée sur le dos."""
+    th = d * math.pi / 4
+    F = np.array([math.cos(th), math.sin(th), 0.0])
+    R = np.array([-F[1], F[0], 0.0])
+    Z = np.array([0.0, 0.0, 1.0])
+    t = i / n
+    ph = 2 * math.pi * t
+    pas = 0.0
+    rebond = 0.0
+    coup = 0.0
+    if anim == "repos":
+        rebond = 0.4 * math.sin(ph)
+    elif anim in ("marche", "course"):
+        pas = 0.45 if anim == "marche" else 0.7
+        rebond = (0.6 if anim == "marche" else 1.0) * abs(math.sin(ph))
+    elif anim == "attaque":
+        coup = math.sin(math.pi * t)
+    hanche = Z * (11.0 + rebond)
+    torse = hanche + Z * 7.5
+    out = [(boite(torse, [F, R, Z], [4.6, 5.6, 5.0], 1.2), "metal"),
+           (boite(torse + F * 3.6 + Z * 0.8, [F, R, Z], [1.6, 3.6, 2.6], 0.8), "vitre"),
+           (boite(torse - Z * 5.4, [F, R, Z], [3.4, 4.2, 1.2], 0.5), "sombre")]
+    # Les rivets sur le ventre, la cheminée et sa vapeur.
+    for k in (-1, 1):
+        out.append((ellipsoide(torse + F * 4.7 + R * k * 3.2 - Z * 2.6, [F, R, Z], [0.6, 0.6, 0.6]), "rivet"))
+    chem = torse - F * 3.4 + R * 2.4 + Z * 4.0
+    out.append((capsule(chem, chem + Z * 4.5, 1.1), "sombre"))
+    bouffee = (t * (2 if anim != "repos" else 1)) % 1.0
+    out.append((ellipsoide(chem + Z * (6.0 + 4.0 * bouffee) - F * 1.5 * bouffee, [F, R, Z],
+                           [1.6 + bouffee, 1.6 + bouffee, 1.3 + bouffee]), "vapeur"))
+    # Les jambes.
+    for k, phase in ((-1, 0.0), (1, math.pi)):
+        a = pas * math.sin(ph + phase)
+        lever = max(0.0, math.sin(ph + phase)) * pas * 3.0
+        h = hanche + R * k * 3.0
+        pied = R * k * 3.2 + F * (8.0 * math.sin(a)) + Z * (1.4 + lever)
+        genou = (h + pied) / 2 + F * 1.6
+        out.append((capsule(h, genou, 1.8), "metal"))
+        out.append((capsule(genou, pied, 1.6), "sombre"))
+        out.append((boite(pied, [F, R, Z], [2.6, 1.8, 1.2], 0.5), "metal"))
+    # Les bras : le droit frappe avec son poing-piston.
+    for k in (-1, 1):
+        epaule = torse + R * k * 6.4 + Z * 2.4
+        avant = F * (2.0 + (6.0 * coup if k == 1 else 0.0))
+        main = epaule + avant - Z * (6.5 - (3.5 * coup if k == 1 else 0.0)) + R * k * 0.6
+        out.append((ellipsoide(epaule, [F, R, Z], [2.2, 2.2, 2.2]), "metal"))
+        out.append((capsule(epaule, main, 1.4), "sombre"))
+        out.append((boite(main, [F, R, Z], [1.8, 1.8, 1.8], 0.6), "metal"))
+    if anim == "mort":
+        k = min(1.0, (i + 1) / (n - 1))
+        out = [(tourne(f, Z * 0.0 - F * 2.0, R, k * math.pi / 2 * 0.9), m) for f, m in out]
     return out
 
 
@@ -191,6 +261,16 @@ BETES = {
                      "defense": "#d8d8dc"}),
     "corbeau_efface": (agrandi(corbeau, 1.2), {"poil": "#77767e", "ventre": "#9a99a0", "museau": "#c8c6cc", "yeux": "#f2f4ff",
                                  "aile": "#5e5d66"}),
+    # Les formes de combat des héros (Acte IV).
+    "ours": (agrandi(lambda d, a, i, n: quadrupede(OURS, d, a, i, n), 1.5),
+             {"poil": "#6b4a32", "ventre": "#8e6a4c", "criniere": "#4e3423", "museau": "#3a2a24", "yeux": "#1d1620",
+              "defense": "#efe6d0"}),
+    "lynx": (agrandi(lambda d, a, i, n: quadrupede(LYNX, d, a, i, n), 1.35),
+             {"poil": "#c49a5e", "ventre": "#ead2a8", "criniere": "#2a2224", "museau": "#3a2a26", "yeux": "#9ccf5a",
+              "defense": "#efe6d0"}),
+    "armure_vapeur": (agrandi(armure, 1.6),
+                      {"metal": "#b07a3c", "sombre": "#4a3a34", "vitre": "#7fc4c8", "rivet": "#f0d08a",
+                       "vapeur": "#e8ecf0"}),
     # Le Grand Sanglier de Mabon, deux fois et demie plus grand, puis dévoré par la Flétrissure.
     "grand_sanglier": (lambda d, a, i, n: grand(d, a, i, n),
                        {"poil": "#5e3b2a", "ventre": "#8a6248", "criniere": "#2a1d18", "museau": "#2c201e",
@@ -201,7 +281,8 @@ BETES = {
 }
 
 # Les grandes bêtes ont des images plus grandes : nom -> (largeur, hauteur, ancre).
-GRANDES = {"grand_sanglier": (152, 112, (76, 96)), "grand_sanglier_efface": (152, 112, (76, 96))}
+GRANDES = {"grand_sanglier": (152, 112, (76, 96)), "grand_sanglier_efface": (152, 112, (76, 96)),
+           "ours": (80, 60, (40, 50)), "armure_vapeur": (72, 84, (36, 74))}
 ECHELLE_GRAND = 3.0
 
 

@@ -188,6 +188,10 @@ func _capture() -> void:
 		current._open_sheet()
 		current.sheet._tab = args.fiche
 		current.sheet._render()
+		if args.has("defile"):
+			await get_tree().process_frame
+			var sc: ScrollContainer = current.sheet.find_children("*", "ScrollContainer", true, false)[0]
+			sc.scroll_vertical = int(args.defile)
 	if args.has("reste"):
 		await get_tree().create_timer(float(args.reste)).timeout
 	if args.has("chat"):

@@ -42,6 +42,7 @@ func _ready() -> void:
 					printerr("Planche manquante : ", file)
 					failed += 1
 	failed += _check_heros()
+	failed += _check_talents()
 	failed += _check_npcs()
 	failed += _check_monsters()
 	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
@@ -53,6 +54,30 @@ func _ready() -> void:
 
 ## Acte IV : les 15 peuples, les 17 classes et chaque pièce que le miroir
 ## peut demander existent ; la répartition conseillée place tous les points.
+func _check_talents() -> int:
+	var failed := 0
+	for c in Heros.data().classes:
+		for v in 3:
+			var tree := Heros.arbre(c.id, v)
+			if tree.size() != 10:
+				printerr("Arbre de talents incomplet : ", c.id, " ", v)
+				failed += 1
+			var t := Heros.talents_conseilles(c.id, v, 50)
+			if Heros.points_places(t) != Heros.points_de_talent(50):
+				printerr("Talents conseillés incomplets : ", c.id, " ", v)
+				failed += 1
+	# La fiche s'affiche avec l'onglet des talents.
+	var sheet := HeroSheet.new()
+	sheet.me = {"cl": "mage", "v": 0, "lv": 23, "ta": Heros.talents_conseilles("mage", 0, 20), "at": [], "pt": 110}
+	sheet._tab = "talents"
+	add_child(sheet)
+	if sheet._body.get_child_count() < 10:
+		printerr("Onglet des talents vide")
+		failed += 1
+	sheet.queue_free()
+	return failed
+
+
 func _check_heros() -> int:
 	var failed := 0
 	var D := Heros.peuples()
@@ -113,11 +138,13 @@ func _check_npcs() -> int:
 			printerr("Habitant sans dialogues : ", n.id)
 			failed += 1
 			continue
-		for piece in who.look:
-			var v: String = who.look[piece]
-			var file: String = ("cheveux_" + v) if piece == "cheveux" else (piece + ("_" + v if v != "" else ""))
-			if not piece in HeroSprite.ORDRE or not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
-				printerr("Tenue de %s : planche manquante %s" % [n.id, file])
+		if not Heros.peuples().peuples.has(str(who.get("peuple", {}).get("race", ""))):
+			printerr("Habitant sans peuple : ", n.id)
+			failed += 1
+			continue
+		for c in Heros.habitant(who.peuple):
+			if not PeupleSprite.has_piece(c[0]):
+				printerr("Allure de %s : planche manquante %s" % [n.id, c[0]])
 				failed += 1
 		var tree: Dictionary = who.dialogue
 		if not tree.has("debut") or who.get("bulles", []).is_empty():

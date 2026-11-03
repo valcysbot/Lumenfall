@@ -1,10 +1,11 @@
 class_name HeroSheet
 extends Control
 ## La fiche du héros (touche C) : ses 9 attributs à placer, sa voie à choisir
-## au niveau 10. Et la fiche publique des autres héros (clic sur leur nom).
+## au niveau 10, ses talents (onglet 🌳). Et la fiche publique des autres héros (clic sur leur nom).
 
 signal attrs(points: Array)
 signal voie(i: int)
+signal talents(t: Array)
 signal closed
 
 var me := {}        # le dernier état privé (opMe) : cl, v, q, qm, at, pt, lv, or
@@ -14,6 +15,7 @@ var public := {}    # la fiche d'un autre héros (opFiche) ; vide pour la sienne
 var _body: VBoxContainer
 var _tab := "attributs"
 var _draft: Array = []
+var _tdraft: Array = []    # les talents en cours de placement
 var _left: Label
 
 
@@ -54,7 +56,7 @@ func _ready() -> void:
 		title.text = "📜 Ton héros"
 		var tabs := HBoxContainer.new()
 		tabs.add_theme_constant_override("separation", 6)
-		for t in [["attributs", "💪 Attributs"], ["voie", "🌟 Voie"]]:
+		for t in [["attributs", "💪 Attributs"], ["voie", "🌟 Voie"], ["talents", "🌳 Talents"]]:
 			var b := UI.button(t[1])
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var id: String = t[0]
@@ -74,6 +76,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 8)
 	scroll.add_child(_body)
 	_draft = _ints(me.get("at", []))
+	_tdraft = Heros.talents_ints(me.get("ta", []))
 	_render()
 
 
@@ -94,6 +97,8 @@ func update_me(d: Dictionary) -> void:
 	me = d
 	if (d.get("at", []) as Array) != before:
 		_draft = _ints(d.get("at", []))
+	if d.has("ta"):
+		_tdraft = Heros.talents_ints(d.ta)
 	if is_inside_tree():
 		_render()
 
@@ -111,6 +116,8 @@ func _render() -> void:
 		_render_public()
 	elif _tab == "attributs":
 		_render_attrs()
+	elif _tab == "talents":
+		_render_talents()
 	else:
 		_render_voie()
 
@@ -143,6 +150,24 @@ func _render_public() -> void:
 			parts.append("%s %d" % [Heros.ATTRIBUTS[keys[i]][1], int(at[i])])
 	if not parts.is_empty():
 		_line("  ".join(parts), 16, UI.MUTED)
+	# Ses talents : ce qu'il a choisi, palier par palier.
+	var vi := -1
+	var c := Heros.classe(str(p.cl))
+	for i in c.voies.size():
+		if c.voies[i].id == v:
+			vi = i
+	var ta := Heros.talents_ints(p.get("ta", []))
+	var tree := Heros.arbre(str(p.cl), vi)
+	var picked := []
+	for i in tree.size():
+		for j in 3:
+			if int(ta[i][j]) > 0:
+				var tl: Dictionary = tree[i].talents[j]
+				picked.append("%s %s %d/%d" % [tl.icone, tl.nom, int(ta[i][j]), int(tl.max)])
+	if not picked.is_empty():
+		_line("🌳 Talents", 17, UI.LUMEN)
+		var l := _line(" · ".join(picked), 15, UI.PARCH)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
 ## La « répartition conseillée » : la même méthode que le serveur (stats.go, Recommend).
@@ -282,3 +307,117 @@ func _render_voie() -> void:
 			b.pressed.connect(func(): voie.emit(k))
 			box.add_child(b)
 		_body.add_child(card)
+
+
+# --- Les talents ------------------------------------------------------------------
+
+func _render_talents() -> void:
+	var cl := str(me.get("cl", ""))
+	var v := int(me.get("v", -1))
+	var lv := int(me.get("lv", 1))
+	var server: Array = Heros.talents_ints(me.get("ta", []))
+	if _tdraft.size() != 10:
+		_tdraft = server.duplicate(true)
+	var tree := Heros.arbre(cl, v)
+	var total := Heros.points_de_talent(lv)
+	var left := total - Heros.points_places(_tdraft)
+	var price := int(Heros.data().talents.reprise) * lv
+	_line("Points de talent à placer : %d" % left, 18, UI.LUMEN)
+	var help := _line("1 point par niveau dès le niveau %d. Un talent prend jusqu'à %d points. Placer un point est gratuit ; les reprendre se fait au temple, contre %d or." % [int(Heros.data().talents.premier), int(Heros.data().talents.max), price], 15, UI.MUTED)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var takes_back := false
+	for i in 10:
+		for j in 3:
+			if int(_tdraft[i][j]) < int(server[i][j]):
+				takes_back = true
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	var rec := UI.button("⭐ Talents conseillés")
+	rec.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rec.tooltip_text = "Place tes points comme je le conseille pour ta voie."
+	rec.pressed.connect(func():
+		var want := Heros.talents_conseilles(cl, v, lv)
+		# Sans passer au temple : on garde ce qui est déjà placé, et on complète.
+		_tdraft = server.duplicate(true)
+		var spare := total - Heros.points_places(server)
+		for i in 10:
+			for j in 3:
+				var n := mini(spare, maxi(0, int(want[i][j]) - int(_tdraft[i][j])))
+				_tdraft[i][j] += n
+				spare -= n
+		_render())
+	actions.add_child(rec)
+	var ok := UI.button("Valider", true)
+	ok.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ok.disabled = _tdraft == server
+	ok.pressed.connect(func(): talents.emit(_tdraft.duplicate(true)))
+	actions.add_child(ok)
+	_body.add_child(actions)
+	if takes_back:
+		var w := _line("Tu reprends des points : il faut être au temple, et ça coûte %d or." % price, 15, UI.DANGER)
+		w.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var star := ["seul", "groupe", "utile"].find(Heros.etoile(cl, v))
+	for i in 10:
+		if i >= tree.size():
+			var l := _line("🔒 Niveaux %d à 50 : l'arbre de ta voie s'ouvre quand tu la choisis (onglet 🌟 Voie)." % (int(Heros.data().talents.premier) + int(Heros.data().talents.pas)), 15, UI.MUTED)
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			break
+		var tier: Dictionary = tree[i]
+		var open := lv >= int(tier.niveau)
+		var head := "Niveau %d" % int(tier.niveau)
+		if i == 0:
+			head += " · commun aux trois voies"
+		elif i == 1:
+			head += " · ton ultime"
+		if not open:
+			head = "🔒 " + head
+		_line(head, 16, UI.LUMEN if open else UI.MUTED)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		for j in 3:
+			row.add_child(_talent_card(tier.talents[j], i, j, open, j == star, left))
+		_body.add_child(row)
+
+
+func _talent_card(tl: Dictionary, i: int, j: int, open: bool, star: bool, left: int) -> PanelContainer:
+	var n := int(_tdraft[i][j])
+	var mx := int(tl.max)
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", UI.box(UI.STONE_2, UI.LUMEN if n > 0 else UI.LINE, 10, 2 if n > 0 else 1, 8))
+	if not open:
+		card.modulate = Color(1, 1, 1, 0.55)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	card.add_child(col)
+	var title := UI.label("%s %s%s" % [tl.icone, tl.nom, " ⭐" if star else ""], 15, UI.LUMEN if n > 0 else UI.PARCH)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size = Vector2(130, 0)
+	col.add_child(title)
+	var desc := UI.label(str(tl.aide), 13, UI.MUTED)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(130, 0)
+	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(desc)
+	var ranks := HBoxContainer.new()
+	ranks.add_theme_constant_override("separation", 4)
+	var minus := UI.button("−")
+	minus.custom_minimum_size = Vector2(38, 34)
+	minus.disabled = n <= 0
+	minus.pressed.connect(func():
+		_tdraft[i][j] = n - 1
+		_render())
+	ranks.add_child(minus)
+	var dots := UI.label("●".repeat(n) + "○".repeat(maxi(0, mx - n)), 15, UI.LUMEN)
+	dots.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dots.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ranks.add_child(dots)
+	var plus := UI.button("+")
+	plus.custom_minimum_size = Vector2(38, 34)
+	plus.disabled = not open or n >= mx or left <= 0
+	plus.pressed.connect(func():
+		_tdraft[i][j] = n + 1
+		_render())
+	ranks.add_child(plus)
+	col.add_child(ranks)
+	return card

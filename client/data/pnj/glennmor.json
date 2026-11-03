@@ -1,9 +1,9 @@
 {
- "_note": "Les habitants du Val de Glennmor côté client : tenue, bulles quand on passe près d'eux, et dialogue quand on leur parle. {nom} = le nom du héros, {sanglier} = la taille du sanglier de Mabon (elle grandit à chaque fois). Les positions et les horaires sont côté serveur (server/world/maps/glennmor.pnj.json).",
+ "_note": "Les habitants du Val de Glennmor côté client : allure (forge des peuples), bulles quand on passe près d'eux, et dialogue quand on leur parle. {nom} = le nom du héros, {sanglier} = la taille du sanglier de Mabon (elle grandit à chaque fois). Les positions et les horaires sont côté serveur (server/world/maps/glennmor.pnj.json).",
  "pnj": {
   "mabon": {
    "titre": "l'aubergiste de La Chope Pleine",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "1", "tablier": "", "barbe": "brun", "cheveux": "court_brun"},
+   "peuple": {"race": "humain", "k": 2, "p": 4, "y": 1, "hc": 1, "h": 1, "b": 0, "v": 3, "tu": 1, "plus": ["tablier"]},
    "bulles": ["Entrez, entrez, il fait meilleur dedans !", "Une soupe ? Une chope ? Les deux ?", "Ai-je déjà raconté l'histoire du sanglier ?"],
    "dialogue": {
     "debut": {"texte": "Ah ! {nom} ! Bienvenue à La Chope Pleine, la meilleure auberge du Val. Bon, la seule, mais quand même. Que puis-je pour toi ?",
@@ -22,7 +22,7 @@
   },
   "fiacre": {
    "titre": "le cartographe",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "10", "barbe": "blanc", "cheveux": "court_blanc", "cape": ""},
+   "peuple": {"race": "humain", "k": 0, "p": 2, "y": 4, "hc": 5, "h": 6, "b": 1, "v": 9, "tu": 10, "plus": ["cape"], "couleurs": {"cape": "#5a4636"}},
    "bulles": ["Hmpf. Encore un qui marche sur mes croquis.", "Cette rivière n'était pas là hier. J'en suis sûr.", "Ne touche pas à ma plume."],
    "dialogue": {
     "debut": {"texte": "Quoi ? Tu vois bien que je travaille. Bon. Tu as deux minutes, pas plus.",
@@ -37,7 +37,7 @@
   },
   "corbin": {
    "titre": "l'allumeur de lanternes",
-   "look": {"corps": "mat", "pantalon": "", "bottes": "", "tunique": "11", "cape": "", "chapeau": "feutre", "cheveux": "long_noir", "gants": ""},
+   "peuple": {"race": "humain", "k": 1, "p": 12, "y": 0, "hc": 0, "h": 7, "v": 6, "tu": 11, "plus": ["cape", "gants", "chapeau"], "couleurs": {"cape": "#3a2a5a", "chapeau": "#4a3d52"}},
    "bulles": ["Une lanterne de plus. Plus que trois cents.", "La nuit est belle quand elle est éclairée.", "Bonsoir, voyageur. Reste dans la lumière."],
    "dialogue": {
     "debut": {"texte": "Bonsoir, {nom}. Je suis Corbin. Je dors le jour, je veille la nuit, et pas une lanterne ne s'éteint tant que je suis là.",
@@ -50,7 +50,7 @@
   },
   "aelis": {
    "titre": "la marchande",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "8", "cheveux": "long_blond"},
+   "peuple": {"race": "humain", "k": 1, "p": 1, "y": 5, "hc": 3, "h": 9, "v": 1, "tu": 8, "robe": true},
    "bulles": ["Des pommes, des rubans, des bottes presque neuves !", "Approchez, approchez !", "Tout se négocie. Sauf mes prix."],
    "dialogue": {
     "debut": {"texte": "Bienvenue à mon étal, {nom} ! Ici on trouve de tout, ou presque. Surtout presque.",
@@ -63,7 +63,7 @@
   },
   "doran": {
    "titre": "le forgeron",
-   "look": {"corps": "brun", "pantalon": "", "bottes": "", "tunique": "11", "tablier": "", "gants": "", "barbe": "noir", "cheveux": "court_noir"},
+   "peuple": {"race": "humain", "k": 2, "p": 16, "y": 0, "hc": 0, "h": 0, "b": 0, "v": 12, "tu": 11, "plus": ["tablier", "gants", "arme_masse"], "couleurs": {"tablier": "#7a4a2a"}},
    "bulles": ["*Tang* *Tang* *Tang*", "Le fer chaud n'attend pas.", "Belle épée. Elle mériterait un coup d'affûtage."],
    "dialogue": {
     "debut": {"texte": "*Tang*. Oh, pardon. Doran, forgeron. Si c'est en métal et que c'est cassé, je le répare. Si ce n'est pas cassé, je le répare quand même.",
@@ -76,7 +76,7 @@
   },
   "nessa": {
    "titre": "l'herboriste",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "3", "cheveux": "long_roux", "chapeau": "paille"},
+   "peuple": {"race": "humain", "k": 0, "p": 3, "y": 6, "hc": 4, "h": 12, "v": 4, "tu": 3, "robe": true, "plus": ["chapeau", "arme_fioles"], "couleurs": {"chapeau": "#dcb862"}},
    "bulles": ["Menthe, sauge, ortie… et où est passée la menthe d'argent ?", "Ne marche pas sur les camomilles !", "Les plantes parlent, si on sait écouter."],
    "dialogue": {
     "debut": {"texte": "Bonjour, {nom} ! Attention où tu mets les pieds, ce trèfle-là soigne les maux de tête.",
@@ -89,7 +89,7 @@
   },
   "clemence": {
    "titre": "prêtresse de Solenn",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "9", "cape": "", "cheveux": "long_chatain"},
+   "peuple": {"race": "humain", "k": 1, "p": 6, "y": 3, "hc": 2, "h": 8, "v": 2, "tu": 9, "robe": true, "plus": ["cape", "arme_baton"], "couleurs": {"cape": "#e8c66a"}},
    "bulles": ["Que la lumière de Solenn veille sur toi.", "Le temple est toujours ouvert.", "Chaque flamme est une prière."],
    "dialogue": {
     "debut": {"texte": "Paix sur toi, {nom}. Je suis Sœur Clémence. Solenn veille sur ceux qui portent la lumière.",
@@ -104,7 +104,7 @@
   },
   "breval": {
    "titre": "chef de la garde",
-   "look": {"corps": "mat", "pantalon": "", "bottes": "", "tunique": "6", "gants": "", "cape": "", "casque": "", "epee": "", "barbe": "chatain", "cheveux": "court_chatain"},
+   "peuple": {"race": "humain", "k": 2, "p": 12, "y": 1, "hc": 2, "h": 1, "b": 4, "v": 13, "tu": 6, "plus": ["cape", "gants", "casque", "arme_epee", "arme_bouclier"], "couleurs": {"cape": "#4a7bd0"}},
    "bulles": ["Tout est calme. Trop calme.", "Garde ton épée propre, recrue.", "Personne ne passe la Lisière sans mon accord."],
    "dialogue": {
     "debut": {"texte": "Halte ! Ah, un nouveau visage. Capitaine Bréval, de la garde de Bourg-Lanterne. Tu cherches des ennuis, {nom} ?",
@@ -117,7 +117,7 @@
   },
   "gwenn": {
    "titre": "la bergère",
-   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "4", "cheveux": "long_blond", "chapeau": "paille"},
+   "peuple": {"race": "humain", "k": 1, "p": 2, "y": 4, "hc": 3, "h": 13, "v": 5, "tu": 4, "robe": true, "plus": ["chapeau", "arme_baton_noueux"], "couleurs": {"chapeau": "#dcb862"}},
    "bulles": ["Une, deux, trois… il en manque une !", "Bêêê ! Oh pardon, l'habitude.", "Tam ! Tilda ! Rendez-moi mes sabots !"],
    "dialogue": {
     "debut": {"texte": "Bonjour, {nom} ! Tu n'aurais pas vu un mouton tout seul, par hasard ? Il s'appelle Biscuit.",
@@ -130,8 +130,7 @@
   },
   "tam": {
    "titre": "un jumeau",
-   "taille": 0.75,
-   "look": {"corps": "", "pantalon": "", "bottes": "", "tunique": "5", "cheveux": "court_roux"},
+   "peuple": {"race": "humain", "k": 0, "p": 4, "y": 6, "hc": 4, "h": 4, "v": 7, "tu": 5, "taille": 0.75},
    "bulles": ["Attrape-moi si tu peux !", "Tilda, c'est toi le loup !", "Hé ! C'est un vrai dragon, ça ?"],
    "dialogue": {
     "debut": {"texte": "Moi c'est Tam ! Et elle, c'est Tilda ! On est jumeaux, mais moi je suis le plus vieux. De quatre minutes.",
@@ -144,8 +143,7 @@
   },
   "tilda": {
    "titre": "une jumelle",
-   "taille": 0.75,
-   "look": {"corps": "", "pantalon": "", "bottes": "", "robe": "0", "cheveux": "long_roux"},
+   "peuple": {"race": "humain", "k": 0, "p": 4, "y": 6, "hc": 4, "h": 11, "v": 8, "tu": 0, "robe": true, "taille": 0.75},
    "bulles": ["Tam triche toujours !", "On fait la course ?", "Je serai cheffe de la garde, un jour !"],
    "dialogue": {
     "debut": {"texte": "Ne crois pas Tam, c'est moi la plus maligne. Tu veux savoir un secret ?",
