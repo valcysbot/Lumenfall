@@ -56,6 +56,7 @@ type HeroInit struct {
 	Attrs                    Attrs
 	Hardcore                 bool
 	Quest                    int
+	Talents                  Talents
 }
 
 // HeroState : ce qu'un héros a de plus qu'un monstre.
@@ -67,6 +68,9 @@ type HeroState struct {
 	Stats    Stats
 	Hardcore bool
 	Quest    int // Effacés vaincus pour l'épreuve de la voie
+	Talents  Talents
+	Bonus    Bonus // les bonus chiffrés des talents
+	skills   [NSkills]SkillDef
 
 	Target    int
 	Res       float64 // la ressource de la classe
@@ -93,6 +97,14 @@ type HeroState struct {
 	lastY     float64
 	shown     [3]int // ressource, endurance (en dixièmes), potions au dernier envoi
 	me        bool   // état privé à renvoyer au joueur
+}
+
+// Skill : la compétence k (1 à 8) du héros, avec ses talents (nil si elle n'existe pas encore).
+func (hs *HeroState) Skill(k int) *SkillDef {
+	if k < 1 || k > NSkills || hs.skills[k-1].ID == "" {
+		return nil
+	}
+	return &hs.skills[k-1]
 }
 
 // Weapon : la puissance de base de l'arme du héros.
@@ -213,7 +225,10 @@ func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter 
 	if _, ok := Races[in.Race]; !ok {
 		in.Race = "humain"
 	}
-	hs := &HeroState{Class: c, Spec: in.Spec, Race: in.Race, Attrs: in.Attrs, Hardcore: in.Hardcore, Quest: in.Quest,
+	if CheckTalents(c, in.Spec, in.Level, in.Talents) != nil {
+		in.Talents = Talents{} // un arbre qui ne tient plus (classe changée, données anciennes) : on rend les points
+	}
+	hs := &HeroState{Class: c, Spec: in.Spec, Race: in.Race, Attrs: in.Attrs, Hardcore: in.Hardcore, Quest: in.Quest, Talents: in.Talents,
 		Endurance: MaxEndurance, Potions: in.Potions, XP: in.XP, Gold: in.Gold, Trophies: in.Trophies,
 		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y}
 	f := &Fighter{SID: sid, Name: name, Body: body, Level: in.Level, Hero: hs}
@@ -226,7 +241,8 @@ func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter 
 // Restat recalcule les statistiques d'un héros (niveau, attributs, voie).
 func (f *Fighter) Restat() {
 	hs := f.Hero
-	hs.Stats = ComputeStats(hs.Class, hs.Spec, hs.Race, hs.Attrs, f.Level)
+	hs.skills, hs.Bonus = Shape(hs.Class, hs.Spec, hs.Talents)
+	hs.Stats = ComputeStats(hs.Class, hs.Spec, hs.Race, hs.Attrs, f.Level, hs.Bonus)
 	old := f.MaxHP
 	f.MaxHP = hs.Stats.MaxHP
 	if old > 0 && f.HP > 0 {
@@ -782,7 +798,7 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 		} else if hs.CastLeft -= dt; hs.CastLeft <= 0 {
 			k := hs.Cast
 			hs.Cast = 0
-			sk := hs.Class.Skill(k, hs.Spec)
+			sk := hs.Skill(k)
 			if t := a.Get(hs.castOn); sk != nil && a.castTargetOK(h, sk, t) && a.canPay(h, sk, false) {
 				a.execute(h, k, sk, t)
 			} else {

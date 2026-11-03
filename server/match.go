@@ -74,6 +74,7 @@ const (
 	opAttrs   = 33 // client → serveur : {"a":[9 nombres]} placer ses points
 	opFiche   = 34 // client → serveur : {"s":sid} ; serveur → toi : la fiche publique du héros
 	opVoieOut = 35 // serveur → toi : {"k":"quete"|"progres"|"pret"|"choisie","n":Effacés,"v":voie}
+	opTalents = 36 // client → serveur : {"t":[[3 nombres]×10]} placer ses points de talent
 )
 
 // fallenDelay : le temps de voir sa chute avant d'être renvoyé (hardcore).
@@ -213,7 +214,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		}
 		pl.fighter = s.arena.AddHero(pl.sid, h.Name, &pl.body, world.HeroInit{
 			Level: h.Level, XP: h.xp, Gold: h.gold, Potions: h.potions, Trophies: h.trophies,
-			Class: h.Class, Spec: h.Spec, Race: h.Race, Attrs: h.attrs, Hardcore: h.Hardcore, Quest: h.quest,
+			Class: h.Class, Spec: h.Spec, Race: h.Race, Attrs: h.attrs, Hardcore: h.Hardcore, Quest: h.quest, Talents: h.talents,
 		})
 		s.players[p.GetSessionId()] = pl
 
@@ -505,6 +506,16 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 		if err := s.arena.SetAttrs(pl.sid, in.A); err != nil {
 			refuse(d, pl, err.Error())
 		}
+	case opTalents:
+		var in struct {
+			T world.Talents `json:"t"`
+		}
+		if json.Unmarshal(data, &in) != nil {
+			return
+		}
+		if err := s.arena.SetTalents(pl.sid, in.T); err != nil {
+			refuse(d, pl, err.Error())
+		}
 	case opMiroir:
 		w.miroir(d, s, pl, data)
 	case opFiche:
@@ -655,7 +666,7 @@ func fiche(pl *player) map[string]interface{} {
 	return map[string]interface{}{
 		"s": pl.sid, "n": pl.hero.Name, "lv": f.Level, "r": hs.Race, "cl": hs.Class.ID, "v": voie,
 		"dieu": pl.hero.God, "f": world.Races[hs.Race].Faction, "hc": hs.Hardcore, "a": pl.hero.Look.Accord,
-		"at": hs.Attrs, "hpm": f.MaxHP, "tr": tro, "lk": pl.hero.Look,
+		"at": hs.Attrs, "hpm": f.MaxHP, "tr": tro, "lk": pl.hero.Look, "ta": hs.Talents,
 	}
 }
 
@@ -673,7 +684,7 @@ func (pl *player) save() heroPos {
 	f := pl.fighter
 	return heroPos{ID: pl.hero.ID, X: pl.body.X, Y: pl.body.Y, Level: f.Level, XP: f.Hero.XP, Gold: f.Hero.Gold,
 		Potions: f.Hero.Potions, Trophies: f.Hero.Trophies, Voie: f.Hero.Spec, Attrs: f.Hero.Attrs,
-		Quest: f.Hero.Quest, Look: pl.hero.Look, Miroir: pl.hero.miroir}
+		Quest: f.Hero.Quest, Look: pl.hero.Look, Miroir: pl.hero.miroir, Talents: f.Hero.Talents}
 }
 
 // describeNPC présente un habitant comme un héros, avec son identifiant

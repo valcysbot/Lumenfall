@@ -81,6 +81,19 @@ func skillJSON(sk *SkillDef) map[string]any {
 	}
 }
 
+func talentJSON(tl *Talent) map[string]any {
+	return map[string]any{"id": tl.ID, "nom": tl.Name, "aide": tl.Desc, "icone": tl.Icon, "style": StyleNames[tl.Style],
+		"max": tl.Max, "comp": tl.Skill}
+}
+
+func tierJSON(t *Tier) map[string]any {
+	var tl []map[string]any
+	for i := range t.T {
+		tl = append(tl, talentJSON(&t.T[i]))
+	}
+	return map[string]any{"niveau": t.Level, "talents": tl}
+}
+
 func donneesClient() []byte {
 	var classes []map[string]any
 	for _, c := range Classes {
@@ -90,15 +103,19 @@ func donneesClient() []byte {
 		}
 		for i := range c.Specs {
 			sp := &c.Specs[i]
+			var tiers []map[string]any
+			for i := range sp.Tiers {
+				tiers = append(tiers, tierJSON(&sp.Tiers[i]))
+			}
 			specs = append(specs, map[string]any{"id": sp.ID, "nom": sp.Name, "aide": sp.Desc, "role": string(sp.Role),
-				"ultime": skillJSON(&sp.Ultime)})
+				"ultime": skillJSON(&sp.Ultime), "paliers": tiers, "etoile": StyleNames[StarStyle(sp.Role)]})
 		}
 		r := c.Res
 		classes = append(classes, map[string]any{
 			"id": c.ID, "noms": c.Names, "aide": c.Desc, "armes": c.Weapons, "bouclier": c.Shield, "portee": c.Range,
 			"magie": c.Magic, "element": ElementNames[c.Elem], "attaque": c.Anim, "conseil": c.Attr,
 			"ressource":   map[string]any{"id": r.ID, "nom": r.Name, "max": r.Max, "chaleur": r.Heat},
-			"competences": skills, "voies": specs,
+			"competences": skills, "voies": specs, "commun": tierJSON(&c.Common),
 		})
 	}
 	races := map[string]any{}
@@ -128,6 +145,7 @@ func donneesClient() []byte {
 		"epreuve":    VoieQuest,
 		"miroir":     MiroirGold,
 		"changement": SpecChangeGold(1),
+		"talents":    map[string]any{"premier": TalentFirstLvl, "pas": TalentStep, "max": TalentMax, "reprise": TalentResetGold(1)},
 	}
 	b, _ := json.MarshalIndent(out, "", " ")
 	return append(b, '\n')

@@ -146,7 +146,7 @@ type Stats struct {
 }
 
 // ComputeStats calcule les statistiques d'un héros.
-func ComputeStats(c *Class, spec int, race string, at Attrs, level int) Stats {
+func ComputeStats(c *Class, spec int, race string, at Attrs, level int, b Bonus) Stats {
 	r := Races[race]
 	var t Attrs
 	for i := range at {
@@ -168,20 +168,20 @@ func ComputeStats(c *Class, spec int, race string, at Attrs, level int) Stats {
 		main = f(Agilite) // les armes à distance (arc, arquebuse, fioles)
 	}
 	s := Stats{
-		Phys:     (1 + 0.02*main + 0.005*f(Agilite)) * one(m.Dmg),
-		Mag:      (1 + 0.02*f(Intelligence)) * one(m.Dmg),
-		Heal:     (1 + 0.015*f(Intelligence)) * one(m.Heal),
-		Crit:     HeroCrit + 0.004*(f(Chance)+f(Precision)) + 0.002*f(Agilite) + m.Crit,
+		Phys:     (1 + 0.02*main + 0.005*f(Agilite)) * one(m.Dmg) * (1 + b.Dmg),
+		Mag:      (1 + 0.02*f(Intelligence)) * one(m.Dmg) * (1 + b.Dmg),
+		Heal:     (1 + 0.015*f(Intelligence)) * one(m.Heal) * (1 + b.Heal),
+		Crit:     HeroCrit + 0.004*(f(Chance)+f(Precision)) + 0.002*f(Agilite) + m.Crit + b.Crit,
 		CritMul:  CritMul + 0.01*f(Precision),
-		Dodge:    math.Min(0.3, 0.004*f(Esquive)+m.Dodge),
-		Taken:    math.Max(0.6, 1-0.006*f(Endurance)) * one(m.Taken),
-		Speed:    1 + math.Min(0.25, 0.008*f(Vitesse)) + m.Speed,
-		Threat:   one(m.Threat),
-		Pet:      one(m.Pet),
-		Shields:  one(m.Shields),
-		Lifelink: m.Lifelink,
+		Dodge:    math.Min(0.35, 0.004*f(Esquive)+m.Dodge+b.Dodge),
+		Taken:    math.Max(0.6, 1-0.006*f(Endurance)) * one(m.Taken) * (1 - b.Taken),
+		Speed:    1 + math.Min(0.25, 0.008*f(Vitesse)) + m.Speed + b.Speed,
+		Threat:   one(m.Threat) * (1 + b.Threat),
+		Pet:      one(m.Pet) * (1 + b.Pet),
+		Shields:  one(m.Shields) * (1 + b.Shields),
+		Lifelink: m.Lifelink + b.Lifelink,
 		Resist:   r.Resist,
 	}
-	s.MaxHP = int(math.Round(float64(HeroMaxHP(level)+8*t[Vitalite]) * one(m.HP)))
+	s.MaxHP = int(math.Round(float64(HeroMaxHP(level)+8*t[Vitalite]) * one(m.HP) * (1 + b.HP)))
 	return s
 }

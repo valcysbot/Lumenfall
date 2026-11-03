@@ -67,7 +67,8 @@ ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS hardcore BOOLEAN  NOT NULL DEFAUL
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS attrs    JSONB    NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS quest    SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS look     JSONB    NOT NULL DEFAULT '{}'::jsonb;
-ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS miroir   SMALLINT NOT NULL DEFAULT 0`)
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS miroir   SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS talents  JSONB    NOT NULL DEFAULT '[]'::jsonb`)
 	return err
 }
 
@@ -91,6 +92,7 @@ type Hero struct {
 	attrs    world.Attrs // lus en base, privés
 	quest    int
 	miroir   int
+	talents  world.Talents
 
 	xp, gold, potions int
 	trophies          map[string]int
@@ -98,17 +100,18 @@ type Hero struct {
 
 // heroCols : les colonnes lues pour un héros, dans l'ordre de scanHero.
 const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies,
-	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir`
+	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir, talents`
 
 func scanHero(row interface{ Scan(...any) error }, h *Hero) error {
-	var tro, at, look []byte
+	var tro, at, look, tal []byte
 	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro,
-		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir); err != nil {
+		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir, &tal); err != nil {
 		return err
 	}
 	h.trophies = map[string]int{}
 	_ = json.Unmarshal(tro, &h.trophies)
 	_ = json.Unmarshal(at, &h.attrs)
+	_ = json.Unmarshal(tal, &h.talents)
 	h.Look = world.DefaultLook()
 	_ = json.Unmarshal(look, &h.Look)
 	return nil
@@ -315,9 +318,9 @@ func saveHeroes(ctx context.Context, db *sql.DB, mapID string, ps []heroPos) err
 	_, err := db.ExecContext(ctx, `
 UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, level = v.level, xp = v.xp, gold = v.gold,
 	potions = v.potions, trophies = v.trophies, voie = v.voie, attrs = v.attrs, quest = v.quest,
-	look = v.look, miroir = v.miroir, updated_at = now()
+	look = v.look, miroir = v.miroir, talents = v.talents, updated_at = now()
 FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold integer,
-	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint)
+	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint, talents jsonb)
 WHERE h.id = v.id`, mapID, string(rows))
 	return err
 }
@@ -337,6 +340,7 @@ type heroPos struct {
 	Quest    int            `json:"quest"`
 	Look     world.Look     `json:"look"`
 	Miroir   int            `json:"miroir"`
+	Talents  world.Talents  `json:"talents"`
 }
 
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.

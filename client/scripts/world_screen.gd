@@ -66,6 +66,7 @@ var toast: Label
 var sheet: HeroSheet        # la fiche du héros ouverte (C), ou nil
 var miroir_btn: Button
 var _me := {}               # le dernier état privé du héros (opMe)
+var sheet_btn: Button       # « 📜 Héros » : un point lumineux quand des talents attendent
 var _miroir: Miroir
 const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
 
@@ -146,8 +147,8 @@ func _build_hud() -> void:
 	wave_btn.tooltip_text = "Touche H"
 	wave_btn.pressed.connect(_wave)
 	buttons.add_child(wave_btn)
-	var sheet_btn := UI.button("📜 Héros")
-	sheet_btn.tooltip_text = "Tes attributs et ta voie (touche C)"
+	sheet_btn = UI.button("📜 Héros")
+	sheet_btn.tooltip_text = "Tes attributs, ta voie et tes talents (touche C)"
 	sheet_btn.pressed.connect(_open_sheet)
 	buttons.add_child(sheet_btn)
 	miroir_btn = UI.button("🪞 Miroir")
@@ -454,6 +455,7 @@ func _on_state(op: int, d: Dictionary) -> void:
 		Net.OP_ME:
 			_me.merge(d, true)
 			combat.set_me(d)
+			_glow_sheet()
 			if sheet != null and is_instance_valid(sheet) and sheet.public.is_empty():
 				sheet.update_me(_me)
 		Net.OP_FICHE:
@@ -1100,7 +1102,11 @@ func _on_level(sid: int, lv: int) -> void:
 	_float(sid, "Niveau %d !" % lv, UI.LUMEN, true)
 	if sid == my_sid:
 		_show_toast("✨ Niveau %d ! Tu te sens plus fort." % lv)
-		if braise != null:
+		if Heros.palier_au_niveau(lv) and (lv < int(Heros.data().voie) + int(Heros.data().talents.pas) or int(_me.get("v", -1)) >= 0):
+			_show_toast("🌳 Un nouveau palier de talents s'ouvre ! Fiche du héros (C), onglet Talents.")
+			if braise != null:
+				braise.say("Braise : « NIVEAU %d ! Et un nouveau palier de talents, regarde ta fiche ! »" % lv)
+		elif braise != null:
 			braise.say("Braise fait un looping : « NIVEAU %d ! »" % lv)
 	else:
 		_add_chat_line("", "%s passe au niveau %d !" % [pawns[sid].hero_name, lv], true)
@@ -1232,8 +1238,29 @@ func _open_sheet() -> void:
 		sheet.hero = {"race": pawns[my_sid].race}
 	sheet.attrs.connect(func(a): Net.send(Net.OP_ATTRS, {"a": a}))
 	sheet.voie.connect(func(i): Net.send(Net.OP_VOIE, {"v": i}))
+	sheet.talents.connect(func(t): Net.send(Net.OP_TALENTS, {"t": t}))
 	sheet.closed.connect(func(): sheet = null)
 	hud.get_child(0).add_child(sheet)
+
+
+## Le point lumineux sur « 📜 Héros » : des points de talent attendent d'être placés.
+func _glow_sheet() -> void:
+	if sheet_btn == null:
+		return
+	var lv := int(_me.get("lv", 1))
+	var tree := Heros.arbre(str(_me.get("cl", "")), int(_me.get("v", -1)))
+	var ta := Heros.talents_ints(_me.get("ta", []))
+	var room := 0
+	for i in tree.size():
+		if lv >= int(tree[i].niveau):
+			for j in 3:
+				room += int(tree[i].talents[j].max) - int(ta[i][j])
+	var waiting := mini(room, Heros.points_de_talent(lv) - Heros.points_places(ta)) > 0
+	sheet_btn.text = "📜 Héros ✦" if waiting else "📜 Héros"
+	if waiting:
+		sheet_btn.add_theme_color_override("font_color", UI.LUMEN)
+	else:
+		sheet_btn.remove_theme_color_override("font_color")
 
 
 func _close_sheet() -> void:

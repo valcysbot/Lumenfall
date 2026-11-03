@@ -89,6 +89,7 @@ type Spec struct {
 	Role           Role
 	Mods           Mods
 	Ultime         SkillDef
+	Tiers          [NTiers - 1]Tier // l'arbre de talents de la voie (après le palier commun)
 }
 
 // Resource : la ressource d'une classe.
@@ -120,6 +121,7 @@ type Class struct {
 	Attr    [9]int   // répartition conseillée (poids par attribut)
 	Skills  [7]SkillDef
 	Specs   [3]Spec
+	Common  Tier // le premier palier de talents, commun aux trois voies
 }
 
 // Le niveau où l'on choisit sa voie, et où l'ultime arrive.

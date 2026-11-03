@@ -75,7 +75,7 @@ func duel(t *testing.T, c *Class, spec int, sorte string, camp, lv int, seed int
 			a.Potion(h.SID)
 		}
 		for k := NSkills; k >= 1; k-- {
-			sk := h.Hero.Class.Skill(k, h.Hero.Spec)
+			sk := h.Hero.Skill(k)
 			if sk == nil || sk.Level > h.Level || h.Hero.CD[k] > 0 {
 				continue
 			}

@@ -41,6 +41,7 @@ const OP_VOIE := 32
 const OP_ATTRS := 33
 const OP_FICHE := 34
 const OP_VOIE_OUT := 35
+const OP_TALENTS := 36
 
 const SESSION_PATH := "user://session.cfg"
 

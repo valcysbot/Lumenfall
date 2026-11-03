@@ -19,7 +19,7 @@ func (a *Arena) UseSkill(sid, k int) {
 		return
 	}
 	hs := h.Hero
-	sk := hs.Class.Skill(k, hs.Spec)
+	sk := hs.Skill(k)
 	if sk == nil {
 		a.refuse(h, "Choisis d'abord ta voie : l'ultime arrive avec elle, au niveau 10.")
 		return
@@ -357,9 +357,39 @@ func (a *Arena) ChooseSpec(sid, i int) error {
 		hs.Gold -= price
 	}
 	hs.Spec = i
+	hs.Talents = hs.Talents.KeepCommon() // les points de l'ancienne voie reviennent
 	hs.CD[NSkills] = 0
 	h.Restat()
 	a.emit(Event{Kind: EvVoie, Tgt: h.SID, Text: "choisie", Value: i})
+	return nil
+}
+
+// SetTalents : le héros place ses points de talent. En ajouter est gratuit ;
+// en reprendre se fait au temple, contre de l'or.
+func (a *Arena) SetTalents(sid int, t Talents) error {
+	h := a.Heroes[sid]
+	if h == nil {
+		return errors.New("Héros introuvable.")
+	}
+	hs := h.Hero
+	if err := CheckTalents(hs.Class, hs.Spec, h.Level, t); err != nil {
+		return err
+	}
+	if t == hs.Talents {
+		return nil
+	}
+	if !t.Within(hs.Talents) {
+		if math.Hypot(h.Body.X-a.Temple[0], h.Body.Y-a.Temple[1]) > VillageRadius {
+			return errors.New("On ne reprend ses points de talent qu'au temple.")
+		}
+		price := TalentResetGold(h.Level)
+		if hs.Gold < price {
+			return errors.New("Reprendre ses talents coûte " + strconv.Itoa(price) + " or.")
+		}
+		hs.Gold -= price
+	}
+	hs.Talents = t
+	h.Restat()
 	return nil
 }
 
