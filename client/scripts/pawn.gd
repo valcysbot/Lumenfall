@@ -1,7 +1,7 @@
 class_name Pawn
 extends Node2D
 ## Quelqu'un dans le monde : un héros (son peuple et son allure, PeupleSprite),
-## un habitant (identifiant `npc`, HeroSprite) ou un monstre (sorte `kind`,
+## un habitant (identifiant `npc`, PeupleSprite) ou un monstre (sorte `kind`,
 ## MonsterSprite). Avec son ombre, son nom, ses bulles de chat, sa barre de
 ## vie, ses effets et, pour les héros, leur aura qui grandit tous les 10 niveaux.
 
@@ -51,7 +51,7 @@ var dead := false
 var targeted := false
 var foe := false        # ton adversaire en duel
 
-var sprite: Node2D     # PeupleSprite (héros) ou HeroSprite (habitants)
+var sprite: Node2D     # PeupleSprite (héros, habitants) ou HeroSprite (anciennes planches)
 var _floats := false   # les fées flottent
 var mon: MonsterSprite
 var forme: MonsterSprite   # la forme de combat d'un héros, quand sa voie en a une
@@ -81,6 +81,14 @@ func _ready() -> void:
 		stature = Heros.echelle(race, allure)
 		_floats = Heros.peuple(race).get("flotte", false)
 		dress_hero()
+	elif look.has("race"):
+		# Un habitant dessiné avec la forge des peuples (Acte IV).
+		sprite = PeupleSprite.new()
+		add_child(sprite)
+		stature = Heros.echelle(str(look.race), look) * float(look.get("taille", 1.0))
+		sprite.dress(Heros.habitant(look))
+		sprite.dir = dir
+		sprite.scale = Vector2(stature, stature)
 	else:
 		sprite = HeroSprite.new()
 		add_child(sprite)

@@ -234,6 +234,36 @@ static func couches(race: String, cl: String, lk: Dictionary) -> Array:
 	return out
 
 
+## Les couches d'un habitant (res://data/pnj/<carte>.json, clé « peuple ») : un
+## héros sans classe, avec sa robe ou sa tunique, et ses pièces en plus
+## (tablier, gants, cape, chapeau, casque, arme_…) dans leurs couleurs.
+static func habitant(pe: Dictionary) -> Array:
+	var race: String = pe.get("race", "humain")
+	var carr: String = CARRURES[clampi(int(pe.get("k", 1)), 0, 2)]
+	var plus: Array = pe.get("plus", [])
+	var out := couches(race, "", pe)
+	var cs: Dictionary = {}
+	var at := 0
+	for i in out.size():
+		var e: Array = out[i]
+		if e[0] == "tunique_" + carr:
+			cs = e[1]
+			at = i
+			if pe.get("robe", false):
+				e[0] = "robe_" + carr
+	cs.merge(pe.get("couleurs", {}), true)
+	for p in ["gants", "tablier"]:   # au-dessus de la tunique
+		if plus.has(p):
+			out.insert(at + 1, [p + "_" + carr, cs])
+	if plus.has("cape"):   # derrière le corps
+		var corps := out.map(func(e): return e[0]).find("corps_%s_%s" % [peuple(race).forme, carr])
+		out.insert(maxi(corps, 0), ["cape_" + carr, cs])
+	for p in plus:
+		if p == "chapeau" or p == "casque" or str(p).begins_with("arme_"):
+			out.append([p, cs])
+	return out
+
+
 ## La taille à l'écran : celle du peuple, puis le cran choisi au miroir.
 static func echelle(race: String, lk: Dictionary) -> float:
 	return float(peuple(race).taille) * float(TAILLES[clampi(int(lk.get("t", 2)), 0, 4)])

@@ -514,7 +514,7 @@ func _add_pawn(p: Dictionary) -> void:
 	if p.has("npc"):
 		var who := DialogueBox.info(map_id, p.npc)
 		pawn.npc = p.npc
-		pawn.look = who.get("look", pawn.look)
+		pawn.look = who.get("peuple", who.get("look", pawn.look))
 		pawn.stature = float(who.get("taille", 1.0))
 	if p.has("m"):
 		pawn.kind = p.m

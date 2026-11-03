@@ -15,7 +15,7 @@ static var _data := {}
 
 var hero_name := ""
 var npc := ""
-var _portrait: HeroSprite
+var _portrait: PeupleSprite
 var _name: Label
 var _text: Label
 var _choices: VBoxContainer
@@ -51,7 +51,7 @@ func _ready() -> void:
 	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var holder := Control.new()
 	frame.add_child(holder)
-	_portrait = HeroSprite.new()
+	_portrait = PeupleSprite.new()
 	_portrait.dir = 1
 	_portrait.scale = Vector2(3, 3)
 	_portrait.position = Vector2(60, 168)
@@ -79,7 +79,7 @@ func open(map_id: String, id: String, display_name: String) -> void:
 	if who.is_empty():
 		return
 	npc = id
-	_portrait.dress(who.get("look", {}))
+	_portrait.dress(Heros.habitant(who.get("peuple", {})))
 	_name.text = "%s, %s" % [display_name, who.get("titre", "")] if who.has("titre") else display_name
 	_tree = who.get("dialogue", {})
 	_sizes = data(map_id).get("sanglier", [])

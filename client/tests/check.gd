@@ -138,11 +138,13 @@ func _check_npcs() -> int:
 			printerr("Habitant sans dialogues : ", n.id)
 			failed += 1
 			continue
-		for piece in who.look:
-			var v: String = who.look[piece]
-			var file: String = ("cheveux_" + v) if piece == "cheveux" else (piece + ("_" + v if v != "" else ""))
-			if not piece in HeroSprite.ORDRE or not ResourceLoader.exists(HeroSprite.DIR + file + ".png"):
-				printerr("Tenue de %s : planche manquante %s" % [n.id, file])
+		if not Heros.peuples().peuples.has(str(who.get("peuple", {}).get("race", ""))):
+			printerr("Habitant sans peuple : ", n.id)
+			failed += 1
+			continue
+		for c in Heros.habitant(who.peuple):
+			if not PeupleSprite.has_piece(c[0]):
+				printerr("Allure de %s : planche manquante %s" % [n.id, c[0]])
 				failed += 1
 		var tree: Dictionary = who.dialogue
 		if not tree.has("debut") or who.get("bulles", []).is_empty():
