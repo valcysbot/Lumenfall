@@ -4,6 +4,7 @@ extends Node
 ## Mode capture (captures d'écran automatiques, sans joueur) :
 ##   godot --path client -- --capture=world --out=/chemin/capture.png
 ##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier
+##    --gigue=ms (réseau irrégulier) --mesure=s --trajet=x,y (fluidité) --fluidite
 ##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s
 ##    --capture=heroes --effacer --confirmer)
 
@@ -118,6 +119,9 @@ func _capture() -> void:
 	else:
 		hero = heroes[0]
 	enter_world(hero)
+	if args.has("gigue"):
+		current.gigue = float(args.gigue) / 1000.0
+	current._fluidite = args.has("fluidite")
 	await get_tree().create_timer(float(args.get("wait", "4"))).timeout
 	if args.has("aller"):
 		var t: PackedStringArray = args.aller.split(",")
@@ -194,6 +198,51 @@ func _capture() -> void:
 			sc.scroll_vertical = int(args.defile)
 	if args.has("reste"):
 		await get_tree().create_timer(float(args.reste)).timeout
+	if args.has("mesure"):
+		# Mesure la fluidité : images par seconde, pire image, appels de dessin.
+		var frames := 0
+		var pire := 0.0
+		var appels := 0
+		var calcul := 0.0
+		# --trajet=x,y : le héros marche pendant la mesure, et on compte ses à-coups.
+		var me: Pawn = current.pawns.get(current.my_sid)
+		if args.has("trajet"):
+			var tj: PackedStringArray = args.trajet.split(",")
+			Net.send(Net.OP_MOVE_TO, {"t": [float(tj[0]), float(tj[1])], "r": false})
+			await get_tree().create_timer(0.5).timeout
+		var arrets := 0
+		var pas := 0
+		var vitesses: Array[float] = []
+		var dernier_pas := Time.get_ticks_usec()
+		var avant: Vector2 = me.position if me != null else Vector2.ZERO
+		var t0 := Time.get_ticks_usec()
+		var dernier := t0
+		while Time.get_ticks_usec() - t0 < int(float(args.mesure) * 1e6):
+			await get_tree().process_frame
+			var now := Time.get_ticks_usec()
+			pire = maxf(pire, (now - dernier) / 1000.0)
+			dernier = now
+			frames += 1
+			appels = maxi(appels, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
+			calcul += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+			if me != null and me.walking:
+				pas += 1
+				if me.position.distance_to(avant) < 0.01:
+					arrets += 1
+				vitesses.append(me.position.distance_to(avant) / maxf(0.001, (now - dernier_pas) / 1e6))
+			dernier_pas = now
+			if me != null:
+				avant = me.position
+		print("Mesure : %.1f images/s, pire image %.1f ms, calcul %.2f ms par image, %d appels de dessin, %d nœuds" % [
+			frames / float(args.mesure), pire, calcul / maxf(frames, 1), appels, int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))])
+		if pas > 0:
+			var moy := 0.0
+			for v in vitesses:
+				moy += v / vitesses.size()
+			var ecart := 0.0
+			for v in vitesses:
+				ecart += (v - moy) * (v - moy) / vitesses.size()
+			print("Marche : %d images, %d figées, vitesse à l'écran irrégulière à %.0f %%" % [pas, arrets, 100.0 * sqrt(ecart) / maxf(moy, 0.001)])
 	if args.has("chat"):
 		Net.send(Net.OP_CHAT, {"m": args.chat})
 		await get_tree().create_timer(1.0).timeout

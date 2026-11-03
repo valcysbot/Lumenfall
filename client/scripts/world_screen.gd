@@ -7,7 +7,12 @@ extends Node2D
 
 signal quit_world
 
-const INTERP_DELAY := 0.11  # secondes de retard volontaire pour un mouvement fluide
+const INTERP_DELAY := 0.17  # secondes de retard volontaire pour un mouvement fluide
+const TICK := 0.1            # le serveur envoie le monde 10 fois par seconde
+var _fluidite := false        # réglage : montrer images/s et régularité du réseau
+var _dernier_delta := -1.0
+var _ecart_reseau := 0.0      # écart moyen entre deux images du monde et le rythme attendu (s)
+var gigue := 0.0             # pour les essais : retard aléatoire ajouté aux messages (secondes)
 const RUN_SEEN := 5.2       # au-dessus de cette vitesse (cases/s), on montre la course
 const ZOOM_MIN := 0.8
 const ZOOM_MAX := 2.2
@@ -111,7 +116,7 @@ func _ready() -> void:
 	_build_hud()
 
 	camera.position = Iso.to_screen(Vector2(hero.x, hero.y))
-	Net.match_state.connect(_on_state)
+	Net.match_state.connect(_on_state_gigue)
 	_show_toast("En route pour Erydor…")
 	var err := await Net.join_world(hero.id)
 	if err != "":
@@ -284,6 +289,13 @@ func _build_settings(root: Control) -> void:
 	follow.button_pressed = _braise_wanted()
 	follow.toggled.connect(_set_braise)
 	col.add_child(follow)
+	var fl := CheckButton.new()
+	fl.text = "Afficher la fluidité"
+	fl.tooltip_text = "Images par seconde de ton écran, et la régularité du réseau"
+	fl.toggled.connect(func(on: bool):
+		_fluidite = on
+		_update_info())
+	col.add_child(fl)
 	var tuto := UI.button("🐉 Revoir le tutoriel de combat")
 	tuto.focus_mode = Control.FOCUS_NONE
 	tuto.pressed.connect(func():
@@ -324,6 +336,8 @@ func _update_info() -> void:
 		if pawns[sid].npc == "" and pawns[sid].kind == "":
 			n += 1
 	info.text = "%s · %s · %s · %d %s" % [hero.get("name", ""), _map_name(), sky.describe(), n, "aventurier en ligne" if n <= 1 else "aventuriers en ligne"]
+	if _fluidite:
+		info.text += " · %d im/s · réseau ±%d ms" % [Engine.get_frames_per_second(), roundi(_ecart_reseau * 1000)]
 
 
 func _show_toast(text: String) -> void:
@@ -374,6 +388,17 @@ func _add_chat_line(who: String, text: String, system: bool = false) -> void:
 
 # --- Messages du serveur ------------------------------------------------------
 
+## Pour les essais (--gigue=ms) : imite un réseau irrégulier, comme chez des amis
+## loin du serveur. Les messages gardent leur ordre, mais arrivent en retard.
+var _gigue_fin := 0.0
+func _on_state_gigue(op: int, d: Dictionary) -> void:
+	if gigue <= 0.0:
+		_on_state(op, d)
+		return
+	_gigue_fin = maxf(_gigue_fin, _clock + randf() * gigue)
+	get_tree().create_timer(_gigue_fin - _clock).timeout.connect(_on_state.bind(op, d))
+
+
 func _on_state(op: int, d: Dictionary) -> void:
 	match op:
 		Net.OP_SNAPSHOT:
@@ -411,6 +436,9 @@ func _on_state(op: int, d: Dictionary) -> void:
 				buffers.erase(sid)
 				_update_info()
 		Net.OP_DELTA:
+			if _dernier_delta >= 0.0 and _clock - _dernier_delta < 0.5:   # sinon, rien ne bougeait
+				_ecart_reseau = lerpf(_ecart_reseau, absf(_clock - _dernier_delta - TICK), 0.05)
+			_dernier_delta = _clock
 			for e in d.p:
 				var sid := int(e[0])
 				if buffers.has(sid):
@@ -425,7 +453,7 @@ func _on_state(op: int, d: Dictionary) -> void:
 							if braise != null:
 								braise.snap(p)
 					else:
-						buf.append([_clock, p, int(e[3])])
+						buf.append([_stamp(buf), p, int(e[3])])
 		Net.OP_CHAT_OUT:
 			var sid := int(d.s)
 			_add_chat_line(d.n, d.m)
@@ -586,6 +614,17 @@ func _process(delta: float) -> void:
 			marker.visible = false
 
 
+## L'heure d'une nouvelle position. Le réseau livre les images du monde un peu
+## n'importe quand ; on les replace à intervalles réguliers (un tick), en se
+## recalant doucement sur l'heure d'arrivée. Sans ça, un message en retard de
+## quelques millisecondes faisait s'arrêter puis sauter les héros.
+func _stamp(buf: Array) -> float:
+	var prev: float = buf[-1][0]
+	if _clock - prev > 2.5 * TICK:
+		return _clock   # il ne bougeait plus : on repart de maintenant
+	return clampf(lerpf(prev + TICK, _clock, 0.1), prev + TICK * 0.5, _clock + TICK)
+
+
 func _interpolate() -> void:
 	var t := _clock - INTERP_DELAY
 	for sid in buffers:
@@ -599,8 +638,8 @@ func _interpolate() -> void:
 		if buf.size() >= 2 and t > a[0]:
 			var b = buf[1]
 			var k := clampf((t - a[0]) / maxf(0.001, b[0] - a[0]), 0.0, 1.0)
-			pos = a[1].lerp(b[1], k)
 			moving = a[1].distance_to(b[1]) > 0.001
+			pos = a[1].lerp(b[1], k)
 			if moving:
 				pawn.running = a[1].distance_to(b[1]) / maxf(0.05, b[0] - a[0]) > RUN_SEEN
 			pawn.dir = b[2]
