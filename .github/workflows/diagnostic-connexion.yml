@@ -1,0 +1,40 @@
+name: Diagnostic de connexion (temporaire)
+
+on:
+  push:
+    branches: [claude/project-thread-1eh0mk]
+    paths: [".github/workflows/diagnostic-connexion.yml"]
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    env:
+      GODOT_VERSION: 4.7.2
+      HOST: ${{ vars.LF_SERVER_HOST }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Chaîne du certificat
+        run: |
+          echo | openssl s_client -connect "$HOST:443" -servername "$HOST" -showcerts 2>/dev/null | grep -E "^ *[0-9] s:|i:|NotAfter|Verify" || true
+          echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null | openssl x509 -noout -dates -issuer
+      - name: DNS
+        run: nslookup "$HOST" || true
+      - name: Godot fait la requête
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
+          unzip -q godot.zip
+          cat > t.gd <<'GD'
+          extends SceneTree
+          func _init():
+          	var h := HTTPRequest.new()
+          	root.add_child(h)
+          	h.timeout = 15
+          	h.request_completed.connect(func(r, c, _hd, b):
+          		print("RESULTAT result=", r, " code=", c, " corps=", b.get_string_from_utf8())
+          		quit())
+          	var err = h.request("https://" + OS.get_environment("HOST") + "/healthcheck")
+          	print("request() -> ", err)
+          GD
+          ./Godot_v${GODOT_VERSION}-stable_win64_console.exe --headless --script t.gd 2>&1 | tail -20
