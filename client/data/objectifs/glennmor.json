@@ -1,5 +1,5 @@
 {
- "_note": "La prochaine étape conseillée dans le Val de Glennmor, selon le niveau du héros (retour de la soirée de jeu de la V0.5 : « on ne comprend pas ce que l'on fait »). « vers » : le lieu, en cases ; une flèche le montre autour du héros. Les camps sont dans server/world/maps/glennmor.monstres.json.",
+ "_note": "La prochaine étape conseillée dans le Val de Glennmor, selon le niveau du héros (retour de la soirée de jeu de la V0.5 : « on ne comprend pas ce que l'on fait »). « vers » : le lieu, en cases (la flèche qui le montrait a été retirée en V0.5.3, elle n'aidait pas ; gardé pour une future carte). Les camps sont dans server/world/maps/glennmor.monstres.json.",
  "etapes": [
   {"jusqu_au": 3, "texte": "Chasse les sangliers, pas loin du village", "vers": [70, 135]},
   {"jusqu_au": 5, "texte": "Les loups rôdent dans les bois du nord", "vers": [60, 62]},

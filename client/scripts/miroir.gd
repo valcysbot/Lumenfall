@@ -414,7 +414,7 @@ func _page_classe() -> void:
 	var c := Heros.classe(form.classe)
 	_h(Heros.accorde(c.noms, a))
 	_note(c.aide)
-	_note("Ressource : %s%s" % [c.ressource.nom, " · bouclier (clic droit)" if c.bouclier else ""])
+	_note("Ressource : %s%s" % [c.ressource.nom, " · bouclier (%s)" % Touches.label("garde").to_lower() if c.bouclier else ""])
 	_h("Compétences")
 	for sk in c.competences:
 		_note("%s  niv. %d · %s : %s" % [sk.icone, int(sk.niveau), sk.nom, sk.aide])
