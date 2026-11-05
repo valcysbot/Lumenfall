@@ -5,8 +5,11 @@ extends PanelContainer
 ##
 ## Les dialogues viennent de res://data/pnj/<carte>.json : chaque habitant a
 ## des nœuds { texte, choix: [{ texte, vers }] } ; « vers » vide = au revoir.
+## Un choix peut aussi porter une « action » (boutique, maitre, coffre) : la
+## conversation se ferme et le panneau de l'habitant s'ouvre (Acte V).
 
 signal closed
+signal action(npc: String, what: String)
 
 const DATA := "res://data/pnj/%s.json"
 const MEMOIRE := "user://habitants.cfg"   # ce dont les habitants se souviennent
@@ -88,6 +91,11 @@ func open(map_id: String, id: String, display_name: String) -> void:
 
 
 func _show(key: String) -> void:
+	if key.begins_with("!"):
+		var who := npc
+		close()
+		action.emit(who, key.substr(1))
+		return
 	if key == "" or not _tree.has(key):
 		close()
 		return
@@ -102,6 +110,8 @@ func _show(key: String) -> void:
 		var b := UI.button("%d. %s" % [i, ch.texte])
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var to: String = ch.get("vers", "")
+		if ch.has("action"):
+			to = "!" + str(ch.action)
 		b.pressed.connect(_show.bind(to))
 		_choices.add_child(b)
 		_keys.append(to)

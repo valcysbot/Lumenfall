@@ -75,6 +75,8 @@ var _me := {}               # le dernier état privé du héros (opMe)
 var objectif: Label          # « 🎯 la prochaine étape », sous les boutons
 var sheet_btn: Button       # « 📜 Héros » : un point lumineux quand des talents attendent
 var _miroir: Miroir
+var objets: MondeObjets       # l'Acte V : sac, butin, métiers, commerce
+var sac_btn: Button
 const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
 
 var _last_dir := Vector2.ZERO
@@ -172,6 +174,10 @@ func _build_hud() -> void:
 	sheet_btn.tooltip_text = "Tes attributs, ta voie et tes talents (touche C)"
 	sheet_btn.pressed.connect(_open_sheet)
 	buttons.add_child(sheet_btn)
+	sac_btn = UI.button("🎒 Sac")
+	sac_btn.tooltip_text = "Ton sac, ton équipement et tes métiers (touche I)"
+	sac_btn.pressed.connect(func(): objets.toggle_sac())
+	buttons.add_child(sac_btn)
 	miroir_btn = UI.button("🪞 Miroir")
 	miroir_btn.tooltip_text = "Le miroir de Solenn : change ton allure"
 	miroir_btn.pressed.connect(_open_miroir)
@@ -267,6 +273,12 @@ func _build_hud() -> void:
 	root.add_child(toast)
 
 	_build_duel_card(root)
+	objets = MondeObjets.new()
+	add_child(objets)
+	objets.setup(self, root, touch)
+	objets.add_apparences_button(miroir_btn)
+	dialogue.action.connect(objets.npc_action)
+	combat.trade.connect(func(): Net.send(Net.OP_OBJET, {"a": "echange_demande", "t": target_sid}))
 	tutorial = CombatTutorial.new()
 	tutorial.touch = touch
 	tutorial.glow.connect(_glow)
@@ -424,6 +436,8 @@ func _on_state_gigue(op: int, d: Dictionary) -> void:
 
 
 func _on_state(op: int, d: Dictionary) -> void:
+	if objets.on_state(op, d):
+		return
 	match op:
 		Net.OP_SNAPSHOT:
 			my_sid = int(d.you)
@@ -521,7 +535,7 @@ func _on_state(op: int, d: Dictionary) -> void:
 			_on_voie(d)
 		Net.OP_CAST:
 			if int(d.s) == my_sid:
-				combat.start_cast(int(d.k), int(d.ms))
+				combat.start_cast(int(d.k), int(d.ms), str(d.get("t", "")))
 		Net.OP_ANIM:
 			for a in d.a:
 				_on_anim(int(a[0]), str(a[1]))
@@ -554,6 +568,7 @@ func _add_pawn(p: Dictionary) -> void:
 		var old: Pawn = pawns[sid]
 		if p.has("r") and old.race != "":
 			old.allure = p.get("lk", {})
+			old.equipement = p.get("eq")
 			old.voie = int(p.get("v", -1))
 			old.stature = Heros.echelle(old.race, old.allure)
 			old.dress_hero()
@@ -566,6 +581,7 @@ func _add_pawn(p: Dictionary) -> void:
 		pawn.dieu = str(p.get("dieu", ""))
 		pawn.hardcore = bool(p.get("hc", false))
 		pawn.allure = p.get("lk", {})
+		pawn.equipement = p.get("eq")
 	if p.has("npc"):
 		var who := DialogueBox.info(map_id, p.npc)
 		pawn.npc = p.npc
@@ -611,6 +627,7 @@ func _process(delta: float) -> void:
 	sky.update_torches(pawns, my_sid)
 	_update_npcs(delta)
 	_update_hunt()
+	objets.process(delta)
 	if duel_card.visible:
 		_duel_t -= delta
 		_duel_text.text = "⚔️ %s" % duel_card.get_meta("text") + "\n(%d s pour répondre)" % ceili(maxf(0, _duel_t))
@@ -759,6 +776,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	var target = null
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
+	if target != null and objets.click(target):
+		_talk_to = -1
+		_hunt = 0
+		return
 	if target != null and _click_fighter(target):
 		return
 	if target != null and _click_npc(target):
@@ -960,6 +981,12 @@ func _combat_key(event: InputEvent) -> bool:
 			_open_sheet()
 	elif act == "potion":
 		_potion()
+	elif act == "sac":
+		objets.toggle_sac()
+	elif act == "rapide_1" or act == "rapide_2":
+		objets.quick(int(act.substr(7)) - 1)
+	elif act == "ramasser":
+		objets.act_nearest()
 	elif act == "roulade":
 		_roll()
 	elif act == "cible":
@@ -1201,7 +1228,7 @@ func _on_level(sid: int, lv: int) -> void:
 
 
 func _on_loot(d: Dictionary) -> void:
-	var line := "+%d XP · +%d or" % [int(d.xp), int(d.get("or", 0))]
+	var line := "+%d XP · +%s" % [int(d.xp), Objets.monnaie(int(d.get("or", 0)), true)]
 	_add_chat_line("", line, true)
 	var tro := str(d.get("tr", ""))
 	if tro != "":
@@ -1210,7 +1237,7 @@ func _on_loot(d: Dictionary) -> void:
 		if braise != null:
 			braise.say("Braise : « Oh, un %s ! On l'accroche où ? »" % tro.to_lower())
 	if pawns.has(int(d.m)):
-		_float(int(d.m), "+%d or" % int(d.get("or", 0)), UI.LUMEN)
+		_float(int(d.m), "+" + Objets.monnaie(int(d.get("or", 0))), UI.LUMEN)
 
 
 # --- Les duels ------------------------------------------------------------------
@@ -1417,7 +1444,7 @@ func _open_miroir() -> void:
 	_miroir = Miroir.new()
 	_miroir.mode = "solenn"
 	_miroir.price = 0 if int(_me.get("mir", 0)) == 0 else int(Heros.data().miroir)
-	_miroir.form = {"race": me.race, "classe": me.classe, "look": me.allure.duplicate(true)}
+	_miroir.form = {"race": me.race, "classe": me.classe, "look": me.allure.duplicate(true), "eq": me.equipement}
 	_miroir.cancelled.connect(func():
 		_miroir.queue_free()
 		_miroir = null)

@@ -143,6 +143,8 @@ type Stats struct {
 	Threat, Pet       float64
 	Shields, Lifelink float64
 	Resist            Element
+	Armor             float64            // l'armure portée (Acte V)
+	Res               [nElements]float64 // résistances des objets, repas et élixirs
 }
 
 // ComputeStats calcule les statistiques d'un héros.

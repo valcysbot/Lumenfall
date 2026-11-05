@@ -26,6 +26,7 @@ type NPC struct {
 	Wander    float64    `json:"wander"`   // rayon de flânerie autour du travail
 	Nocturnal bool       `json:"nocturne"` // éveillé la nuit
 	Running   bool       `json:"run"`      // toujours en train de courir (enfants)
+	Veille    bool       `json:"veille"`   // marchand ou maître : reste à son poste la nuit (Acte V)
 
 	Body    Body `json:"-"`
 	Visible bool `json:"-"` // dehors (ou à son poste), donc vu des joueurs
@@ -34,7 +35,7 @@ type NPC struct {
 }
 
 // Awake indique si l'habitant est debout à l'instant t.
-func (n *NPC) Awake(t time.Time) bool { return n.Nocturnal == IsNight(t) }
+func (n *NPC) Awake(t time.Time) bool { return n.Veille || n.Nocturnal == IsNight(t) }
 
 // LoadNPCs charge les habitants d'une carte (maps/<id>.pnj.json) et vérifie
 // que leurs lieux sont praticables et reliés entre eux. Pas de fichier : pas

@@ -697,6 +697,9 @@
   "peau": "#f0bf98",
   "totem": "#c0532a",
   "ruban": "#d03a3a",
+  "armure": "#a4adc0",
+  "bordure": "#d0a548",
+  "capuche": "#5a4636",
   "cuir_carquois": "#7a4a2a"
  },
  "alpha": {

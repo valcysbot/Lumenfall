@@ -93,6 +93,7 @@ DEFAUTS = {
     "mousse": "#6a9a4a", "taches": "#a0623a", "cicatrice": "#c87a72", "peinture": "#d03a3a",
     "runes": "#6ad0f0", "larmes": "#3a3a5a", "chapeau": "#dcb862", "tissu": "#e05a47", "sourcils": "#2e2433",
     "yeux": "#2a2238", "cheveux": "#2e2433", "peau": "#f0bf98", "totem": "#c0532a", "ruban": "#d03a3a",
+    "armure": "#a4adc0", "bordure": "#d0a548", "capuche": "#5a4636",
 }
 # Transparence de certains matériaux (ailes de fée).
 ALPHA = {"aile": 0.72, "orbe": 0.9}

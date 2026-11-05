@@ -38,7 +38,7 @@ func TalentPoints(level int) int { return max(0, level-TalentFirstLvl+1) }
 func TierLevel(i int) int { return TalentFirstLvl + TalentStep*i }
 
 // TalentResetGold : le prix, au temple, pour reprendre ses points.
-func TalentResetGold(level int) int { return 10 * level }
+func TalentResetGold(level int) int { return 10 * level * Argent }
 
 // Style : à quoi sert un talent.
 type Style int

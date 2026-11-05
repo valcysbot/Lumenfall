@@ -64,10 +64,14 @@ func TestUneJourneeAGlennmor(t *testing.T) {
 		}
 	}
 	for _, n := range npcs {
-		if appear[n.ID] != 1 || vanish[n.ID] != 1 {
+		if n.Veille {
+			if appear[n.ID] != 0 || vanish[n.ID] != 0 || !n.Visible { // toujours à son poste
+				t.Errorf("%s veille la nuit, mais : sorti %d fois, rentré %d fois", n.ID, appear[n.ID], vanish[n.ID])
+			}
+		} else if appear[n.ID] != 1 || vanish[n.ID] != 1 {
 			t.Errorf("%s : sorti %d fois, rentré %d fois", n.ID, appear[n.ID], vanish[n.ID])
 		}
-		if !n.Nocturnal && loin[n.ID] > 1.5 {
+		if !n.Nocturnal && loin[n.ID] > 2 { // un détour autour d'un obstacle, pas plus
 			t.Errorf("%s s'éloigne de son travail (%.1f cases de trop)", n.ID, loin[n.ID])
 		}
 	}

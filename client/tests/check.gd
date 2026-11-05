@@ -45,6 +45,7 @@ func _ready() -> void:
 	failed += _check_talents()
 	failed += _check_npcs()
 	failed += _check_monsters()
+	failed += _check_objets()
 	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
 		printerr("Braise n'a pas de planche")
 		failed += 1
@@ -152,7 +153,11 @@ func _check_npcs() -> int:
 			failed += 1
 		for key in tree:
 			for ch in tree[key].get("choix", []):
-				if ch.vers != "" and not tree.has(ch.vers):
+				if ch.has("action"):
+					if not ch.action in ["boutique", "maitre", "coffre"]:
+						printerr("Dialogue de %s : action inconnue %s" % [n.id, ch.action])
+						failed += 1
+				elif ch.vers != "" and not tree.has(ch.vers):
 					printerr("Dialogue de %s : « %s » mène nulle part (%s)" % [n.id, ch.texte, ch.vers])
 					failed += 1
 	return failed
@@ -176,5 +181,70 @@ func _check_monsters() -> int:
 			failed += 1
 	if n < 5:
 		printerr("Bestiaire du serveur illisible (%d sortes trouvées)" % n)
+		failed += 1
+	return failed
+
+
+## Acte V : les points de récolte et les ateliers ont leur image, les pièces
+## d'armure existent, la monnaie s'écrit bien, un héros équipé s'habille.
+func _check_objets() -> int:
+	var failed := 0
+	var meta = JSON.parse_string(FileAccess.get_file_as_string(MondeObjets.ASSETS + "metiers.json"))
+	for n in ["filon_cuivre", "filon_fer", "sauge", "lin", "lysimaque", "chardon_gris", "fleur_de_lune", "chene", "arbre_gris",
+			"forge", "joaillerie", "alchimie", "couture", "cuir", "cuisine"]:
+		if not (meta is Dictionary and meta.has(n)) or not ResourceLoader.exists(MondeObjets.ASSETS + n + ".png"):
+			printerr("Image de métier manquante : ", n)
+			failed += 1
+	for c in ["mince", "normale", "costaud"]:
+		for p in ["plastron_", "epaulieres_"]:
+			if not PeupleSprite.has_piece(p + c):
+				printerr("Pièce d'armure manquante : ", p + c)
+				failed += 1
+	if not PeupleSprite.has_piece("capuche"):
+		printerr("Pièce d'armure manquante : capuche")
+		failed += 1
+	if Objets.monnaie(12345) != "1 or 23 ar 45 cu" or Objets.monnaie(5, true) != "5 cuivre":
+		printerr("Monnaie mal écrite : ", Objets.monnaie(12345))
+		failed += 1
+	var eq := {"tete": "tete_plaques:3", "epaules": "epaules_mailles:1", "torse": "torse_cuir:2", "mains": "mains_tissu:0",
+		"jambes": "jambes_plaques:0", "pieds": "pieds_cuir:0", "dos": "dos_cape:4", "arme": "arme_epee:2", "main_gauche": "mg_bouclier:1"}
+	var pieces := Heros.couches("humain", "guerrier", {}, eq).map(func(e): return e[0])
+	for p in ["casque", "epaulieres_normale", "plastron_normale", "gants_normale", "cape_normale", "arme_epee", "arme_bouclier"]:
+		if not pieces.has(p):
+			printerr("Héros équipé : il manque ", p)
+			failed += 1
+	# Les fenêtres se dessinent avec des données comme celles du serveur (listes vides en null comprises).
+	var it := {"id": "1", "b": "tete_plaques", "nom": "Heaume", "ic": "🪖", "k": "equipement", "sl": "tete", "ar": "plaques", "lv": 3, "r": 2,
+		"a": [["force", 2, "+2 Force"]], "arm": 1.5, "d": 80, "px": 12, "ok": true, "st": 2, "sc": 3.0}
+	var sac := {"sac": [it, null, {"id": "2", "b": "potion", "nom": "Potion", "ic": "🧪", "k": "provision", "n": 3, "u": true, "r": 0, "px": 30}],
+		"eq": {"torse": it}, "me": {"minage": {"lv": 3, "xp": 4, "xpn": 22}, "couture": {"lv": 0}}, "art": null, "rap": ["", "potion"],
+		"po": "potion", "bu": {"repas": {"b": "ragout", "nom": "Ragoût", "ic": "🍲", "t": 600}}, "or": 12345, "rep": 40, "arm": 9.1, "pw": 9.2}
+	var win := SacWindow.new()
+	win.data = sac
+	add_child(win)
+	for tab in ["sac", "metiers"]:
+		win._tab = tab
+		win._sel = {"sac": 0}
+		win._render()
+	win.set_ctx("boutique")
+	win.queue_free()
+	var rec := {"id": "forge:tete_plaques:1", "nom": "Heaume", "ic": "🪖", "r": 1, "lv": 1, "req": 1, "n": 1, "need": [["Lingot", "🟧", 2, 4]], "ok": false, "eq": true, "sl": "tete", "ar": "plaques", "pour_moi": true, "px": 20}
+	for d in [{"p": "boutique", "articles": [{"b": "potion", "nom": "Potion", "ic": "🧪", "px": 120, "it": it}], "rachat": null},
+			{"p": "atelier", "m": "forge", "nom": "Forge", "ic": "⚒️", "lv": 1, "connu": true, "recettes": [rec], "choix": [["force", "Force"]]},
+			{"p": "maitre", "npc": "doran", "metiers": [{"id": "forge", "nom": "Forge", "ic": "⚒️", "recolte": false, "lv": 1, "connu": true, "recettes": [rec]},
+				{"id": "minage", "nom": "Minage", "ic": "⛏️", "recolte": true, "lv": 1, "connu": true, "recettes": null}], "art": ["forge"], "max": 2, "rep": 0, "forge": true},
+			{"p": "coffre", "it": [null, it], "or": 500},
+			{"p": "miroir", "apps": [{"lk": "tete_plaques:3", "nom": "Heaume", "ic": "🪖", "r": 3, "sl": "tete"}], "px": 25}]:
+		var pn := Panneau.new()
+		pn.sac = sac
+		add_child(pn)
+		pn.set_data(d)
+		pn.queue_free()
+	var ech := EchangeWindow.new()
+	add_child(ech)
+	ech.set_view({"k": "maj", "moi": {"s": 1, "n": "A", "it": null, "or": 0, "ok": false}, "lui": {"s": 2, "n": "B", "it": [it], "or": 500, "ok": true}})
+	ech.queue_free()
+	if Heros.couches("humain", "guerrier", {}, {}).map(func(e): return e[0]).has("arme_epee"):
+		printerr("Héros sans arme : il ne devrait pas en porter")
 		failed += 1
 	return failed

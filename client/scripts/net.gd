@@ -42,6 +42,16 @@ const OP_ATTRS := 33
 const OP_FICHE := 34
 const OP_VOIE_OUT := 35
 const OP_TALENTS := 36
+# Les objets, les métiers et l'économie (Acte V).
+const OP_OBJET := 37
+const OP_SAC := 38
+const OP_SOL := 39
+const OP_DES := 40
+const OP_NOEUDS := 41
+const OP_ECHANGE := 42
+const OP_PANNEAU := 43
+const OP_RECU := 44
+const OP_METIER_UP := 45
 
 const SESSION_PATH := "user://session.cfg"
 

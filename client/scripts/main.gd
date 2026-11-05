@@ -6,7 +6,10 @@ extends Node
 ##   (options : --aller=x,y --marche=s --salut --chat=… --parler=mabon --choix=sanglier
 ##    --gigue=ms (réseau irrégulier) --mesure=s --trajet=x,y (fluidité) --fluidite --touches
 ##    --cible=sanglier --competences=1,2,roulade --defier=Brann --accepter --reste=s
-##    --capture=heroes --effacer --confirmer)
+##    --capture=heroes --effacer --confirmer
+##    Acte V : --objet=a:…,… (actions envoyées au serveur, séparées par « ; »)
+##    --recolter (ramasse ou récolte le plus proche) --panneau=boutique|maitre:doran|atelier:forge|coffre|miroir
+##    --sac[=metiers] --choisir=i (un objet du sac) --echanger=Nom --accepter_echange)
 
 const LoginScreen := preload("res://scripts/login_screen.gd")
 const HeroScreen := preload("res://scripts/hero_screen.gd")
@@ -199,6 +202,45 @@ func _capture() -> void:
 	if args.has("touches"):
 		var p := preload("res://scripts/touches_panel.gd").new()
 		current.settings.get_parent().add_child(p)
+	# Acte V : le sac, les métiers, les panneaux, l'échange.
+	if args.has("objet"):
+		for a in args.objet.split(";", false):
+			var msg := {}
+			for kv in a.split(",", false):
+				var p: PackedStringArray = kv.split(":", true, 1)
+				msg[p[0]] = int(p[1]) if p[1].is_valid_int() else p[1]
+			Net.send(Net.OP_OBJET, msg)
+			await get_tree().create_timer(0.4).timeout
+	if args.has("recolter"):
+		for i in int(args.recolter) if args.recolter.is_valid_int() else 1:
+			current.objets.act_nearest()
+			await get_tree().create_timer(float(args.get("travail", "4"))).timeout
+	if args.has("echanger"):
+		for sid in current.pawns:
+			if current.pawns[sid].hero_name == args.echanger:
+				current._set_target(sid)
+				current.combat.trade.emit()
+		await get_tree().create_timer(float(args.get("attente", "3"))).timeout
+	if args.has("accepter_echange"):
+		for i in 300:
+			if current.objets._demande != null:
+				await get_tree().create_timer(1.0).timeout
+				Net.send(Net.OP_OBJET, {"a": "echange_reponse", "ok": true})
+				break
+			await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(1.0).timeout
+	if args.has("panneau"):
+		var pp: PackedStringArray = args.panneau.split(":")
+		Net.send(Net.OP_OBJET, {"a": "panneau", "b": pp[0], "r": pp[1] if pp.size() > 1 else ""})
+		await get_tree().create_timer(1.0).timeout
+	if args.has("sac"):
+		if current.objets.sac_win == null:
+			current.objets.open_sac("")
+		if args.sac == "metiers":
+			current.objets.sac_win._tab = "metiers"
+		if args.has("choisir"):
+			current.objets.sac_win._sel = {"sac": int(args.choisir)}
+		current.objets.sac_win._render()
 	if args.has("reste"):
 		await get_tree().create_timer(float(args.reste)).timeout
 	if args.has("mesure"):

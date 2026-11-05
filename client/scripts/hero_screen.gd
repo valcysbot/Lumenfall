@@ -231,5 +231,5 @@ func _hero_in(box: Control, hero: Dictionary, zoom: float, foot: float) -> Peupl
 	var place := func(): hs.position = box.size / 2 + Vector2(0, foot - lift)
 	box.resized.connect(place)
 	place.call()
-	hs.dress(Heros.couches(race, str(hero.get("classe", "")), lk))
+	hs.dress(Heros.couches(race, str(hero.get("classe", "")), lk, hero.get("eq")))
 	return hs

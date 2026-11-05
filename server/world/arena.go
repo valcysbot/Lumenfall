@@ -3,6 +3,8 @@ package world
 import (
 	"math"
 	"math/rand"
+	"sort"
+	"strconv"
 )
 
 // L'arène : tous ceux qui se battent sur une carte (héros et monstres), et les
@@ -57,6 +59,7 @@ type HeroInit struct {
 	Hardcore                 bool
 	Quest                    int
 	Talents                  Talents
+	Inv                      *Inventaire
 }
 
 // HeroState : ce qu'un héros a de plus qu'un monstre.
@@ -71,6 +74,10 @@ type HeroState struct {
 	Talents  Talents
 	Bonus    Bonus // les bonus chiffrés des talents
 	skills   [NSkills]SkillDef
+	Inv      *Inventaire // le sac et l'équipement (nil : un héros d'essai, sans objets)
+	Gear     Gear        // ce que donnent l'équipement, le repas et l'élixir
+	Work     *Work       // récolte, fabrication ou parchemin en cours
+	Account  string      // le compte (pour le coffre et les échanges)
 
 	Target    int
 	Res       float64 // la ressource de la classe
@@ -107,8 +114,17 @@ func (hs *HeroState) Skill(k int) *SkillDef {
 	return &hs.skills[k-1]
 }
 
-// Weapon : la puissance de base de l'arme du héros.
-func (h *Fighter) Weapon() float64 { return HeroWeapon(h.Level) }
+// Weapon : la puissance de base de l'arme du héros. Sans sac (héros d'essai),
+// l'arme suit le niveau ; sinon c'est celle qu'il porte (à mains nues : la moitié).
+func (h *Fighter) Weapon() float64 {
+	if h.Hero == nil || h.Hero.Inv == nil {
+		return HeroWeapon(h.Level)
+	}
+	if w := h.Hero.Gear.Weapon; w > 0 {
+		return w
+	}
+	return HeroWeapon(h.Level) * 0.5
+}
 
 // Power : la puissance d'une attaque, magique ou non, avec les attributs.
 func (h *Fighter) Power(magic bool) float64 {
@@ -135,6 +151,12 @@ const (
 	EvPhase          // le boss Src passe à la phase Value
 	EvDuel           // duel.go : Text = defi, debut, compte ou fin
 	EvVoie           // l'épreuve de la voie : Text = quete, progres, pret ou choisie
+	EvGround         // butin au sol : Text = pose, des, gagne, prend ou fin ; Value = numéro
+	EvItem           // Tgt reçoit Flags × l'objet Text de rareté Value (Skill 1 : fabriqué)
+	EvNode           // le point de récolte Value s'épuise (Flags 0) ou repousse (Flags 1)
+	EvMetier         // Tgt : métier Text au niveau Value (1 : appris, -1 : recette apprise)
+	EvLook           // l'équipement de Src a changé (les autres doivent le voir)
+	EvTrade          // échange entre Src et Tgt : Text = demande, ouvre, maj, fin:…
 )
 
 // Event flags (EvHit).
@@ -169,16 +191,24 @@ type Arena struct {
 	Teles    []*Telegraph
 	Duels    []*Duel
 
-	rng     *rand.Rand
-	teleID  int
-	duelID  int
-	invites map[int]invite // défi reçu par chaque héros
+	// L'Acte V : le butin au sol, les points de récolte, les ateliers, les échanges.
+	Ground   map[int]*GroundItem
+	Nodes    []*Node
+	Ateliers []*Atelier
+	Trades   map[int]*Trade // échange en cours, par héros
+	Ledger   *Ledger        // l'or qui entre et qui sort
+
+	rng      *rand.Rand
+	teleID   int
+	duelID   int
+	groundID int
+	invites  map[int]invite // défi reçu par chaque héros
 }
 
 // NewArena prépare l'arène d'une carte et fait apparaître ses monstres.
 func NewArena(m *Map, camps []Camp, rng *rand.Rand) *Arena {
 	a := &Arena{M: m, Heroes: map[int]*Fighter{}, Camps: camps, rng: rng, invites: map[int]invite{},
-		Temple: m.Spawn, Village: m.Spawn}
+		Temple: m.Spawn, Village: m.Spawn, Ground: map[int]*GroundItem{}, Trades: map[int]*Trade{}, Ledger: NewLedger()}
 	for ci, c := range camps {
 		for i := 0; i < c.Count; i++ {
 			f := &Fighter{SID: MonsterSIDBase + len(a.Monsters), Body: &Body{Dir: rng.Intn(8)}, Mon: &Monster{Camp: ci}}
@@ -230,7 +260,11 @@ func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter 
 	}
 	hs := &HeroState{Class: c, Spec: in.Spec, Race: in.Race, Attrs: in.Attrs, Hardcore: in.Hardcore, Quest: in.Quest, Talents: in.Talents,
 		Endurance: MaxEndurance, Potions: in.Potions, XP: in.XP, Gold: in.Gold, Trophies: in.Trophies,
-		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y}
+		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y, Inv: in.Inv}
+	if hs.Inv != nil {
+		hs.Inv.Fix()
+		hs.Potions = min(hs.Potions, FreePotions)
+	}
 	f := &Fighter{SID: sid, Name: name, Body: body, Level: in.Level, Hero: hs}
 	f.Restat()
 	f.HP = f.MaxHP
@@ -242,7 +276,27 @@ func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter 
 func (f *Fighter) Restat() {
 	hs := f.Hero
 	hs.skills, hs.Bonus = Shape(hs.Class, hs.Spec, hs.Talents)
-	hs.Stats = ComputeStats(hs.Class, hs.Spec, hs.Race, hs.Attrs, f.Level, hs.Bonus)
+	at, b := hs.Attrs, hs.Bonus
+	if hs.Inv != nil {
+		hs.Gear = SumGear(&hs.Inv.Eq)
+		for _, x := range hs.Inv.BuffAffixes() {
+			hs.Gear.add(x)
+		}
+		for i := range at {
+			at[i] += hs.Gear.Attrs[i]
+		}
+		b = b.plus(hs.Gear.Bonus)
+		for _, e := range hs.Gear.Legend {
+			if e.Skill >= 1 && e.Skill <= NSkills && hs.skills[e.Skill-1].ID != "" {
+				t := e.talent()
+				t.shape(&hs.skills[e.Skill-1], 1)
+			}
+		}
+	}
+	hs.Stats = ComputeStats(hs.Class, hs.Spec, hs.Race, at, f.Level, b)
+	hs.Stats.MaxHP += hs.Gear.HP
+	hs.Stats.Armor = hs.Gear.Armor
+	hs.Stats.Res = hs.Gear.Res
 	old := f.MaxHP
 	f.MaxHP = hs.Stats.MaxHP
 	if old > 0 && f.HP > 0 {
@@ -337,6 +391,10 @@ func (a *Arena) Potion(sid int) {
 		return
 	}
 	hs := h.Hero
+	if hs.Inv != nil {
+		a.potionR(h)
+		return
+	}
 	switch {
 	case hs.Potions <= 0:
 		a.refuse(h, "Plus de potions ! Sœur Clémence en a au village.")
@@ -432,6 +490,12 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 		if r := tgt.Hero.Stats.Resist; r != Physique && r == elem {
 			dmg *= 0.9
 		}
+		if elem == Physique {
+			dmg *= 1 - ArmorReduction(tgt.Hero.Stats.Armor, tgt.Level)
+		} else {
+			dmg *= 1 - math.Min(0.5, tgt.Hero.Stats.Res[elem])
+		}
+		a.stopWork(tgt, "")
 		if tgt.Hero.Blocking && !dot && facing(tgt, src) {
 			dmg *= BlockMul
 			ev.Flags |= FlagBlock
@@ -566,7 +630,12 @@ func (a *Arena) kill(f, killer *Fighter) {
 	}
 	hs := f.Hero
 	a.interrupt(f)
+	a.stopWork(f, "")
 	hs.Blocking = false
+	if hs.Inv != nil {
+		hs.Inv.Wear() // l'équipement s'use à chaque mort ; Doran le répare
+		f.Restat()
+	}
 	if hs.Hardcore {
 		// Hardcore : une seule vie. Le match efface le héros.
 		ev.Flags |= FlagHardcore
@@ -581,24 +650,50 @@ func (a *Arena) kill(f, killer *Fighter) {
 }
 
 // reward : tous les héros qui ont combattu le monstre gagnent l'expérience,
-// et chacun tire son propre butin.
+// leur argent et leurs matériaux ; les objets tombent au sol pour le groupe.
 func (a *Arena) reward(m *Fighter) {
 	k := m.Mon.Kind
+	var heroes []*Fighter
+	sids := make([]int, 0, len(m.Mon.threat))
 	for sid := range m.Mon.threat {
+		sids = append(sids, sid)
+	}
+	sort.Ints(sids)
+	for _, sid := range sids {
 		h := a.Heroes[sid]
 		if h == nil {
 			continue
 		}
+		heroes = append(heroes, h)
 		xp := KillXP(m.Level, h.Level, k.XPMul)
-		gold := k.Gold[0] + a.rng.Intn(k.Gold[1]-k.Gold[0]+1)
+		// L'argent compte en cuivres : un ancien « or » vaut un argent.
+		gold := (k.Gold[0]*Argent + a.rng.Intn((k.Gold[1]-k.Gold[0])*Argent+1))
 		trophy := ""
 		if a.rng.Float64() < k.TrophyP {
 			trophy = k.Trophy
-			h.Hero.Trophies[trophy]++
+			if h.Hero.Inv != nil {
+				a.give(h, MakeStack(a.rng, TrophyMat[trophy], 1)) // annoncé par EvItem
+				trophy = ""
+			} else {
+				h.Hero.Trophies[trophy]++
+			}
+		}
+		if k.Flee && h.Hero.Inv != nil {
+			a.give(h, MakeStack(a.rng, "soie_doree", 1))
 		}
 		h.Hero.Gold += gold
+		a.Ledger.In["butin"] += gold
 		a.emit(Event{Kind: EvLoot, Tgt: h.SID, Src: m.SID, Value: gold, XP: xp, Text: trophy})
 		a.GainXP(h, xp)
+	}
+	var withBag []*Fighter
+	for _, h := range heroes {
+		if h.Hero.Inv != nil {
+			withBag = append(withBag, h)
+		}
+	}
+	if len(withBag) > 0 {
+		a.dropItems(m, withBag)
 	}
 }
 
@@ -657,6 +752,9 @@ func (a *Arena) Tick(dt float64) {
 	a.Moved = a.Moved[:0]
 	a.tickTeles(dt)
 	a.tickDuels(dt)
+	a.tickGround(dt)
+	a.tickNodes(dt)
+	a.tickTrades()
 	for _, h := range a.Heroes {
 		a.tickEffects(h, dt)
 		a.tickHero(h, dt)
@@ -839,7 +937,11 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 	// Hors combat : on souffle et la vie remonte.
 	if hs.combat >= CombatTime {
 		if h.HP < h.MaxHP {
-			hs.regen += dt * 0.04 * float64(h.MaxHP)
+			rate := 0.04
+			if hs.Inv != nil && !h.Body.Moving() && hs.Work == nil && hs.Inv.Buffs["repas"] != nil {
+				rate *= RestRegenMul // repu et au repos : la vie remonte bien plus vite
+			}
+			hs.regen += dt * rate * float64(h.MaxHP)
 			if hs.regen >= 1 {
 				n := int(hs.regen)
 				hs.regen -= float64(n)
@@ -848,9 +950,19 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 			}
 		}
 		// Au village, Sœur Clémence remplit la besace.
-		if hs.Potions < MaxPotions && math.Hypot(h.Body.X-a.Village[0], h.Body.Y-a.Village[1]) < VillageRadius {
-			hs.Potions = MaxPotions
-			a.emit(Event{Kind: EvError, Tgt: h.SID, Text: "Sœur Clémence remplit ta besace : 5 potions de soin !"})
+		free := MaxPotions
+		if hs.Inv != nil {
+			free = FreePotions
+		}
+		if hs.Potions < free && math.Hypot(h.Body.X-a.Village[0], h.Body.Y-a.Village[1]) < VillageRadius {
+			hs.Potions = free
+			a.emit(Event{Kind: EvError, Tgt: h.SID, Text: "Sœur Clémence remplit ta besace : " + strconv.Itoa(free) + " potions de soin !"})
+		}
+	}
+	if hs.Inv != nil {
+		a.tickWork(h, dt)
+		if hs.Inv.TickBuffs(dt) {
+			h.Restat()
 		}
 	}
 	shown := [3]int{int(hs.Res * 10), int(hs.Endurance * 10), hs.Potions}
@@ -915,7 +1027,7 @@ func (a *Arena) spawn(f *Fighter, announce bool) {
 	f.Body.Stop()
 	f.Body.Frozen = false
 	mo.Home = [2]float64{x, y}
-	mo.threat, mo.target, mo.evading, mo.gone, mo.age = nil, 0, false, false, 0
+	mo.threat, mo.target, mo.evading, mo.gone, mo.age, mo.skinned = nil, 0, false, false, 0, false
 	mo.attackCD, mo.wander = 0, 1+a.rng.Float64()*4
 	mo.Phase, mo.chargeCD, mo.stompCD, mo.shardCD, mo.windup = 1, 4, 8, 6, 0
 	mo.specialCD, mo.dance = 3+float64(f.SID%4), 0 // sans tirer au sort : les simulations gardent leurs dés
@@ -930,7 +1042,11 @@ func (a *Arena) think(f *Fighter, dt float64) {
 	k := mo.Kind
 	if f.Dead {
 		mo.respawn -= dt
-		if !mo.gone && mo.respawn <= math.Max(RespawnTime, k.Respawn)-CorpseTime {
+		corpse := CorpseTime
+		if _, ok := Skins[k.ID]; ok && !mo.skinned {
+			corpse = SkinTime // le temps de le dépecer
+		}
+		if !mo.gone && mo.respawn <= math.Max(RespawnTime, k.Respawn)-corpse {
 			mo.gone = true
 			a.emit(Event{Kind: EvDespawn, Src: f.SID})
 		}

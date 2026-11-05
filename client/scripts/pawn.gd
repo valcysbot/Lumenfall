@@ -41,6 +41,7 @@ var voie := -1
 var dieu := ""
 var hardcore := false
 var allure := {}
+var equipement: Variant = null   # Acte V : ce que le héros porte (null : la tenue de sa classe)
 
 # Le combat.
 var level := 1
@@ -124,7 +125,7 @@ func _ready() -> void:
 
 ## Habille (ou rhabille, après le miroir de Solenn) un héros.
 func dress_hero() -> void:
-	sprite.dress(Heros.couches(race, classe, allure))
+	sprite.dress(Heros.couches(race, classe, allure, equipement))
 	sprite.dir = dir
 	sprite.scale = Vector2(stature, stature)
 	_refresh_name()

@@ -1,0 +1,92 @@
+{
+ "alchimie": {
+  "ancre": [
+   19,
+   32
+  ]
+ },
+ "arbre_gris": {
+  "ancre": [
+   29,
+   27
+  ]
+ },
+ "chardon_gris": {
+  "ancre": [
+   15,
+   35
+  ]
+ },
+ "chene": {
+  "ancre": [
+   29,
+   27
+  ]
+ },
+ "couture": {
+  "ancre": [
+   27,
+   43
+  ]
+ },
+ "cuir": {
+  "ancre": [
+   10,
+   34
+  ]
+ },
+ "cuisine": {
+  "ancre": [
+   12,
+   32
+  ]
+ },
+ "filon_cuivre": {
+  "ancre": [
+   20,
+   21
+  ]
+ },
+ "filon_fer": {
+  "ancre": [
+   20,
+   21
+  ]
+ },
+ "fleur_de_lune": {
+  "ancre": [
+   15,
+   31
+  ]
+ },
+ "forge": {
+  "ancre": [
+   24,
+   28
+  ]
+ },
+ "joaillerie": {
+  "ancre": [
+   23,
+   31
+  ]
+ },
+ "lin": {
+  "ancre": [
+   15,
+   31
+  ]
+ },
+ "lysimaque": {
+  "ancre": [
+   15,
+   35
+  ]
+ },
+ "sauge": {
+  "ancre": [
+   15,
+   31
+  ]
+ }
+}

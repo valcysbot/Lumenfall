@@ -32,7 +32,7 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 		case world.EvRespawn:
 			anims = append(anims, [2]interface{}{e.Src, "releve"})
 		case world.EvCast:
-			_ = d.BroadcastMessage(opCast, mustJSON(map[string]int{"s": e.Src, "k": e.Skill, "ms": e.Value}), nil, nil, true)
+			_ = d.BroadcastMessage(opCast, mustJSON(map[string]interface{}{"s": e.Src, "k": e.Skill, "ms": e.Value, "t": e.Text}), nil, nil, true)
 		case world.EvDeath:
 			_ = d.BroadcastMessage(opDeath, mustJSON(map[string]int{"s": e.Tgt, "k": e.Src, "f": e.Flags}), nil, nil, true)
 		case world.EvLevel:
@@ -65,6 +65,8 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 			}
 		case world.EvDuel:
 			sendDuel(d, a, e, only)
+		case world.EvGround, world.EvItem, world.EvNode, world.EvMetier, world.EvLook, world.EvTrade:
+			sendActeV(d, s, e, only)
 		case world.EvError:
 			if to := only(e.Tgt); to != nil {
 				_ = d.BroadcastMessage(opRefuse, mustJSON(map[string]string{"m": e.Text}), to, nil, true)
@@ -97,6 +99,13 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 		if pl.fighter.Hero.TakeMe() {
 			sendMe(d, pl)
 		}
+		if inv := pl.fighter.Hero.Inv; inv != nil && inv.TakeDirty() {
+			sendSac(d, pl)
+			sendMe(d, pl) // les potions du sac comptent sur le bouton R
+			if pl.panel[0] != "" {
+				s.openPanel(d, pl, pl.panel[0], pl.panel[1])
+			}
+		}
 	}
 }
 
@@ -105,6 +114,12 @@ func sendMe(d runtime.MatchDispatcher, pl *player) {
 	f := pl.fighter
 	h := f.Hero
 	ms := func(v float64) int { return int(math.Ceil(v * 1000)) }
+	po := h.Potions
+	if h.Inv != nil {
+		for _, id := range []string{"petite_potion", "potion", "grande_potion"} {
+			po += h.Inv.Count(id)
+		}
+	}
 	cd := make([]int, world.NSkills)
 	cdt := make([]int, world.NSkills) // la recharge complète, talents compris
 	for k := 1; k <= world.NSkills; k++ {
@@ -116,7 +131,7 @@ func sendMe(d runtime.MatchDispatcher, pl *player) {
 	_ = d.BroadcastMessage(opMe, mustJSON(map[string]interface{}{
 		"r": int(h.Res), "rm": int(h.Class.Res.Max), "oh": ms(h.Overheat()),
 		"en": int(h.Endurance * 10), "cd": cd, "cdt": cdt, "gcd": ms(h.GCD),
-		"po": h.Potions, "pocd": ms(h.PotionCD), "lv": f.Level, "xp": h.XP, "xpn": world.XPForLevel(f.Level),
+		"po": po, "pof": h.Potions, "pocd": ms(h.PotionCD), "lv": f.Level, "xp": h.XP, "xpn": world.XPForLevel(f.Level),
 		"or": h.Gold, "tr": h.Trophies, "hp": f.HP, "hpm": f.MaxHP,
 		"cl": h.Class.ID, "v": h.Spec, "q": h.Quest, "qm": world.VoieQuest, "at": h.Attrs, "pt": world.PointsAt(f.Level),
 		"mir": pl.hero.miroir, "ta": h.Talents, "tp": world.TalentPoints(f.Level),
