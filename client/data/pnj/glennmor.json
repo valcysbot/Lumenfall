@@ -7,7 +7,7 @@
    "bulles": ["Entrez, entrez, il fait meilleur dedans !", "Une soupe ? Une chope ? Les deux ?", "Ai-je déjà raconté l'histoire du sanglier ?"],
    "dialogue": {
     "debut": {"texte": "Ah ! {nom} ! Bienvenue à La Chope Pleine, la meilleure auberge du Val. Bon, la seule, mais quand même. Que puis-je pour toi ?",
-     "choix": [{"texte": "Quoi de neuf au village ?", "vers": "ragots"}, {"texte": "Raconte-moi une histoire.", "vers": "sanglier"}, {"texte": "Pourquoi tant de lanternes ?", "vers": "lanternes"}, {"texte": "À plus tard, Mabon !", "vers": ""}]},
+     "choix": [{"texte": "J'aimerais ouvrir mon coffre.", "action": "coffre"}, {"texte": "Apprends-moi à cuisiner !", "action": "maitre"}, {"texte": "Quoi de neuf au village ?", "vers": "ragots"}, {"texte": "Raconte-moi une histoire.", "vers": "sanglier"}, {"texte": "Pourquoi tant de lanternes ?", "vers": "lanternes"}, {"texte": "À plus tard, Mabon !", "vers": ""}]},
     "ragots": {"texte": "Fiacre a encore râlé contre ses cartes, Nessa cherche de la menthe d'argent, et les jumeaux ont caché les sabots de Gwenn. Une semaine normale, quoi.",
      "choix": [{"texte": "Et la Lisière Grise ?", "vers": "lisiere"}, {"texte": "Merci !", "vers": "debut"}]},
     "lisiere": {"texte": "Chut… On n'en parle pas trop fort ici. Les arbres y perdent leurs couleurs, et parfois les gens leurs souvenirs. Demande au Capitaine Bréval, il patrouille par là.",
@@ -54,9 +54,9 @@
    "bulles": ["Des pommes, des rubans, des bottes presque neuves !", "Approchez, approchez !", "Tout se négocie. Sauf mes prix."],
    "dialogue": {
     "debut": {"texte": "Bienvenue à mon étal, {nom} ! Ici on trouve de tout, ou presque. Surtout presque.",
-     "choix": [{"texte": "Je peux acheter quelque chose ?", "vers": "acheter"}, {"texte": "Les affaires marchent ?", "vers": "affaires"}, {"texte": "Juste un coup d'œil.", "vers": ""}]},
-    "acheter": {"texte": "Bientôt ! J'attends ma livraison de Talvanor. Reviens avec quelques pièces et tu ne seras pas déçu.",
-     "choix": [{"texte": "Je reviendrai.", "vers": "debut"}]},
+     "choix": [{"texte": "Je peux voir ton étal ?", "action": "boutique"}, {"texte": "Tu rachètes ce que je trouve ?", "vers": "acheter"}, {"texte": "Les affaires marchent ?", "vers": "affaires"}, {"texte": "Juste un coup d'œil.", "vers": ""}]},
+    "acheter": {"texte": "La livraison de Talvanor est enfin arrivée ! Potions, sacs, fil, flux, fioles… et je rachète tout ce que tu rapportes. Pas cher, mais je rachète.",
+     "choix": [{"texte": "Montre-moi ça.", "action": "boutique"}, {"texte": "Plus tard.", "vers": "debut"}]},
     "affaires": {"texte": "Ça irait mieux si les caravanes de l'est passaient encore. Depuis que la forêt grisaille, plus personne ne veut prendre cette route.",
      "choix": [{"texte": "Je comprends.", "vers": "debut"}]}
    }
@@ -67,11 +67,24 @@
    "bulles": ["*Tang* *Tang* *Tang*", "Le fer chaud n'attend pas.", "Belle épée. Elle mériterait un coup d'affûtage."],
    "dialogue": {
     "debut": {"texte": "*Tang*. Oh, pardon. Doran, forgeron. Si c'est en métal et que c'est cassé, je le répare. Si ce n'est pas cassé, je le répare quand même.",
-     "choix": [{"texte": "Vous pouvez améliorer mon épée ?", "vers": "epee"}, {"texte": "D'où vient votre fer ?", "vers": "fer"}, {"texte": "Bon courage !", "vers": ""}]},
-    "epee": {"texte": "Bientôt, l'ami. Ramène-moi du minerai et on parlera lame qui brille.",
+     "choix": [{"texte": "Apprends-moi tes métiers, ou répare mon équipement.", "action": "maitre"}, {"texte": "Vous pouvez améliorer mon épée ?", "vers": "epee"}, {"texte": "D'où vient votre fer ?", "vers": "fer"}, {"texte": "Bon courage !", "vers": ""}]},
+    "epee": {"texte": "Ramène-moi du minerai et apprends la forge : à l'enclume, c'est toi qui choisis ce que ta lame aura de plus. Celles que je forge valent mieux que ce que lâchent les sangliers.",
      "choix": [{"texte": "Marché conclu.", "vers": "debut"}]},
     "fer": {"texte": "Des collines du nord. Mais le dernier lot avait un drôle de reflet gris. Je ne l'aime pas, ce reflet.",
      "choix": [{"texte": "Étrange…", "vers": "debut"}]}
+   }
+  },
+  "aubin": {
+   "titre": "le bûcheron",
+   "peuple": {"race": "humain", "k": 2, "p": 9, "y": 3, "hc": 2, "h": 3, "b": 2, "v": 10, "tu": 7, "plus": ["gants", "arme_hache"], "couleurs": {"gants": "#5a3a22"}},
+   "bulles": ["Attention, ça tombe !", "Le chêne, c'est solide. Comme moi.", "Un arbre gris de plus… ça me fend le cœur."],
+   "dialogue": {
+    "debut": {"texte": "Hé, {nom} ! Aubin, bûcheron. Si tu entends « attention ! », tu cours. Tu veux apprendre à couper du bois ?",
+     "choix": [{"texte": "Apprends-moi le bûcheronnage.", "action": "maitre"}, {"texte": "À quoi sert le bois ?", "vers": "bois"}, {"texte": "Et ces arbres gris, à l'est ?", "vers": "gris"}, {"texte": "Bon courage !", "vers": ""}]},
+    "bois": {"texte": "Le chêne, Doran en fait des manches, Gwenn des arcs, Mabon du feu pour ses ragoûts. Prends ta hache, va à l'orée des bois, et frappe là où l'écorce brille.",
+     "choix": [{"texte": "Compris.", "vers": "debut"}]},
+    "gris": {"texte": "Dans la Lisière, les arbres perdent leurs couleurs. Leur bois est léger et dur comme de la pierre. Il faut être un bûcheron solide pour l'entamer : niveau 10, au moins.",
+     "choix": [{"texte": "J'y reviendrai.", "vers": "debut"}]}
    }
   },
   "nessa": {
@@ -80,7 +93,7 @@
    "bulles": ["Menthe, sauge, ortie… et où est passée la menthe d'argent ?", "Ne marche pas sur les camomilles !", "Les plantes parlent, si on sait écouter."],
    "dialogue": {
     "debut": {"texte": "Bonjour, {nom} ! Attention où tu mets les pieds, ce trèfle-là soigne les maux de tête.",
-     "choix": [{"texte": "Vous soignez les gens ?", "vers": "soins"}, {"texte": "Vous cherchez quelque chose ?", "vers": "menthe"}, {"texte": "Au revoir, Nessa.", "vers": ""}]},
+     "choix": [{"texte": "Apprenez-moi l'alchimie ou les plantes.", "action": "maitre"}, {"texte": "Vous soignez les gens ?", "vers": "soins"}, {"texte": "Vous cherchez quelque chose ?", "vers": "menthe"}, {"texte": "Au revoir, Nessa.", "vers": ""}]},
     "soins": {"texte": "Les gens, les moutons, et une fois un dragon de la taille d'un chat. Tiens, il te ressemblait un peu, celui qui te suit…",
      "choix": [{"texte": "Braise ? Impossible.", "vers": "debut"}]},
     "menthe": {"texte": "De la menthe d'argent. Elle ne pousse plus depuis que la forêt grisaille. Si tu en vois, pense à moi.",
@@ -121,7 +134,7 @@
    "bulles": ["Une, deux, trois… il en manque une !", "Bêêê ! Oh pardon, l'habitude.", "Tam ! Tilda ! Rendez-moi mes sabots !"],
    "dialogue": {
     "debut": {"texte": "Bonjour, {nom} ! Tu n'aurais pas vu un mouton tout seul, par hasard ? Il s'appelle Biscuit.",
-     "choix": [{"texte": "Pas encore, mais je chercherai.", "vers": "biscuit"}, {"texte": "Vos moutons vont bien ?", "vers": "moutons"}, {"texte": "Bonne journée !", "vers": ""}]},
+     "choix": [{"texte": "Apprenez-moi la couture, le cuir ou le dépeçage.", "action": "maitre"}, {"texte": "Pas encore, mais je chercherai.", "vers": "biscuit"}, {"texte": "Vos moutons vont bien ?", "vers": "moutons"}, {"texte": "Bonne journée !", "vers": ""}]},
     "biscuit": {"texte": "Merci ! Il a une tache en forme de cœur sur le dos. Et il adore les pommes d'Aëlis.",
      "choix": [{"texte": "C'est noté.", "vers": "debut"}]},
     "moutons": {"texte": "Ils vont bien… sauf qu'ils refusent d'aller brouter vers l'est. Même Biscuit, qui n'a peur de rien.",
@@ -156,15 +169,5 @@
   }
  },
  "sanglier": ["gros comme un veau", "gros comme une vache", "gros comme une charrette de foin", "gros comme la forge de Doran", "gros comme l'auberge tout entière", "si gros qu'il cachait la lune"],
- "braise": {
-  "village": ["Braise renifle : ça sent la soupe de Mabon par ici !", "Braise : « Tant de lanternes… On est bien, ici. »"],
-  "nuit": ["Braise se blottit contre ta torche.", "Braise : « La nuit tombe. Reste près des lanternes, d'accord ? »"],
-  "pluie": ["Braise : « Pfff, la pluie… mes flammes détestent ça. »"],
-  "interieur": ["Braise s'installe près de la cheminée.", "Braise : « Enfin au chaud ! »"],
-  "pnj": ["Braise : « Va lui parler, je suis sûr qu'il a des choses à raconter ! »"],
-  "foret": ["Braise : « Les arbres sont grands par ici… On ne se perd pas, hein ? »"],
-  "lisiere": ["Braise frissonne : « Je n'aime pas cette couleur grise… »"],
-  "effaces": ["Braise chuchote : « Les Effacés n'ont plus de couleurs. Ta lumière leur fait mal. »", "Braise : « La nuit, ils voient ta torche de loin. Fais attention. »"],
-  "combat": ["Braise : « Vas-y ! Je t'encourage très fort, de loin ! »", "Braise : « Ta Ferveur monte, tente le Jugement (5) ! »", "Braise : « Pense à ta potion, touche R ! »"]
- }
+ "braise": {"village": ["Braise renifle : ça sent la soupe de Mabon par ici !", "Braise : « Tant de lanternes… On est bien, ici. »"], "nuit": ["Braise se blottit contre ta torche.", "Braise : « La nuit tombe. Reste près des lanternes, d'accord ? »"], "pluie": ["Braise : « Pfff, la pluie… mes flammes détestent ça. »"], "interieur": ["Braise s'installe près de la cheminée.", "Braise : « Enfin au chaud ! »"], "pnj": ["Braise : « Va lui parler, je suis sûr qu'il a des choses à raconter ! »"], "foret": ["Braise : « Les arbres sont grands par ici… On ne se perd pas, hein ? »"], "lisiere": ["Braise frissonne : « Je n'aime pas cette couleur grise… »"], "effaces": ["Braise chuchote : « Les Effacés n'ont plus de couleurs. Ta lumière leur fait mal. »", "Braise : « La nuit, ils voient ta torche de loin. Fais attention. »"], "combat": ["Braise : « Vas-y ! Je t'encourage très fort, de loin ! »", "Braise : « Ta Ferveur monte, tente le Jugement (5) ! »", "Braise : « Pense à ta potion, touche R ! »"]}
 }

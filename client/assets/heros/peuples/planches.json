@@ -206,6 +206,9 @@
   "cape_normale": [
    "cape"
   ],
+  "capuche": [
+   "capuche"
+  ],
   "casque": [
    "casque",
    "garde"
@@ -313,6 +316,18 @@
    "peau",
    "sous"
   ],
+  "epaulieres_costaud": [
+   "armure",
+   "bordure"
+  ],
+  "epaulieres_mince": [
+   "armure",
+   "bordure"
+  ],
+  "epaulieres_normale": [
+   "armure",
+   "bordure"
+  ],
   "gants_costaud": [
    "gants"
   ],
@@ -348,6 +363,18 @@
   ],
   "pantalon_normale": [
    "pantalon"
+  ],
+  "plastron_costaud": [
+   "armure",
+   "bordure"
+  ],
+  "plastron_mince": [
+   "armure",
+   "bordure"
+  ],
+  "plastron_normale": [
+   "armure",
+   "bordure"
   ],
   "robe_costaud": [
    "tissu",

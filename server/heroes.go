@@ -69,6 +69,26 @@ ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS quest    SMALLINT NOT NULL DEFAUL
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS look     JSONB    NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS miroir   SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS talents  JSONB    NOT NULL DEFAULT '[]'::jsonb`)
+	if err != nil {
+		return err
+	}
+	// Acte V : le sac et l'équipement (NULL : pas encore passé à l'Acte V, voir
+	// openInventaire), le coffre de chaque compte et le suivi de l'or.
+	_, err = db.ExecContext(ctx, `
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS inventaire JSONB;
+ALTER TABLE lf_heroes ALTER COLUMN gold TYPE BIGINT;
+CREATE TABLE IF NOT EXISTS lf_coffres (
+	user_id    UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+	coffre     JSONB NOT NULL,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS lf_economie (
+	jour    DATE   NOT NULL,
+	raison  TEXT   NOT NULL,
+	sens    TEXT   NOT NULL,
+	montant BIGINT NOT NULL DEFAULT 0,
+	PRIMARY KEY (jour, raison, sens)
+)`)
 	return err
 }
 
@@ -83,30 +103,41 @@ type Hero struct {
 	Y     float64 `json:"y"`
 	Level int     `json:"level"`
 
-	Race     string      `json:"race"`
-	Class    string      `json:"classe"`
-	Spec     int         `json:"voie"`
-	God      string      `json:"dieu"`
-	Hardcore bool        `json:"hardcore"`
-	Look     world.Look  `json:"look"`
-	attrs    world.Attrs // lus en base, privés
+	Race     string            `json:"race"`
+	Class    string            `json:"classe"`
+	Spec     int               `json:"voie"`
+	God      string            `json:"dieu"`
+	Hardcore bool              `json:"hardcore"`
+	Look     world.Look        `json:"look"`
+	Eq       map[string]string `json:"eq,omitempty"` // l'équipement visible (Acte V)
+	attrs    world.Attrs       // lus en base, privés
 	quest    int
 	miroir   int
 	talents  world.Talents
 
 	xp, gold, potions int
 	trophies          map[string]int
+	inv               *world.Inventaire // nil : le héros n'a pas encore de sac (Acte IV)
 }
 
 // heroCols : les colonnes lues pour un héros, dans l'ordre de scanHero.
 const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies,
-	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir, talents`
+	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir, talents, inventaire`
 
 func scanHero(row interface{ Scan(...any) error }, h *Hero) error {
-	var tro, at, look, tal []byte
+	var tro, at, look, tal, inv []byte
 	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro,
-		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir, &tal); err != nil {
+		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir, &tal, &inv); err != nil {
 		return err
+	}
+	if len(inv) > 0 {
+		h.inv = &world.Inventaire{}
+		if json.Unmarshal(inv, h.inv) != nil {
+			h.inv = nil
+		} else {
+			h.inv.Fix()
+			h.Eq = h.inv.Look()
+		}
 	}
 	h.trophies = map[string]int{}
 	_ = json.Unmarshal(tro, &h.trophies)
@@ -318,35 +349,37 @@ func saveHeroes(ctx context.Context, db *sql.DB, mapID string, ps []heroPos) err
 	_, err := db.ExecContext(ctx, `
 UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, level = v.level, xp = v.xp, gold = v.gold,
 	potions = v.potions, trophies = v.trophies, voie = v.voie, attrs = v.attrs, quest = v.quest,
-	look = v.look, miroir = v.miroir, talents = v.talents, updated_at = now()
-FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold integer,
-	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint, talents jsonb)
+	look = v.look, miroir = v.miroir, talents = v.talents, inventaire = v.inventaire, updated_at = now()
+FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold bigint,
+	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint, talents jsonb,
+	inventaire jsonb)
 WHERE h.id = v.id`, mapID, string(rows))
 	return err
 }
 
 // heroPos : ce qu'on sauvegarde d'un héros en jeu.
 type heroPos struct {
-	ID       string         `json:"id"`
-	X        float64        `json:"x"`
-	Y        float64        `json:"y"`
-	Level    int            `json:"level"`
-	XP       int            `json:"xp"`
-	Gold     int            `json:"gold"`
-	Potions  int            `json:"potions"`
-	Trophies map[string]int `json:"trophies"`
-	Voie     int            `json:"voie"`
-	Attrs    world.Attrs    `json:"attrs"`
-	Quest    int            `json:"quest"`
-	Look     world.Look     `json:"look"`
-	Miroir   int            `json:"miroir"`
-	Talents  world.Talents  `json:"talents"`
+	ID       string            `json:"id"`
+	X        float64           `json:"x"`
+	Y        float64           `json:"y"`
+	Level    int               `json:"level"`
+	XP       int               `json:"xp"`
+	Gold     int               `json:"gold"`
+	Potions  int               `json:"potions"`
+	Trophies map[string]int    `json:"trophies"`
+	Voie     int               `json:"voie"`
+	Attrs    world.Attrs       `json:"attrs"`
+	Quest    int               `json:"quest"`
+	Look     world.Look        `json:"look"`
+	Miroir   int               `json:"miroir"`
+	Talents  world.Talents     `json:"talents"`
+	Inv      *world.Inventaire `json:"inventaire"`
 }
 
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
 // À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
 // afficher (une nouvelle région, par exemple).
-const minClientVersion = "0.5.0"
+const minClientVersion = "0.6.0"
 
 // versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
 // illisible compte comme trop ancienne.

@@ -525,8 +525,39 @@ def tablier(p):
             (boite(p.buste(5.4 * k, 0, 31.5), [F, R, Z], [0.6, 3.8 * k, 5.0], 0.4), "tablier")]
 
 
+def plastron(p):
+    """Acte V : le plastron des armures de mailles et de plaques, par-dessus la tunique."""
+    F, R, Z, k = p.F, p.R, p.Z, p.k
+    torse = coupe(ellipsoide(p.buste(0.2, 0, 33.2), [F, R, Z], [6.9 * k, 8.7 * k, 10.0]), p.buste(0, 0, 23.0), -Z)
+    return [(torse, "armure"),
+            (ellipsoide(p.buste(0, 0, 24.2), [F, R, Z], [6.6 * k, 8.5 * k, 1.4]), "bordure"),
+            (ellipsoide(p.buste(6.7 * k, 0, 34.0), [F, R, Z], [0.9, 1.6, 1.6]), "bordure")]
+
+
+def epaulieres(p):
+    """Acte V : les épaulières, une coque sur chaque épaule."""
+    F, R, Z, k = p.F, p.R, p.Z, p.k
+    lk = 0.6 + 0.4 * k
+    out = []
+    for (e, co, m, cote) in p.bras:
+        c = e + Z * 0.8 + R * cote * 0.8
+        out.append((coupe(ellipsoide(c, [F, R, Z], [4.4 * lk, 4.6 * lk, 4.0]), c - Z * 1.6, -Z), "armure"))
+        out.append((coupe(coupe(ellipsoide(c, [F, R, Z], [4.7 * lk, 4.9 * lk, 4.3]), c - Z * 1.6, -Z), c - Z * 0.6, Z), "bordure"))
+    return out
+
+
+def capuche(p):
+    """Acte V : la capuche des armures de tissu et de cuir (le visage reste à l'air)."""
+    R = p.R
+    tF, tZ = p.tF, p.tZ
+    coque = ellipsoide(p.tete + tZ * 0.8 - tF * 0.8, [tF, R, tZ], [8.9, 8.6, 9.2])
+    coque = sauf(coque, ellipsoide(p.tete + tF * 6.5 - tZ * 0.6, [tF, R, tZ], [5.0, 5.6, 6.2]))
+    pan = ellipsoide(p.tete - tF * 5.6 - tZ * 6.5, [tF, R, tZ], [2.6, 6.0, 5.0])
+    return [(coque, "capuche"), (pan, "capuche")]
+
+
 VETEMENTS = {"tunique": tunique, "pantalon": pantalon, "bottes": bottes, "gants": gants, "cape": cape,
-             "robe": robe, "tablier": tablier}
+             "robe": robe, "tablier": tablier, "plastron": plastron, "epaulieres": epaulieres}
 
 
 # --- Les armes des 17 classes --------------------------------------------------
@@ -728,10 +759,11 @@ def catalogue():
         cat[f"barbe_{n:02d}"] = (barbe(n), "standard", 1.0, 0.0)
     for v, fn in VETEMENTS.items():
         for nomc, k in CARRURES.items():
-            env = 1.2 if v == "cape" else (1.4 if v == "tablier" else 0.0)
+            env = 1.2 if v == "cape" else (1.4 if v in ("tablier", "plastron", "epaulieres") else 0.0)
             cat[f"{v}_{nomc}"] = (fn, "standard", k, env)
     cat["casque"] = (casque, "standard", 1.0, 0.0)
     cat["chapeau"] = (chapeau, "standard", 1.0, 0.0)
+    cat["capuche"] = (capuche, "standard", 1.0, 0.0)
     for a in ARMES:
         cat[f"arme_{a}"] = (arme(a), "standard", 1.0, 1.0)
     return cat

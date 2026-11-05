@@ -65,4 +65,4 @@ func (l Look) Validate() error {
 }
 
 // MiroirGold : le prix du miroir de Solenn, après le premier passage gratuit.
-const MiroirGold = 50
+const MiroirGold = 50 * Argent

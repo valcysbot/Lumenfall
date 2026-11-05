@@ -187,7 +187,9 @@ static func allure_au_hasard(race: String) -> Dictionary:
 
 ## Les couches à empiler pour un héros : [[pièce, {matériau: couleur}], …],
 ## de l'arrière vers l'avant.
-static func couches(race: String, cl: String, lk: Dictionary) -> Array:
+## `eq` (Acte V) : ce que le héros porte, {emplacement: "base:rareté"} ; null
+## pour un héros sans sac (création, anciens héros) : il garde la tenue de sa classe.
+static func couches(race: String, cl: String, lk: Dictionary, eq: Variant = null) -> Array:
 	var P := peuple(race)
 	var D := peuples()
 	var carr: String = CARRURES[clampi(int(lk.get("k", 1)), 0, 2)]
@@ -201,6 +203,8 @@ static func couches(race: String, cl: String, lk: Dictionary) -> Array:
 	}
 	if P.get("ames", false):
 		cs.yeux = "#bff4ff"   # les Revenants ont les yeux qui luisent doucement
+	if eq is Dictionary:
+		return _couches_equipees(P, cl, carr, forme, lk, cs, eq)
 	var out := []
 	var dos := ["queue", "ailes", "nageoires"]
 	for t in P.traits:
@@ -231,6 +235,88 @@ static func couches(race: String, cl: String, lk: Dictionary) -> Array:
 	if cl != "":
 		for w in classe(cl).armes:
 			out.append(["arme_" + w, cs])
+	return out
+
+
+## Acte V : les couleurs des pièces selon le type d'armure, et la teinte de la rareté.
+const ARMURES := {"tissu": "", "cuir": "#8a5a32", "mailles": "#a8b0bc", "plaques": "#d4d8e2"}
+const JAMBES := {"tissu": "#6e4c35", "cuir": "#5e3c24", "mailles": "#8d96a8", "plaques": "#b8bece"}
+const PIEDS := {"tissu": "#5a4636", "cuir": "#4a3328", "mailles": "#6a7080", "plaques": "#a4adc0"}
+const RARETES := ["#9d9d9d", "#4fd16a", "#4a9ce8", "#b35de8", "#f0902c", "#ffd84a"]
+
+
+## Ce que porte un emplacement : [base, type d'armure, rareté] (base vide : rien).
+static func piece_portee(eq: Dictionary, slot: String) -> Array:
+	var v := str(eq.get(slot, ""))
+	if v == "":
+		return ["", "", 0]
+	var parts := v.split(":")
+	var base: String = parts[0]
+	var r := int(parts[1]) if parts.size() > 1 else 0
+	var t := ""
+	for a in ARMURES:
+		if base.ends_with("_" + a):
+			t = a
+	return [base, t, clampi(r, 0, 5)]
+
+
+static func _couches_equipees(P: Dictionary, cl: String, carr: String, forme: String, lk: Dictionary, cs: Dictionary, eq: Dictionary) -> Array:
+	var D := peuples()
+	var out := []
+	var dos := ["queue", "ailes", "nageoires"]
+	var avec := func(extra: Dictionary) -> Dictionary:
+		var c := cs.duplicate()
+		c.merge(extra, true)
+		return c
+	for t in P.traits:
+		if dos.any(func(x): return t.begins_with(x)):
+			out.append(["trait_" + t, cs])
+	var cape := piece_portee(eq, "dos")
+	if cape[0] != "":
+		out.append(["cape_" + carr, avec.call({"cape": RARETES[cape[2]]})])
+	out.append(["corps_%s_%s" % [forme, carr], cs])
+	var jambes := piece_portee(eq, "jambes")
+	out.append(["pantalon_" + carr, avec.call({"pantalon": JAMBES.get(jambes[1], JAMBES.tissu)})])
+	var pieds := piece_portee(eq, "pieds")
+	out.append(["bottes_" + carr, avec.call({"bottes": PIEDS.get(pieds[1], PIEDS.tissu)})])
+	var torse := piece_portee(eq, "torse")
+	var boucle := {"boucle": RARETES[torse[2]]} if torse[0] != "" else {}
+	out.append([("robe_" if ROBES.has(cl) else "tunique_") + carr, avec.call(boucle)])
+	if torse[1] != "" and torse[1] != "tissu":
+		out.append(["plastron_" + carr, avec.call({"armure": ARMURES[torse[1]], "bordure": RARETES[torse[2]]})])
+	var mains := piece_portee(eq, "mains")
+	if mains[0] != "":
+		out.append(["gants_" + carr, avec.call({"gants": ARMURES[mains[1]] if mains[1] != "tissu" else "#8a6a52"})])
+	var ep := piece_portee(eq, "epaules")
+	if ep[0] != "":
+		var couleur: String = ARMURES[ep[1]] if ep[1] != "tissu" else str(cs.tissu)
+		out.append(["epaulieres_" + carr, avec.call({"armure": couleur, "bordure": RARETES[ep[2]]})])
+	out.append(["visage_%02d" % clampi(int(lk.get("v", 0)), 0, 15), cs])
+	for m in lk.get("m", []):
+		var nom: String = D.marques[clampi(int(m[0]), 0, D.marques.size() - 1)]
+		out.append(["marque_" + nom, {nom: D.cheveux[clampi(int(m[1]), 0, 23)]}])
+	var tete := piece_portee(eq, "tete")
+	if forme == "standard":
+		if tete[1] != "mailles" and tete[1] != "plaques" and tete[1] != "cuir":
+			out.append(["cheveux_%02d" % clampi(int(lk.get("h", 0)), 0, 19), cs])
+		var b := int(lk.get("b", -1))
+		if b >= 0:
+			out.append(["barbe_%02d" % clampi(b, 0, 5), cs])
+	for t in P.traits:
+		if not dos.any(func(x): return t.begins_with(x)):
+			out.append(["trait_" + t, cs])
+	match tete[1]:
+		"tissu":
+			out.append(["chapeau", avec.call({"chapeau": str(cs.tissu), "ceinture": RARETES[tete[2]]})])
+		"cuir":
+			out.append(["capuche", avec.call({"capuche": ARMURES.cuir})])
+		"mailles", "plaques":
+			out.append(["casque", avec.call({"casque": ARMURES[tete[1]], "garde": RARETES[tete[2]]})])
+	for slot in ["arme", "main_gauche"]:
+		var a := piece_portee(eq, slot)
+		if a[0] != "":
+			var w: String = a[0].trim_prefix("arme_").trim_prefix("mg_")
+			out.append(["arme_" + w, avec.call({"garde": RARETES[a[2]]} if a[2] >= 2 else {})])
 	return out
 
 

@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.5.3 « Mille chemins » (5 novembre 2026) · **Acte en cours :** Acte V, objets, métiers et économie
+**Version actuelle :** V0.6 « Mille trésors » (5 novembre 2026) · **Acte en cours :** Acte V, objets, métiers et économie
 
 ---
 
@@ -14,7 +14,7 @@
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
 | IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✓ validé par Elowan |
-| V | Objets, métiers et économie | ○ |
+| V | Objets, métiers et économie | ✱ V0.6 livrée, soirée de jeu à venir |
 | VI | Social, guildes, PvP | ○ |
 | VII | Donjons, raids, quêtes et histoire | ○ |
 | VIII | Familiers, montures, maison, mini-jeux, événements | ○ |
@@ -186,6 +186,40 @@
 - **Effacer, c'est pour toujours** : il n'y a pas de corbeille. Si le héros est encore en jeu sur un autre appareil, il continue jusqu'à sa déconnexion, puis disparaît.
 - **Hardcore** : l'effacement est testé dans les simulations et sur un serveur local, pas encore avec une vraie mort sur le serveur de test.
 
+## 💰 Acte V, objets, métiers et économie
+
+### ✓ Quêtes accomplies
+
+- ✓ **Le Conseil des Objets** : 38 questions en 7 chapitres, toutes répondues le 5 novembre 2026 ([archive](docs/conseil-des-objets.html)). 30 recommandations suivies, 7 choix d'Elowan.
+- ✓ **Les objets** (`server/world/objets.go`) : 12 emplacements (tête, épaules, torse, mains, jambes, pieds, dos, arme, main gauche, cou, deux anneaux), 4 types d'armure (chaque classe porte le sien : tissu, cuir, mailles ou plaques), 6 raretés (commun, peu commun, rare, épique, légendaire, lumineux). Une base fixe (armure ou puissance d'arme selon le niveau) et des bonus tirés au hasard : attributs, vie, résistances, critique, vol de vie, vitesse, dégâts, soins. Un légendaire change une compétence (+30 % de puissance, recharge plus courte, coût moindre, effets plus longs ou touche en zone). Deux objets uniques : les **Défenses de Mabon** (amulette légendaire du Grand Sanglier) et l'**Éclat du Lumenfall** (anneau lumineux, très rare). Un objet a un niveau requis ; il se lie quand on le porte.
+- ✓ **Le sac** (`server/world/sac.go`, fenêtre `client/scripts/sac_window.gd`) : touche I ou bouton 🎒. Le héros au centre avec ses 12 emplacements, le sac de 30 places à droite (jusqu'à 90 avec des sacs fabriqués ou achetés), un onglet ⚒️ Métiers. Sur PC : glisser-déposer, double-clic ou clic droit pour équiper ou utiliser, bulle au survol avec flèches vertes et rouges et ⭐ selon ta voie. Sur téléphone : toucher, puis « Équiper ». Deux raccourcis de provisions (F et G) et la potion de la touche R au choix.
+- ✓ **L'équipement se voit** : la forme suit le type d'armure (chapeau, capuche ou casque, plastron des mailles et des plaques, épaulières, gants, cape), les couleurs suivent la rareté. Nouvelles pièces dans la forge des peuples : plastron, épaulières (3 carrures) et capuche.
+- ✓ **L'usure** : chaque mort use l'équipement porté (−10 sur 100). Cassé, il ne donne plus rien mais ne disparaît jamais. Doran répare tout, contre un peu d'argent.
+- ✓ **Le butin** (`server/world/butin.go`) : l'argent et les matériaux vont tout seuls dans le sac ; les objets tombent au sol et brillent de la couleur de leur rareté (un rai de lumière à partir de rare). Seul, l'objet est à toi ; en groupe, **les dés** : besoin (seulement pour ce que ta classe porte), cupidité ou passer, 20 secondes. Les anciens trophées deviennent des matériaux (défenses, crocs, plumes). Le Grand Sanglier donne un rare à chaque héros, un épique une fois sur cinq et les Défenses de Mabon 3 fois sur 100 ; le Sanglier doré lâche beaucoup d'argent et de la soie dorée.
+- ✓ **Les métiers** (`server/world/metiers.go`) : 4 récoltes pour tout le monde (minage, herboristerie, dépeçage, bûcheronnage) et 2 artisanats au choix parmi forge, couture, travail du cuir, alchimie, joaillerie, plus la cuisine pour tous. 89 points de récolte dans le Val (`tools/maps/gen_metiers.py`) : filons de cuivre, chênes, sauge, lin, lysimaque ; filons de fer, arbres gris, chardon gris et fleur de lune dans la Lisière Grise. Les points sont partagés : premier arrivé, premier servi, puis ils repoussent. Un atelier par métier au village (enclume, établi du joaillier, alambic de Nessa, métier à tisser et chevalet au marché, marmite de la Chope Pleine). Le métier monte en récoltant et en fabriquant, jusqu'au niveau 50 ; les recettes s'apprennent chez les maîtres (Doran, Nessa, Gwenn, Mabon et Aubin, le nouveau bûcheron) ou sur des plans rares lâchés par les monstres. **L'artisan choisit un bonus** de la pièce, et ce qu'il fabrique vaut un peu plus que le butin (×1,08) ; avec de la chance (10 % à 25 % selon le niveau), la pièce sort une rareté au-dessus.
+- ✓ **La monnaie** : or, argent et cuivre (100 cuivres = 1 argent, 100 argents = 1 or). L'or des héros de l'Acte IV devient de l'argent (1 ancien or = 1 argent).
+- ✓ **Le commerce** (`server/world/commerce.go`) : l'étal d'Aelis vend l'essentiel (potions, galettes, parchemin de retour, sacs, fil, flux, fioles, sel, tanin) et rachète tout, pas cher, avec un rachat des 10 derniers objets vendus. **L'échange face à face** (« 🤝 Échanger » dans le cadre de la cible) : chacun pose objets et argent, les deux valident. **Le coffre** de l'auberge, chez Mabon, partagé entre les 3 héros du compte (60 places). **Les apparences** au miroir de Solenn : une pièce prend l'allure d'une autre pièce du même genre déjà portée, contre un peu d'argent.
+- ✓ **Les provisions** (`server/world/provisions.go`) : Sœur Clémence remplit 3 potions gratuites ; les autres s'achètent ou se fabriquent (petite, normale, grande). Un repas à la fois, 30 minutes de bonus, et une vie qui revient trois fois plus vite au repos. Des élixirs, des sacs, le parchemin de retour.
+- ✓ **Le suivi de l'argent** : le serveur compte chaque jour l'argent qui entre (butin) et qui sort (réparations, achats, recettes, temple, miroir), par raison (table `lf_economie`).
+- ✓ **Les dessins** : les points de récolte et les ateliers (`tools/sprites/forge_metiers.py`), Aubin le bûcheron.
+- ✓ **La livraison** : les héros existants gardent tout ; ils reçoivent un équipement commun de leur niveau et de leur classe, et leurs trophées deviennent des matériaux. Le serveur demande au moins la v0.6.0.
+
+### ✱ Quêtes en cours
+
+- ✱ **La soirée de jeu entre amis** : échanger, fabriquer, vendre, puis corriger vos retours.
+
+### ⚠️ Points d'attention
+
+- **Tout s'échange, mais un objet porté est lié** (choix d'Elowan) : on peut donner ce qu'on trouve, pas ce qu'on a déjà porté.
+- **Les dés** (choix d'Elowan) : testés dans les simulations du serveur, pas encore à plusieurs en vrai. Dites-moi si 20 secondes, c'est trop long.
+- **Les points de récolte sont partagés** (choix d'Elowan) : à plusieurs au même endroit, ça peut créer des petites courses. Ils repoussent au bout de quelques minutes.
+- **Pas d'outils de récolte** : on récolte à mains nues pour l'instant (pas de pioche ni de hache à acheter). Facile à ajouter si vous en voulez.
+- **Les marchands et les maîtres restent à leur poste la nuit** (Aelis, Doran, Nessa, Gwenn, Mabon, Aubin) : sinon, 40 minutes sur 120, impossible de vendre ou d'apprendre un métier.
+- **Équilibrage de l'économie à l'aveugle** : les prix, les chances de butin et la valeur de l'artisanat sont réglés au jugé. Le suivi de l'argent dira si l'argent s'accumule trop.
+- **L'hôtel des ventes attendra Médiolane** (choix d'Elowan, Acte IX).
+- **Les vieux prix du temple** : changer de voie (20 argent par niveau), reprendre ses talents (10 argent par niveau) et le miroir (50 argent) suivent la nouvelle monnaie.
+- **Il faut la v0.6.0** pour entrer dans le monde.
+
 ---
 
 ## ⚖️ Décisions prises
@@ -321,11 +355,71 @@
 | 05/11/2026 | La flèche vers la prochaine étape | **Retirée, elle n'aidait pas** (retour d'Elowan) ; le panneau 🎯 reste |
 | 05/11/2026 | Cible automatique | Le monstre qui te frappe devient ta cible, sauf si ta cible se bat déjà contre toi ⭐ |
 
+| 05/11/2026 | Emplacements | 12 : 7 visibles + main gauche + épaulières + amulette + 2 anneaux ⭐ |
+| 05/11/2026 | Types d'armure | 4 (tissu, cuir, mailles, plaques), un par classe ⭐ |
+| 05/11/2026 | Équipement visible | Forme selon le type d'armure, couleurs selon la rareté ⭐ |
+| 05/11/2026 | Apparences | Au miroir de Solenn, contre un peu d'argent ⭐ |
+| 05/11/2026 | Sac | 30 places, jusqu'à 90 avec des sacs ⭐ |
+| 05/11/2026 | Usure | À chaque mort, Doran répare, un objet cassé ne disparaît jamais ⭐ |
+| 05/11/2026 | Raretés | 6, du commun gris au lumineux doré ⭐ |
+| 05/11/2026 | Bonus des objets | Base fixe + bonus au hasard ; les légendaires changent une compétence ⭐ |
+| 05/11/2026 | Niveau requis | Oui ⭐ |
+| 05/11/2026 | Échanges | **Tout s'échange, mais un objet porté devient lié** (choix d'Elowan) |
+| 05/11/2026 | Comparer | Flèches vertes et rouges, ⭐ selon la voie ⭐ |
+| 05/11/2026 | Butin en groupe | **Butin commun, dés besoin / cupidité** (choix d'Elowan) |
+| 05/11/2026 | Au sol | Les objets brillent ; argent et matériaux vont tout seuls dans le sac ⭐ |
+| 05/11/2026 | Trophées | Deviennent des matériaux ⭐ |
+| 05/11/2026 | Butin des boss | Rare garanti par héros, épique 1 fois sur 5, Défenses de Mabon 3 % (« Épique au premier boss ?? » : adouci) |
+| 05/11/2026 | Métiers | 4 récoltes + 6 artisanats ; toutes les récoltes, 2 artisanats et la cuisine ⭐ |
+| 05/11/2026 | Points de récolte | **Partagés, premier arrivé se sert** (choix d'Elowan) |
+| 05/11/2026 | Fabriquer | À l'atelier du village, une barre, la chance d'une rareté au-dessus ; un atelier par métier (précision d'Elowan) |
+| 05/11/2026 | Progression des métiers | En fabriquant et en récoltant ; recettes chez les maîtres ou sur les monstres ⭐ |
+| 05/11/2026 | Valeur de l'artisanat | Un peu meilleur que le butin (×1,08) et l'artisan choisit un bonus (précision d'Elowan : « il faut un équilibre ») |
+| 05/11/2026 | Maîtres | Doran, Nessa, Gwenn, Mabon et un bûcheron (Aubin) ⭐ |
+| 05/11/2026 | Monnaie | **Or, argent, cuivre** (choix d'Elowan) |
+| 05/11/2026 | Marchande | Aelis vend l'essentiel et rachète tout, avec un rachat ⭐ |
+| 05/11/2026 | Échange | Fenêtre face à face, les deux valident ⭐ |
+| 05/11/2026 | Hôtel des ventes | **Plus tard, avec Médiolane (Acte IX)** (choix d'Elowan) |
+| 05/11/2026 | Coffre | Partagé entre les 3 héros du compte, à l'auberge ⭐ |
+| 05/11/2026 | Argent du monde | Des dépenses utiles et un suivi de l'argent qui entre et sort ⭐ |
+| 05/11/2026 | Potions | Clémence en remplit 3, les autres s'achètent ou se fabriquent, en plusieurs tailles ⭐ |
+| 05/11/2026 | Repas | Un à la fois, 30 minutes, la vie revient plus vite au repos ⭐ |
+| 05/11/2026 | Touche R | La potion choisie, et 2 raccourcis de provisions ⭐ |
+| 05/11/2026 | Fenêtre du sac | Touche I, bouton 🎒, héros au centre, glisser-déposer sur PC, toucher puis « Équiper » sur téléphone ⭐ |
+| 05/11/2026 | Héros existants | Gardés, avec un équipement commun de leur niveau ; trophées en matériaux ⭐ |
+| 05/11/2026 | Livraison | **Tout dans la V0.6** (choix d'Elowan) |
+| 05/11/2026 | Validation de l'Acte V | Après une soirée entre amis (échanger, fabriquer, vendre) et les retours corrigés ⭐ |
+| 05/11/2026 | Nom de la V0.6 | **« Mille trésors »** (choix d'Elowan) |
+| 05/11/2026 | Marchands la nuit | Aelis et les maîtres restent à leur poste la nuit (décision de Claude, pour qu'on puisse commercer le soir) |
+
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.6 · « Mille trésors » (5 novembre 2026)
+
+L'Acte V arrive d'un coup : objets, métiers et économie.
+
+- 🎒 **Ton sac** (touche I, bouton 🎒) : ton héros au centre, ses 12 emplacements autour, 30 places de sac. Glisse un objet sur ton héros pour l'équiper (ou double-clic, ou clic droit) ; sur téléphone, touche-le puis « Équiper ». La bulle compare avec ce que tu portes (▲ vert, ▼ rouge) et te met des ⭐ selon ta voie.
+- 🛡️ **Ce que tu portes se voit** : casque, capuche ou chapeau, plastron, épaulières, gants, cape, armes, dans les couleurs de leur rareté.
+- ✨ **Le butin brille au sol** : gris, vert, bleu, violet, orange… et doré pour le plus rare. L'argent et les matériaux vont tout seuls dans ton sac. En groupe, **les dés** : besoin, cupidité ou passer.
+- ⛏️ **Les métiers** : récolte les filons, les plantes et les troncs (clic dessus, ou touche E quand tu es à côté), dépèce les bêtes tombées. Apprends deux artisanats chez les maîtres (Doran, Nessa, Gwenn, et Mabon pour la cuisine), puis fabrique à l'atelier du village. Tu choisis le bonus de ta pièce, et avec un peu de chance elle sort d'une rareté au-dessus ! Aubin, le nouveau bûcheron, s'est installé près de la forge.
+- 🪙 **Or, argent et cuivre** : ton ancien or devient de l'argent (1 pour 1).
+- 🛒 **L'étal d'Aelis** est enfin ouvert : potions, galettes, sacs, parchemin de retour, et elle rachète tout (avec un rachat si tu te trompes).
+- 🤝 **Échanger** : vise un héros, « 🤝 Échanger », posez vos objets et votre argent, validez tous les deux.
+- 🧰 **Le coffre** de l'auberge, chez Mabon, partagé entre les héros de ton compte.
+- 👗 **Les apparences** au miroir de Solenn : donne à une pièce l'allure d'une autre que tu as déjà portée.
+- 🔧 **L'usure** : chaque chute use ton équipement. Doran le répare.
+- 🍲 **Les repas et les élixirs** : un repas à la fois, 30 minutes de bonus. Sœur Clémence remplit 3 potions gratuites ; les autres s'achètent ou se fabriquent. Raccourcis F et G pour tes provisions.
+- 🌙 Les marchands et les maîtres restent à leur poste la nuit.
+- 🎁 Tes héros gardent tout : ils reçoivent un équipement de leur niveau, et leurs trophées deviennent des matériaux.
+- ⚠️ Il faut la v0.6.0 pour entrer dans le monde.
+
+![Le sac](docs/captures/v0.6/sac.png)
+
+Captures : [récolter la sauge (téléphone)](docs/captures/v0.6/recolte.png) · [l'étal d'Aelis](docs/captures/v0.6/etal-d-aelis.png) · [Doran, maître forgeron](docs/captures/v0.6/doran.png) · [à la forge, un heaume de l'ours](docs/captures/v0.6/forge.png) · [l'échange](docs/captures/v0.6/echange.png) · [les armures](docs/captures/v0.6/armures.png) · [ateliers et points de récolte](docs/captures/v0.6/ateliers-et-recoltes.png).
 
 ### V0.5.3 · « Mille chemins » (5 novembre 2026)
 

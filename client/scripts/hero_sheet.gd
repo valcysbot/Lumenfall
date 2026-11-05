@@ -322,7 +322,7 @@ func _render_voie() -> void:
 		if here:
 			box.add_child(UI.label("C'est ta voie.", 15, UI.MOSS))
 		elif lv >= need and (v >= 0 or q >= qm):
-			var b := UI.button("Choisir cette voie" if v < 0 else "En changer au temple (%d or)" % (int(Heros.data().changement) * lv), v < 0)
+			var b := UI.button("Choisir cette voie" if v < 0 else "En changer au temple (%s)" % Objets.monnaie(int(Heros.data().changement) * lv), v < 0)
 			var k := i
 			b.pressed.connect(func(): voie.emit(k))
 			box.add_child(b)
@@ -343,7 +343,7 @@ func _render_talents() -> void:
 	var left := total - Heros.points_places(_tdraft)
 	var price := int(Heros.data().talents.reprise) * lv
 	_line("Points de talent à placer : %d" % left, 18, UI.LUMEN)
-	var help := _line("1 point par niveau dès le niveau %d. Un talent prend jusqu'à %d points. Placer un point est gratuit ; les reprendre se fait au temple, contre %d or." % [int(Heros.data().talents.premier), int(Heros.data().talents.max), price], 15, UI.MUTED)
+	var help := _line("1 point par niveau dès le niveau %d. Un talent prend jusqu'à %d points. Placer un point est gratuit ; les reprendre se fait au temple, contre %s." % [int(Heros.data().talents.premier), int(Heros.data().talents.max), Objets.monnaie(price, true)], 15, UI.MUTED)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var takes_back := false
 	for i in 10:
@@ -374,7 +374,7 @@ func _render_talents() -> void:
 	actions.add_child(ok)
 	_body.add_child(actions)
 	if takes_back:
-		var w := _line("Tu reprends des points : il faut être au temple, et ça coûte %d or." % price, 15, UI.DANGER)
+		var w := _line("Tu reprends des points : il faut être au temple, et ça coûte %s." % Objets.monnaie(price, true), 15, UI.DANGER)
 		w.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var star := ["seul", "groupe", "utile"].find(Heros.etoile(cl, v))
 	for i in 10:

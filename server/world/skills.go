@@ -10,7 +10,7 @@ import (
 // sans rien savoir de chaque classe.
 
 // SpecChangeGold : le prix, au temple, pour changer de voie.
-func SpecChangeGold(level int) int { return 20 * level }
+func SpecChangeGold(level int) int { return 20 * level * Argent }
 
 // UseSkill : compétence k (1 à 7, et 8 pour l'ultime de la voie) sur la cible actuelle.
 func (a *Arena) UseSkill(sid, k int) {
@@ -352,9 +352,10 @@ func (a *Arena) ChooseSpec(sid, i int) error {
 		}
 		price := SpecChangeGold(h.Level)
 		if hs.Gold < price {
-			return errors.New("Changer de voie coûte " + strconv.Itoa(price) + " or.")
+			return errors.New("Changer de voie coûte " + Money(price) + ".")
 		}
 		hs.Gold -= price
+		a.Ledger.Out["temple"] += price
 	}
 	hs.Spec = i
 	hs.Talents = hs.Talents.KeepCommon() // les points de l'ancienne voie reviennent
@@ -384,9 +385,10 @@ func (a *Arena) SetTalents(sid int, t Talents) error {
 		}
 		price := TalentResetGold(h.Level)
 		if hs.Gold < price {
-			return errors.New("Reprendre ses talents coûte " + strconv.Itoa(price) + " or.")
+			return errors.New("Reprendre ses talents coûte " + Money(price) + ".")
 		}
 		hs.Gold -= price
+		a.Ledger.Out["temple"] += price
 	}
 	hs.Talents = t
 	h.Restat()

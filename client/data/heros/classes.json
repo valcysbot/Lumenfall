@@ -11,7 +11,7 @@
   "endurance",
   "precision"
  ],
- "changement": 20,
+ "changement": 2000,
  "classes": [
   {
    "aide": "Maître de toutes les armes, il encaisse ou frappe fort. Sa Rage monte à chaque coup.",
@@ -19502,7 +19502,7 @@
   "compagnon"
  ],
  "epreuve": 5,
- "miroir": 50,
+ "miroir": 5000,
  "points": 5,
  "races": {
   "drakeide": {
@@ -19586,7 +19586,7 @@
   "max": 3,
   "pas": 5,
   "premier": 5,
-  "reprise": 10
+  "reprise": 1000
  },
  "voie": 10
 }

@@ -24,6 +24,10 @@ const ACTIONS := [
 	["roulade", "Roulade", KEY_SPACE],
 	["cible", "Cible suivante", KEY_TAB],
 	["fiche", "Ta fiche de héros", KEY_C],
+	["sac", "Ton sac", KEY_I],
+	["rapide_1", "Raccourci 1 (provision)", KEY_F],
+	["rapide_2", "Raccourci 2 (provision)", KEY_G],
+	["ramasser", "Ramasser, récolter (le plus proche)", KEY_E],
 	["saluer", "Saluer", KEY_H],
 	["courir", "Courir (maintenir)", KEY_SHIFT],
 	["garde", "Lever le bouclier (maintenir)", 0x4000002],   # SOURIS + clic droit

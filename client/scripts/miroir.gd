@@ -161,7 +161,7 @@ func _random() -> void:
 
 func _refresh() -> void:
 	var lk: Dictionary = form.look
-	_hero.dress(Heros.couches(form.race, form.classe, lk))
+	_hero.dress(Heros.couches(form.race, form.classe, lk, form.get("eq")))
 	var P := Heros.peuple(form.race)
 	var c := Heros.classe(form.classe)
 	var a := int(lk.get("a", 0))
@@ -173,7 +173,7 @@ func _refresh() -> void:
 		_summary.text += "\n" + Heros.faction_of(form.race).blason + " " + Heros.faction_of(form.race).nom
 		_ok_btn.text = "Créer ce héros"
 	else:
-		_ok_btn.text = "Garder ce reflet" + (" (%d or)" % price if price > 0 else " (offert)")
+		_ok_btn.text = "Garder ce reflet" + (" (%s)" % Objets.monnaie(price) if price > 0 else " (offert)")
 	_place()
 
 

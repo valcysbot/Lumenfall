@@ -164,7 +164,7 @@ func TestPlacerSesTalents(t *testing.T) {
 	in := heros(c, 12, -1)
 	in.Quest = VoieQuest
 	h := a.AddHero(5, "Essai", &Body{X: a.Temple[0], Y: a.Temple[1]}, in)
-	h.Hero.Gold = 1000
+	h.Hero.Gold = 100000
 	var tal Talents
 	tal[1][0] = 1
 	if a.SetTalents(5, tal) == nil {
@@ -199,7 +199,7 @@ func TestPlacerSesTalents(t *testing.T) {
 		t.Fatal("points repris loin du temple")
 	}
 	h.Body.Teleport(a.Temple[0], a.Temple[1])
-	if err := a.SetTalents(5, tal); err != nil || h.Hero.Gold != 1000-TalentResetGold(12) {
+	if err := a.SetTalents(5, tal); err != nil || h.Hero.Gold != 100000-TalentResetGold(12) {
 		t.Fatalf("reprise au temple : %v, or %d", err, h.Hero.Gold)
 	}
 }

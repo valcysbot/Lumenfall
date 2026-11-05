@@ -12,6 +12,7 @@ signal next_target
 signal block(on: bool)
 signal challenge
 signal fiche
+signal trade
 
 const NSKILLS := 8
 
@@ -51,6 +52,7 @@ var _target_bar: ProgressBar
 var _target_fx: Label
 var _duel_btn: Button
 var _fiche_btn: Button
+var _trade_btn: Button
 var _cast_box: PanelContainer
 var _cast_bar: ProgressBar
 var _cast_label: Label
@@ -164,6 +166,11 @@ func _build_target() -> void:
 	_fiche_btn.focus_mode = Control.FOCUS_NONE
 	_fiche_btn.pressed.connect(func(): fiche.emit())
 	col.add_child(_fiche_btn)
+	_trade_btn = UI.button("🤝 Échanger")
+	_trade_btn.focus_mode = Control.FOCUS_NONE
+	_trade_btn.tooltip_text = "Proposer un échange face à face (assez près l'un de l'autre)."
+	_trade_btn.pressed.connect(func(): trade.emit())
+	col.add_child(_trade_btn)
 	_target_box.visible = false
 	add_child(_target_box)
 
@@ -341,13 +348,13 @@ func set_vitals(new_hp: int, new_max: int, new_fx: int, new_level: int) -> void:
 	_refresh()
 
 
-func start_cast(k: int, ms: int) -> void:
+func start_cast(k: int, ms: int, text: String = "") -> void:
 	if k == 0 or ms <= 0:
 		_cast_box.visible = false
 		return
 	_cast_total = ms / 1000.0
 	_cast_end = SkillButton.now() + _cast_total
-	_cast_label.text = str(skills[k].get("nom", "")) if k < skills.size() else ""
+	_cast_label.text = text if text != "" else (str(skills[k].get("nom", "")) if k < skills.size() else "")
 	_cast_box.visible = true
 
 
@@ -407,7 +414,7 @@ func _refresh() -> void:
 		_res_text.text = "%s %d / %d%s" % [c.ressource.nom, res, res_max, "  · SURCHAUFFE" if overheat > 0 else ""]
 	_xp_bar.max_value = maxi(1, xp_next)
 	_xp_bar.value = xp
-	_lvl_text.text = "Niv. %d · ✨ %d / %d XP · 🪙 %d" % [level, xp, xp_next, gold]
+	_lvl_text.text = "Niv. %d · ✨ %d / %d XP · 🪙 %s" % [level, xp, xp_next, Objets.monnaie(gold)]
 	_fx_text.text = fx_text(fx)
 	_fx_text.visible = _fx_text.text != ""
 	for k in range(1, NSKILLS + 1):
@@ -438,6 +445,7 @@ func _process(delta: float) -> void:
 		var foe := target.kind != "" or target.foe
 		_duel_btn.visible = target.kind == "" and target.npc == "" and not target.is_me and not in_duel
 		_fiche_btn.visible = target.race != "" and not target.is_me
+		_trade_btn.visible = target.race != "" and not target.is_me and not in_duel
 		(_target_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = UI.DANGER if foe else Color("5fbf6a")
 		_target_fx.text = fx_text(target.fx)
 		_target_fx.visible = _target_fx.text != ""

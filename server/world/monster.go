@@ -101,6 +101,7 @@ type Monster struct {
 	evading  bool
 	respawn  float64 // secondes avant de revenir, une fois mort
 	gone     bool    // corps retiré, invisible
+	skinned  bool    // déjà dépecé
 	age      float64
 	repath   float64
 
