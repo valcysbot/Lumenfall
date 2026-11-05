@@ -397,7 +397,7 @@ type MetiersData struct {
 // s'il a monté (0 sinon). Une tâche bien plus facile que son niveau ne rapporte rien.
 func (inv *Inventaire) GainMetier(id string, req, xp int) int {
 	me := inv.Metiers[id]
-	if me == nil || me.Lv <= 0 || me.Repos || me.Lv >= MetierMax {
+	if me == nil || me.Lv <= 0 || me.Lv >= MetierMax {
 		return 0
 	}
 	if d := me.Lv - req; d >= 10 {
@@ -431,11 +431,6 @@ func (inv *Inventaire) Learn(id string) error {
 		return errors.New("Tu connais déjà deux métiers d'artisanat. Il faut en oublier un d'abord.")
 	}
 	inv.Artisanats = append(inv.Artisanats, id)
-	if me := inv.Metiers[id]; me != nil && me.Lv > 0 && me.Repos {
-		me.Repos = false // repris : le niveau et les recettes étaient gardés
-		inv.dirty = true
-		return nil
-	}
 	inv.Metiers[id] = &Metier{Lv: 1}
 	for _, r := range RecipesOf(id) {
 		if r.Start {
@@ -446,14 +441,14 @@ func (inv *Inventaire) Learn(id string) error {
 	return nil
 }
 
-// Forget met un métier d'artisanat de côté : il libère sa place, mais son
-// niveau et ses recettes sont gardés pour le jour où on le reprend.
+// Forget oublie un métier d'artisanat (son niveau et ses recettes sont perdus).
 func (inv *Inventaire) Forget(id string) error {
 	for i, a := range inv.Artisanats {
 		if a == id {
 			inv.Artisanats = append(inv.Artisanats[:i], inv.Artisanats[i+1:]...)
-			if me := inv.Metiers[id]; me != nil {
-				me.Repos = true
+			inv.Metiers[id] = &Metier{}
+			for _, r := range RecipesOf(id) {
+				delete(inv.Recettes, r.ID)
 			}
 			inv.dirty = true
 			return nil
@@ -465,7 +460,7 @@ func (inv *Inventaire) Forget(id string) error {
 // Knows dit si le héros pratique ce métier.
 func (inv *Inventaire) Knows(id string) bool {
 	me := inv.Metiers[id]
-	return me != nil && me.Lv > 0 && !me.Repos
+	return me != nil && me.Lv > 0
 }
 
 // CanCraft vérifie qu'une recette est connue et que les matériaux sont là.

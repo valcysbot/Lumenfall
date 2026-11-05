@@ -447,8 +447,7 @@ func _render_metiers() -> void:
 	_body.add_child(grid)
 	for m in METIERS:
 		var id: String = m[0]
-		var repos := int(me.get(id, {}).get("repos", 0)) > 0
-		var known := int(me.get(id, {}).get("lv", 0)) > 0 and not repos
+		var known := int(me.get(id, {}).get("lv", 0)) > 0
 		var card := PanelContainer.new()
 		card.add_theme_stylebox_override("panel", UI.box(UI.STONE_2, UI.LUMEN if known else UI.LINE, 10, 1, 8))
 		card.custom_minimum_size = Vector2(330, 0)
@@ -472,10 +471,7 @@ func _render_metiers() -> void:
 				_: aide = "À son atelier, au village (maître : %s)." % m[3]
 			col.add_child(UI.label(aide, 13, UI.MUTED))
 		else:
-			if repos:
-				col.add_child(UI.label("Mis de côté au niveau %d : %s te le rend quand tu veux." % [int(me[id].get("lv", 0)), m[3]], 13, UI.MUTED))
-			else:
-				col.add_child(UI.label("À apprendre auprès de %s%s." % [m[3], "" if art.size() < 2 else " (tu as déjà deux artisanats)"], 13, UI.MUTED))
+			col.add_child(UI.label("À apprendre auprès de %s%s." % [m[3], "" if art.size() < 2 else " (tu as déjà deux artisanats)"], 13, UI.MUTED))
 		grid.add_child(card)
 
 

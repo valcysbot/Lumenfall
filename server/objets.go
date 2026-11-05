@@ -29,7 +29,7 @@ const (
 	opEchange  = 42 // serveur → toi : l'échange {"k":"demande"|"ouvre"|"maj"|"fin", …}
 	opPanneau  = 43 // serveur → toi : un panneau ouvert (boutique, atelier, maître, coffre, miroir)
 	opRecu     = 44 // serveur → toi : un objet reçu {"nom","r","n","fab","chance"}
-	opMetierUp = 45 // serveur → toi : {"m":"forge","lv":12} (lv 1 : appris, -1 : recette apprise, -2 : métier repris)
+	opMetierUp = 45 // serveur → toi : {"m":"forge","lv":12} (lv 1 : appris, -1 : recette apprise)
 
 	npcReach = 4.5 // cases : assez près d'un habitant pour commercer
 )
@@ -125,9 +125,6 @@ func sendSac(d runtime.MatchDispatcher, pl *player) {
 	metiers := map[string]map[string]int{}
 	for id, m := range inv.Metiers {
 		metiers[id] = map[string]int{"lv": m.Lv, "xp": m.XP, "xpn": world.MetierXP(m.Lv)}
-		if m.Repos {
-			metiers[id]["repos"] = 1
-		}
 	}
 	buffs := map[string]map[string]interface{}{}
 	for k, b := range inv.Buffs {
@@ -355,7 +352,7 @@ func (s *worldState) openPanel(d runtime.MatchDispatcher, pl *player, what, arg 
 				}
 			}
 			ms = append(ms, map[string]interface{}{"id": id, "nom": def.Name, "ic": def.Icon, "recolte": def.Recolte,
-				"lv": m.Lv, "connu": inv.Knows(id), "repos": m.Repos, "recettes": recs})
+				"lv": m.Lv, "connu": inv.Knows(id), "recettes": recs})
 		}
 		panneau(d, pl, "maitre", map[string]interface{}{"npc": arg, "metiers": ms, "art": inv.Artisanats,
 			"max": world.ArtisanatsMax, "rep": inv.RepairCost(), "forge": arg == "doran"})

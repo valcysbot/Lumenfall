@@ -427,34 +427,21 @@ func TestNomsEtArgent(t *testing.T) {
 
 func itoa(v int64) string { return strconv.FormatInt(v, 10) }
 
-func TestOublierGardeLaProgression(t *testing.T) {
+func TestOublierRemetAZero(t *testing.T) {
 	a, h := areneSac(t, "guerrier", 3)
 	inv := h.Hero.Inv
-	if err := a.LearnMetier(h.SID, "forge"); err != nil {
-		t.Fatal(err)
-	}
-	a.LearnMetier(h.SID, "joaillerie")
-	inv.Metiers["forge"].Lv, inv.Metiers["forge"].XP = 17, 9
+	a.LearnMetier(h.SID, "forge")
+	inv.Metiers["forge"].Lv = 17
 	inv.Recettes["forge:torse_plaques:1"] = true
 	if err := a.ForgetMetier(h.SID, "forge"); err != nil {
 		t.Fatal(err)
 	}
-	if inv.Knows("forge") || len(inv.Artisanats) != 1 {
-		t.Fatal("la forge est oubliée, sa place est libre")
+	if inv.Knows("forge") || inv.Recettes["forge:torse_plaques:1"] {
+		t.Fatal("oublier un métier efface son niveau et ses recettes")
 	}
-	if inv.GainMetier("forge", 17, 50) != 0 || inv.Metiers["forge"].XP != 9 {
-		t.Fatal("un métier mis de côté ne progresse pas")
-	}
-	if err := a.LearnMetier(h.SID, "couture"); err != nil {
-		t.Fatal(err)
-	}
-	a.ForgetMetier(h.SID, "couture")
-	if err := a.LearnMetier(h.SID, "forge"); err != nil {
-		t.Fatal(err)
-	}
-	f := inv.Metiers["forge"]
-	if !inv.Knows("forge") || f.Lv != 17 || f.XP != 9 || !inv.Recettes["forge:torse_plaques:1"] {
-		t.Fatalf("la forge reprise devrait garder niveau et recettes : %+v", f)
+	a.LearnMetier(h.SID, "forge")
+	if inv.Metiers["forge"].Lv != 1 {
+		t.Fatalf("la forge réapprise repart du niveau 1 : %d", inv.Metiers["forge"].Lv)
 	}
 }
 
