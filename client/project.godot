@@ -6,11 +6,12 @@ config_version=5
 
 config/name="Lumenfall"
 config/description="Lumenfall, les Chroniques d'Erydor"
-config/version="0.6.0"
+config/version="0.6.1"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 boot_splash/bg_color=Color(0.0823529, 0.0745098, 0.113725, 1)
 boot_splash/show_image=false
+run/flush_stdout_on_print=true
 
 [autoload]
 
@@ -31,8 +32,8 @@ pointing/emulate_touch_from_mouse=false
 
 [rendering]
 
-renderer/rendering_method="gl_compatibility"
+renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="gl_compatibility"
+rendering_device/fallback_to_opengl3=true
 textures/canvas_textures/default_texture_filter=2
 textures/vram_compression/import_etc2_astc=true
-anti_aliasing/quality/msaa_2d=2
