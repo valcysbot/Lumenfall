@@ -702,32 +702,32 @@ func ArmorReduction(armor float64, level int) float64 {
 
 // ItemView : ce que le client voit d'un objet.
 type ItemView struct {
-	ID     string         `json:"id"` // en texte : les nombres de 62 bits ne tiennent pas dans un double
-	Base   string         `json:"b"`
-	Name   string         `json:"nom"`
-	Icon   string         `json:"ic"`
-	Kind   string         `json:"k"`
-	Slot   string         `json:"sl,omitempty"`
-	Armor  string         `json:"ar,omitempty"`
-	Weapon string         `json:"w,omitempty"`
-	Lv     int            `json:"lv,omitempty"`
-	R      int            `json:"r"`
-	Aff    [][]any        `json:"a,omitempty"` // [nom, valeur affichée]
-	Leg    []string       `json:"lg,omitempty"` // les effets des légendaires, en phrases
-	ArmorV float64        `json:"arm,omitempty"`
-	Power  float64        `json:"pw,omitempty"`
-	Dur    int            `json:"d"`
-	Lie    bool           `json:"l,omitempty"`
-	Fab    string         `json:"f,omitempty"`
-	N      int            `json:"n,omitempty"`
-	Sell   int            `json:"px"`
-	Repair int            `json:"rep,omitempty"`
-	Use    bool           `json:"u,omitempty"`
-	Usable bool           `json:"ok"` // le héros peut le porter (type d'armure, arme)
-	Stars  int            `json:"st,omitempty"`
-	Desc   string         `json:"ds,omitempty"`
-	Look   string         `json:"lk,omitempty"`
-	Score  float64        `json:"sc,omitempty"`
+	ID     string   `json:"id"` // en texte : les nombres de 62 bits ne tiennent pas dans un double
+	Base   string   `json:"b"`
+	Name   string   `json:"nom"`
+	Icon   string   `json:"ic"`
+	Kind   string   `json:"k"`
+	Slot   string   `json:"sl,omitempty"`
+	Armor  string   `json:"ar,omitempty"`
+	Weapon string   `json:"w,omitempty"`
+	Lv     int      `json:"lv,omitempty"`
+	R      int      `json:"r"`
+	Aff    [][]any  `json:"a,omitempty"`  // [nom, valeur affichée]
+	Leg    []string `json:"lg,omitempty"` // les effets des légendaires, en phrases
+	ArmorV float64  `json:"arm,omitempty"`
+	Power  float64  `json:"pw,omitempty"`
+	Dur    int      `json:"d"`
+	Lie    bool     `json:"l,omitempty"`
+	Fab    string   `json:"f,omitempty"`
+	N      int      `json:"n,omitempty"`
+	Sell   int      `json:"px"`
+	Repair int      `json:"rep,omitempty"`
+	Use    bool     `json:"u,omitempty"`
+	Usable bool     `json:"ok"` // le héros peut le porter (type d'armure, arme)
+	Stars  int      `json:"st,omitempty"`
+	Desc   string   `json:"ds,omitempty"`
+	Look   string   `json:"lk,omitempty"`
+	Score  float64  `json:"sc,omitempty"`
 }
 
 // View : l'objet tel que le héros de classe cl le voit.
