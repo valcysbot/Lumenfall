@@ -187,7 +187,13 @@ func TestSacEtPiles(t *testing.T) {
 	}
 }
 
+func sansEchecs(t *testing.T) {
+	echecsActifs = false
+	t.Cleanup(func() { echecsActifs = true })
+}
+
 func TestRecolteEtFabrication(t *testing.T) {
+	sansEchecs(t)
 	a, h := areneSac(t, "guerrier", 3)
 	inv := h.Hero.Inv
 	if err := a.LearnMetier(h.SID, "forge"); err != nil {
@@ -420,3 +426,52 @@ func TestNomsEtArgent(t *testing.T) {
 }
 
 func itoa(v int64) string { return strconv.FormatInt(v, 10) }
+
+func TestOublierRemetAZero(t *testing.T) {
+	a, h := areneSac(t, "guerrier", 3)
+	inv := h.Hero.Inv
+	a.LearnMetier(h.SID, "forge")
+	inv.Metiers["forge"].Lv = 17
+	inv.Recettes["forge:torse_plaques:1"] = true
+	if err := a.ForgetMetier(h.SID, "forge"); err != nil {
+		t.Fatal(err)
+	}
+	if inv.Knows("forge") || inv.Recettes["forge:torse_plaques:1"] {
+		t.Fatal("oublier un métier efface son niveau et ses recettes")
+	}
+	a.LearnMetier(h.SID, "forge")
+	if inv.Metiers["forge"].Lv != 1 {
+		t.Fatalf("la forge réapprise repart du niveau 1 : %d", inv.Metiers["forge"].Lv)
+	}
+}
+
+func TestEchecs(t *testing.T) {
+	if EchecChance(1, 1) != EchecBase || EchecChance(30, 1) != EchecMin || EchecChance(5, 1) >= EchecBase {
+		t.Fatal("5 % au niveau demandé, moins au-dessus, 1 % au moins")
+	}
+	if EchecBase > LuckBase {
+		t.Fatal("rater ne doit pas être plus fréquent qu'une rareté gagnée")
+	}
+	inv := NewInventaire()
+	rng := rand.New(rand.NewSource(1))
+	inv.Add(MakeStack(rng, "minerai_cuivre", 10))
+	r := &Recipe{Needs: []Need{{Base: "minerai_cuivre", N: 4}}}
+	inv.Gache(r)
+	if inv.Count("minerai_cuivre") != 8 {
+		t.Fatalf("une fabrication ratée gâche la moitié : reste %d", inv.Count("minerai_cuivre"))
+	}
+	r.Needs[0].N = 1
+	inv.Gache(r)
+	if inv.Count("minerai_cuivre") != 7 {
+		t.Fatal("au moins un matériau gâché")
+	}
+	ratees := 0
+	for i := 0; i < 10000; i++ {
+		if inv.Rate(rng, "minage", 1) {
+			ratees++
+		}
+	}
+	if ratees < 350 || ratees > 650 {
+		t.Fatalf("environ 5 %% de récoltes ratées au niveau 1 : %d sur 10000", ratees)
+	}
+}

@@ -391,6 +391,8 @@
 | 05/11/2026 | Validation de l'Acte V | Après une soirée entre amis (échanger, fabriquer, vendre) et les retours corrigés ⭐ |
 | 05/11/2026 | Nom de la V0.6 | **« Mille trésors »** (choix d'Elowan) |
 | 05/11/2026 | Marchands la nuit | Aelis et les maîtres restent à leur poste la nuit (décision de Claude, pour qu'on puisse commercer le soir) |
+| 05/11/2026 | Oublier un métier | **Tout repart à zéro** : niveau et recettes perdus, après une confirmation (choix d'Elowan) |
+| 05/11/2026 | Rater | Récolte, dépeçage et fabrication peuvent rater : **5 %** au niveau demandé (moitié de la chance de rareté), −0,5 % par niveau au-dessus, 1 % au moins. Une fabrication ratée gâche la moitié des matériaux (au moins un) et donne un peu d'expérience (demande d'Elowan) |
 
 ⭐ = recommandation de Claude suivie.
 

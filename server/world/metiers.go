@@ -49,7 +49,45 @@ const (
 	LuckPerLevel   = 0.005
 	LuckMax        = 0.25
 	ForgetLevelMin = 0
+	EchecBase      = 0.05 // chance de rater une récolte ou une fabrication (moitié de LuckBase)
+	EchecPerLevel  = 0.005
+	EchecMin       = 0.01
 )
+
+// echecsActifs : les tests qui comptent des objets fabriqués les coupent.
+var echecsActifs = true
+
+// EchecChance : la chance de rater, au niveau lv pour une tâche du niveau req.
+// 5 % au niveau demandé, un peu moins à chaque niveau au-dessus, jamais moins de 1 %.
+func EchecChance(lv, req int) float64 {
+	return math.Max(EchecMin, EchecBase-EchecPerLevel*float64(lv-req))
+}
+
+// Rate dit si la tâche est ratée cette fois.
+func (inv *Inventaire) Rate(rng *rand.Rand, id string, req int) bool {
+	if !echecsActifs {
+		return false
+	}
+	lv := 1
+	if me := inv.Metiers[id]; me != nil && me.Lv > 0 {
+		lv = me.Lv
+	}
+	return rng.Float64() < EchecChance(lv, req)
+}
+
+// Gache : une fabrication ratée gâche la moitié des matériaux (au moins un).
+func (inv *Inventaire) Gache(r *Recipe) {
+	lost := 0
+	for _, n := range r.Needs {
+		if k := n.N / 2; k > 0 && inv.Take(n.Base, k) {
+			lost += k
+		}
+	}
+	if lost == 0 && len(r.Needs) > 0 {
+		inv.Take(r.Needs[0].Base, 1)
+	}
+	inv.dirty = true
+}
 
 // MetierXP : l'expérience pour passer du niveau l au suivant.
 func MetierXP(l int) int { return 10 + 4*l }
