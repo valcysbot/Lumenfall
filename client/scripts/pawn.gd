@@ -51,6 +51,41 @@ var fx := 0
 var dead := false
 var targeted := false
 var foe := false        # ton adversaire en duel
+# L'Acte VI : titre, guilde, drapeau de guerre, groupe, émotes et danses.
+var titre := ""
+var guilde := {}        # {n: nom, bl: blason}
+var drapeau := false
+var allie := false      # dans ton groupe
+var _sub_label: Label
+var _emote := ""
+var _emote_t := 0.0
+var _emote_len := 1.0
+var _emote_icon: Label
+var _dir_avant := -1
+
+## Les émotes : [emoji au-dessus de la tête, durée en secondes].
+const EMOTES := {"salut": ["👋", 2.0], "rire": ["😂", 3.0], "pleurer": ["😢", 3.5], "applaudir": ["👏", 3.0],
+	"assis": ["", 10.0], "dormir": ["💤", 12.0], "montrer": ["👉", 2.5], "incliner": ["", 2.2], "danser": ["🎶", 7.0],
+	"acclamer": ["🎉", 3.0], "hausser": ["🤷", 2.5], "colere": ["💢", 3.0], "coeur": ["❤️", 3.5]}
+
+## Une danse par peuple : [nom, saut, balancement, inclinaison, tours par seconde, écrasement, vitesse, couleur].
+const DANSES := {
+	"humain": ["la gigue du val", 6.0, 3.0, 0.08, 0.0, 0.0, 2.4, Color("f2d94e")],
+	"nain": ["la danse des marteaux", 3.0, 1.0, 0.05, 0.0, 0.18, 3.2, Color("e8a050")],
+	"halfelin": ["la ronde des pommes", 5.0, 2.0, 0.0, 0.8, 0.0, 2.6, Color("e05a47")],
+	"gnome": ["le cliquetis", 3.0, 2.0, 0.12, 0.0, 0.06, 5.0, Color("8fd0e8")],
+	"golem": ["le pas de pierre", 1.0, 4.0, 0.14, 0.0, 0.08, 1.0, Color("a69c8a")],
+	"elfe": ["la valse des feuilles", 2.0, 6.0, 0.06, 0.4, 0.0, 1.4, Color("86c493")],
+	"fee": ["le tourbillon", 8.0, 2.0, 0.0, 1.6, 0.0, 2.0, Color("f080b0")],
+	"felin": ["le ronron", 2.0, 4.0, 0.22, 0.0, 0.0, 2.5, Color("f2c14e")],
+	"homme_bete": ["la danse du feu de camp", 10.0, 3.0, 0.1, 0.0, 0.1, 1.6, Color("f08a3c")],
+	"sirene": ["la houle", 2.0, 8.0, 0.12, 0.0, 0.0, 1.3, Color("4fb3d9")],
+	"orque": ["le pas de guerre", 4.0, 2.0, 0.16, 0.0, 0.16, 2.0, Color("d03a3a")],
+	"drakeide": ["la danse des braises", 5.0, 3.0, 0.08, 0.6, 0.0, 2.2, Color("ff8a3c")],
+	"revenant": ["la gigue des âmes", 3.0, 5.0, 0.1, 0.0, 0.0, 1.8, Color("bfe8ff")],
+	"elfe_noir": ["l'ombre qui danse", 2.0, 9.0, 0.05, 0.0, 0.0, 2.0, Color("a070d8")],
+	"lumin": ["la ronde de lumière", 4.0, 2.0, 0.0, 1.0, 0.0, 2.0, Color("f4f4f4")],
+}
 
 var sprite: Node2D     # PeupleSprite (héros, habitants) ou HeroSprite (anciennes planches)
 var _floats := false   # les fées flottent
@@ -109,6 +144,19 @@ func _ready() -> void:
 	_name_label.add_theme_constant_override("outline_size", 5)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_name_label)
+	_sub_label = Label.new()
+	_sub_label.add_theme_font_size_override("font_size", 12)
+	_sub_label.add_theme_color_override("font_color", Color(UI.LUMEN, 0.95))
+	_sub_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_sub_label.add_theme_constant_override("outline_size", 4)
+	_sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_sub_label)
+	_emote_icon = Label.new()
+	_emote_icon.add_theme_font_size_override("font_size", 26)
+	_emote_icon.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	_emote_icon.add_theme_constant_override("outline_size", 4)
+	_emote_icon.visible = false
+	add_child(_emote_icon)
 	_refresh_name()
 
 	_bubble = PanelContainer.new()
@@ -155,8 +203,29 @@ func _refresh_name() -> void:
 	if _name_label == null:
 		return
 	_name_label.text = t
+	if allie and not is_me:
+		_name_label.add_theme_color_override("font_color", UI.MOSS)
 	_name_label.reset_size()
 	_name_label.position = Vector2(-_name_label.size.x / 2, -_head())
+	# Sous les pieds : le titre et la guilde.
+	var sub := []
+	if titre != "":
+		sub.append("« %s »" % titre)
+	if not guilde.is_empty():
+		sub.append("    ‹%s›" % guilde.get("n", ""))
+	_sub_label.text = "  ".join(sub)
+	_sub_label.visible = not sub.is_empty()
+	_sub_label.reset_size()
+	_sub_label.position = Vector2(-_sub_label.size.x / 2, 12)
+
+
+## L'Acte VI : ce que les autres voient de toi (titre, guilde, drapeau).
+func set_social(p: Dictionary) -> void:
+	titre = str(p.get("ti", ""))
+	var g = p.get("gu")
+	guilde = g if g is Dictionary else {}
+	drapeau = bool(p.get("dr", false))
+	_refresh_name()
 
 
 func _pct() -> float:
@@ -230,6 +299,11 @@ func _puff(node: Node2D) -> void:
 
 
 func play(anim: String) -> void:
+	if EMOTES.has(anim) and anim != "salut":
+		emote(anim)
+		return
+	if anim == "salut":
+		_show_emote_icon("👋", 2.0)
 	if forme != null and forme.visible:
 		if anim in ["attaque", "tir", "sort", "bouclier", "incante"]:
 			forme.play_once("attaque")
@@ -240,7 +314,108 @@ func play(anim: String) -> void:
 		sprite.play_once(anim)
 
 
+## Une émote : une petite animation du corps, et un emoji au-dessus de la tête.
+## La danse dépend du peuple du héros.
+func emote(e: String) -> void:
+	if dead or sprite == null or not EMOTES.has(e):
+		return
+	_end_emote()
+	_emote = e
+	_emote_len = float(EMOTES[e][1])
+	_emote_t = _emote_len
+	_dir_avant = dir
+	_show_emote_icon(str(EMOTES[e][0]), _emote_len)
+
+
+func _show_emote_icon(icon: String, len: float) -> void:
+	if _emote_icon == null or icon == "":
+		return
+	_emote_icon.text = icon
+	_emote_icon.visible = true
+	_emote_icon.modulate.a = 1.0
+	_emote_icon.reset_size()
+	var tw := _emote_icon.create_tween()
+	_emote_icon.position = Vector2(-_emote_icon.size.x / 2, -_head() - 38)
+	tw.tween_property(_emote_icon, "position:y", -_head() - 52, minf(len, 3.0))
+	tw.parallel().tween_property(_emote_icon, "modulate:a", 0.0, 0.6).set_delay(maxf(0.0, minf(len, 3.0) - 0.6))
+	tw.tween_callback(func(): _emote_icon.visible = false)
+
+
+func _end_emote() -> void:
+	if _emote == "":
+		return
+	_emote = ""
+	_emote_t = 0.0
+	if sprite != null:
+		sprite.rotation = 0.0
+		sprite.position.x = 0.0
+		if not _floats:
+			sprite.position.y = 0.0
+		sprite.scale = Vector2(stature, stature)
+		sprite.modulate = Color.WHITE
+	if _dir_avant >= 0:
+		dir = _dir_avant
+		_dir_avant = -1
+
+
+## L'animation de l'émote en cours, image par image.
+func _anim_emote(delta: float) -> void:
+	_emote_t -= delta
+	if _emote_t <= 0.0 or walking or dead:
+		_end_emote()
+		return
+	var t := _emote_len - _emote_t
+	var off := Vector2.ZERO
+	var rot := 0.0
+	var sq := 0.0
+	match _emote:
+		"danser":
+			var d: Array = DANSES.get(race, DANSES.humain)
+			var v: float = d[6]
+			off.y = -absf(sin(t * v * PI)) * float(d[1])
+			off.x = sin(t * v * PI / 2) * float(d[2])
+			rot = sin(t * v * PI / 2) * float(d[3])
+			sq = absf(cos(t * v * PI)) * float(d[5])
+			if float(d[4]) > 0.0:
+				dir = (int(t * float(d[4]) * 8.0) + maxi(_dir_avant, 0)) % 8
+			if race == "revenant":
+				sprite.modulate.a = 0.75 + 0.25 * sin(t * 6.0)
+		"rire":
+			off.y = -absf(sin(t * 14.0)) * 2.0
+			rot = sin(t * 7.0) * 0.05
+		"pleurer":
+			rot = 0.08
+			off.y = sin(t * 3.0) * 1.0
+		"applaudir":
+			sq = absf(sin(t * 12.0)) * 0.04
+		"assis":
+			off.y = 10.0 * stature
+			sq = 0.28
+		"dormir":
+			off.y = 12.0 * stature
+			sq = 0.32
+			rot = 0.12 + sin(t * 1.5) * 0.02
+		"montrer":
+			rot = -0.06
+		"incliner":
+			rot = sin(clampf(t / 2.2, 0.0, 1.0) * PI) * 0.45 * (1.0 if dir < 4 else -1.0)
+		"acclamer":
+			off.y = -absf(sin(t * 5.0)) * 9.0
+		"hausser":
+			sq = -absf(sin(t * 4.0)) * 0.05
+		"colere":
+			off.x = sin(t * 40.0) * 1.5
+			sprite.modulate = Color(1.0, 0.8, 0.8)
+		"coeur":
+			off.y = -absf(sin(t * 3.0)) * 3.0
+	sprite.position.x = off.x
+	sprite.position.y = (-12.0 + sin(_t * 2.2) * 2.5 if _floats else 0.0) + off.y
+	sprite.rotation = rot
+	sprite.scale = Vector2(stature * (1.0 + sq * 0.4), stature * (1.0 - sq))
+
+
 func die() -> void:
+	_end_emote()
 	dead = true
 	hp = 0
 	fx = 0
@@ -307,7 +482,9 @@ func _process(delta: float) -> void:
 	else:
 		sprite.dir = dir
 		sprite.set_motion(walking and not dead, running)
-		if _floats:
+		if _emote != "":
+			_anim_emote(delta)
+		elif _floats:
 			sprite.position.y = -12.0 + sin(_t * 2.2) * 2.5 if not dead else 0.0
 		# Furtif : on ne voit plus qu'une ombre qui glisse.
 		sprite.modulate.a = 0.35 if fx & FX_FURTIF else 1.0
@@ -389,9 +566,29 @@ func _draw() -> void:
 			draw_circle(p, 1.5 + sin(_t * 8 + i) * 0.8, Color(1, 0.9, 0.5, 0.9))
 	if dead:
 		return
+	# L'Acte VI : la danse fait des étincelles ; le blason de la guilde ; le drapeau de guerre.
+	if _emote == "danser":
+		var dc: Color = DANSES.get(race, DANSES.humain)[7]
+		for i in 6:
+			var ph := fposmod(_t * 0.7 + i / 6.0, 1.0)
+			var a := i * TAU / 6.0 + _t
+			draw_circle(Vector2(cos(a) * 22.0, -ph * 50.0 * stature), 2.0 * (1.0 - ph) + 0.5, Color(dc, 0.9 * (1.0 - ph)))
+	elif _emote == "coeur":
+		for i in 3:
+			var ph := fposmod(_t * 0.5 + i / 3.0, 1.0)
+			draw_circle(Vector2(sin(i * 2.0 + _t) * 10.0, -_head() - ph * 30.0), 3.0 * (1.0 - ph) + 1.0, Color(1, 0.4, 0.55, 1.0 - ph))
+	if not guilde.is_empty() and _sub_label != null and _sub_label.visible:
+		var bx := _sub_label.position.x + (_sub_label.size.x - _sub_label.get_theme_font("font").get_string_size("‹%s›" % guilde.get("n", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x) - 14.0
+		Blason.dessiner(self, Rect2(bx, _sub_label.position.y + 2, 11, 13), guilde.get("bl", {}))
+	if drapeau and _name_label != null:
+		var fx0 := _name_label.position.x + _name_label.size.x + 5.0
+		var fy0 := _name_label.position.y + 18.0
+		draw_line(Vector2(fx0, fy0), Vector2(fx0, fy0 - 18.0), Color(0.85, 0.8, 0.7), 1.5)
+		var wave := sin(_t * 6.0) * 1.5
+		draw_colored_polygon(PackedVector2Array([Vector2(fx0, fy0 - 18.0), Vector2(fx0 + 11.0, fy0 - 14.0 + wave), Vector2(fx0, fy0 - 10.0)]), Color("d03a3a"))
 	# Barre de vie : toujours sur les monstres touchés ou visés, sur les héros blessés.
 	var hurt := hp < hp_max
-	if npc == "" and (targeted or foe or _show_bar > 0 or (hurt and kind == "") or (kind != "" and hurt)):
+	if npc == "" and (targeted or foe or allie or _show_bar > 0 or (hurt and kind == "") or (kind != "" and hurt)):
 		var w := 44.0 if kind != "" else 36.0
 		if kind == "grand_sanglier":
 			w = 90.0

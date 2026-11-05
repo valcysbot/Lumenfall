@@ -76,6 +76,12 @@ var objectif: Label          # « 🎯 la prochaine étape », sous les boutons
 var sheet_btn: Button       # « 📜 Héros » : un point lumineux quand des talents attendent
 var _miroir: Miroir
 var objets: MondeObjets       # l'Acte V : sac, butin, métiers, commerce
+var social: MondeSocial       # l'Acte VI : groupe, amis, guilde, chat, Cercle
+var _chat_hist: Array = []    # [ligne BBCode, canal] : les derniers messages
+var _chat_tab := "tout"
+var _chat_tabs: HBoxContainer
+var _duel_camp: Array = []    # duel de groupe : les adversaires
+var _duel_chef := 0           # duel de groupe : le chef de ton camp
 var sac_btn: Button
 const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
 
@@ -166,8 +172,8 @@ func _build_hud() -> void:
 	buttons.add_theme_constant_override("separation", 8)
 	buttons.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 14)
 	buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	var wave_btn := UI.button("👋 Saluer")
-	wave_btn.tooltip_text = "Touche H"
+	var wave_btn := UI.button("👋")
+	wave_btn.tooltip_text = "Saluer (touche H)"
 	wave_btn.pressed.connect(_wave)
 	buttons.add_child(wave_btn)
 	sheet_btn = UI.button("📜 Héros")
@@ -183,7 +189,8 @@ func _build_hud() -> void:
 	miroir_btn.pressed.connect(_open_miroir)
 	miroir_btn.visible = false
 	buttons.add_child(miroir_btn)
-	var chat_btn := UI.button("💬 Parler")
+	var chat_btn := UI.button("💬")
+	chat_btn.tooltip_text = "Parler (Entrée). /g groupe, /gu guilde, /w Nom pour chuchoter"
 	chat_btn.pressed.connect(_open_chat)
 	buttons.add_child(chat_btn)
 	var gear := UI.button("⚙")
@@ -224,8 +231,28 @@ func _build_hud() -> void:
 	chat_log.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 14)
 	chat_log.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	chat_log.custom_minimum_size = Vector2(380, 0)
-	chat_log.position.y -= 190 if touch else 20
+	chat_log.position.y -= 190 + 34 if touch else 20 + 34
 	root.add_child(chat_log)
+	# Les onglets du chat : tout, ou un seul canal (et c'est là qu'on écrit).
+	_chat_tabs = HBoxContainer.new()
+	_chat_tabs.add_theme_constant_override("separation", 3)
+	_chat_tabs.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 14)
+	_chat_tabs.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_chat_tabs.position.y -= 190 if touch else 14
+	for t in MondeSocial.ONGLETS:
+		var b := Button.new()
+		b.text = t[1]
+		b.tooltip_text = t[2]
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 13)
+		b.add_theme_stylebox_override("normal", UI.box(Color(UI.NIGHT, 0.55), Color(UI.LINE, 0.6), 8, 1, 3))
+		b.add_theme_stylebox_override("hover", UI.box(Color(UI.NIGHT, 0.75), UI.LUMEN, 8, 1, 3))
+		b.add_theme_stylebox_override("pressed", UI.box(Color(UI.NIGHT, 0.75), UI.LUMEN, 8, 1, 3))
+		var id: String = t[0]
+		b.set_meta("id", id)
+		b.pressed.connect(_set_chat_tab.bind(id))
+		_chat_tabs.add_child(b)
+	root.add_child(_chat_tabs)
 
 	chat_edit = LineEdit.new()
 	chat_edit.placeholder_text = "Écris ton message, puis Entrée (Échap pour fermer)"
@@ -273,6 +300,14 @@ func _build_hud() -> void:
 	root.add_child(toast)
 
 	_build_duel_card(root)
+	social = MondeSocial.new()
+	add_child(social)
+	social.setup(self, root, touch)
+	social.add_buttons(buttons, 4)
+	combat.social.connect(func(a):
+		if target_sid != 0:
+			Net.send(Net.OP_SOCIAL, {"a": a, "t": target_sid, "n": pawns[target_sid].hero_name if pawns.has(target_sid) else ""}))
+	_set_chat_tab("tout")
 	objets = MondeObjets.new()
 	add_child(objets)
 	objets.setup(self, root, touch)
@@ -324,6 +359,12 @@ func _build_settings(root: Control) -> void:
 		_fluidite = on
 		_update_info())
 	col.add_child(fl)
+	var flt := CheckButton.new()
+	flt.text = "Filtrer les gros mots (✦✦✦)"
+	flt.button_pressed = true
+	flt.toggled.connect(func(on): if social != null: social.set_filtre(on))
+	flt.visibility_changed.connect(func(): if social != null: flt.set_pressed_no_signal(social.filtre))
+	col.add_child(flt)
 	var keys := UI.button("⌨ Changer mes touches")
 	keys.focus_mode = Control.FOCUS_NONE
 	keys.pressed.connect(func():
@@ -392,13 +433,59 @@ func _open_chat() -> void:
 func _send_chat(text: String) -> void:
 	text = text.strip_edges()
 	if text != "":
-		Net.send(Net.OP_CHAT, {"m": text})
+		social.send_chat(text)
 	chat_edit.text = ""
 	chat_edit.visible = false
 	chat_edit.release_focus()
 
 
-func _add_chat_line(who: String, text: String, system: bool = false) -> void:
+func _add_chat_line(who: String, text: String, system: bool = false, canal: String = "") -> void:
+	var safe := text.replace("[", "[lb]")
+	var bb := ""
+	if system:
+		bb = "[color=#%s]%s[/color]" % [UI.LUMEN.to_html(false), safe]
+	else:
+		bb = "[color=#%s]%s[/color] : %s" % [UI.EMBER.to_html(false), who.replace("[", "[lb]"), safe]
+	_push_chat(bb, canal)
+
+
+## Une ligne du chat, gardée pour les onglets, montrée si l'onglet ouvert la concerne.
+func _push_chat(bb: String, canal: String) -> void:
+	_chat_hist.append([bb, canal])
+	if _chat_hist.size() > 120:
+		_chat_hist.pop_front()
+	if _chat_tab == "tout" or canal == _chat_tab or (canal == "" and _chat_tab == "region"):
+		_show_chat_line(bb, true)
+
+
+func _set_chat_tab(id: String) -> void:
+	_chat_tab = id
+	if social != null:
+		social.canal = "region" if id == "tout" else id
+	for b in _chat_tabs.get_children():
+		b.add_theme_color_override("font_color", UI.LUMEN if b.get_meta("id") == id else UI.MUTED)
+	if chat_edit != null:
+		var nom: String = MondeSocial.CANAUX.get(social.canal if social != null else "region", MondeSocial.CANAUX.region)[0]
+		chat_edit.placeholder_text = "[%s] Écris ton message, puis Entrée (/g, /gu, /w Nom…)" % nom
+	for c in chat_log.get_children():
+		chat_log.remove_child(c)
+		c.queue_free()
+	var start := _chat_hist.size()
+	var n := 0
+	for i in range(_chat_hist.size() - 1, -1, -1):
+		var h: Array = _chat_hist[i]
+		if id == "tout" or h[1] == id or (h[1] == "" and id == "region"):
+			n += 1
+			start = i
+			if n >= 7:
+				break
+	for i in range(start, _chat_hist.size()):
+		var h: Array = _chat_hist[i]
+		if id == "tout" or h[1] == id or (h[1] == "" and id == "region"):
+			_show_chat_line(h[0], false)
+
+
+func _show_chat_line(bb: String, fade: bool) -> void:
 	var l := RichTextLabel.new()
 	l.bbcode_enabled = true
 	l.fit_content = true
@@ -408,17 +495,13 @@ func _add_chat_line(who: String, text: String, system: bool = false) -> void:
 	l.add_theme_font_size_override("normal_font_size", 16)
 	l.add_theme_constant_override("outline_size", 5)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	var safe := text.replace("[", "[lb]")
-	if system:
-		l.text = "[color=#%s]%s[/color]" % [UI.LUMEN.to_html(false), safe]
-	else:
-		l.text = "[color=#%s]%s[/color] : %s" % [UI.EMBER.to_html(false), who.replace("[", "[lb]"), safe]
+	l.text = bb
 	chat_log.add_child(l)
 	while chat_log.get_child_count() > 7:
 		chat_log.get_child(0).queue_free()
 		chat_log.remove_child(chat_log.get_child(0))
 	var tw := l.create_tween()
-	tw.tween_interval(20)
+	tw.tween_interval(20 if fade else 30)
 	tw.tween_property(l, "modulate:a", 0.0, 2)
 
 
@@ -436,6 +519,8 @@ func _on_state_gigue(op: int, d: Dictionary) -> void:
 
 
 func _on_state(op: int, d: Dictionary) -> void:
+	if social.on_state(op, d):
+		return
 	if objets.on_state(op, d):
 		return
 	match op:
@@ -495,9 +580,10 @@ func _on_state(op: int, d: Dictionary) -> void:
 						buf.append([_stamp(buf), p, int(e[3])])
 		Net.OP_CHAT_OUT:
 			var sid := int(d.s)
-			_add_chat_line(d.n, d.m)
-			if pawns.has(sid):
-				pawns[sid].say(d.m)
+			var f: Array = social.format_chat(d)
+			_push_chat(f[0], f[1])
+			if pawns.has(sid) and social.bubble_ok(d):
+				pawns[sid].say(social.filter_text(str(d.m)))
 		Net.OP_NOTICE:
 			_add_chat_line("", d.m, true)
 			_show_toast(d.m)
@@ -566,6 +652,10 @@ func _add_pawn(p: Dictionary) -> void:
 	if pawns.has(sid):
 		# Un héros déjà là a changé d'allure (miroir de Solenn) ou de voie.
 		var old: Pawn = pawns[sid]
+		if p.has("r"):
+			old.set_social(p)
+			if sid == my_sid:
+				social.set_my_flag(bool(p.get("dr", false)))
 		if p.has("r") and old.race != "":
 			old.allure = p.get("lk", {})
 			old.equipement = p.get("eq")
@@ -598,6 +688,14 @@ func _add_pawn(p: Dictionary) -> void:
 	pawn.dead = p.has("hp") and int(p.hp) <= 0
 	pawn.dir = int(p.d)
 	pawn.is_me = sid == my_sid
+	if p.has("r"):
+		pawn.titre = str(p.get("ti", ""))
+		pawn.guilde = p.get("gu") if p.get("gu") is Dictionary else {}
+		pawn.drapeau = bool(p.get("dr", false))
+		pawn.allie = social.in_group(sid) and sid != my_sid
+		pawn.foe = social.ennemis.has(sid) or _duel_camp.has(sid)
+		if pawn.is_me:
+			social.set_my_flag(pawn.drapeau)
 	var wp := Vector2(p.x, p.y) / 100.0
 	pawn.position = Iso.to_screen(wp)
 	entities.add_child(pawn)
@@ -776,6 +874,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	var target = null
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
+	if target != null and social.click(target):
+		return
 	if target != null and objets.click(target):
 		_talk_to = -1
 		_hunt = 0
@@ -844,6 +944,7 @@ func _update_npcs(delta: float) -> void:
 			Net.send(Net.OP_MOVE_DIR, {"d": [0, 0], "r": false})
 			_talk_at = Iso.to_world(pawns[my_sid].position)
 			dialogue.open(map_id, pawn.npc, pawn.hero_name)
+			Net.send(Net.OP_SOCIAL, {"a": "rencontre", "n": pawn.npc})
 		elif _clock - _chase_t > 1.0:
 			# L'habitant bouge : on recalcule le trajet de temps en temps.
 			_chase_t = _clock
@@ -987,6 +1088,12 @@ func _combat_key(event: InputEvent) -> bool:
 		objets.quick(int(act.substr(7)) - 1)
 	elif act == "ramasser":
 		objets.act_nearest()
+	elif act == "social":
+		social.toggle_window("")
+	elif act == "emotes":
+		social.toggle_menu()
+	elif act == "carte":
+		social.toggle_carte()
 	elif act == "roulade":
 		_roll()
 	elif act == "cible":
@@ -1260,7 +1367,7 @@ func _t_attaque(sid: int) -> bool:
 
 
 func _hostile(sid: int) -> bool:
-	return pawns.has(sid) and not pawns[sid].dead and (pawns[sid].kind != "" or sid == _duel_foe)
+	return pawns.has(sid) and not pawns[sid].dead and (pawns[sid].kind != "" or sid == _duel_foe or _duel_camp.has(sid) or social.at_war(sid))
 
 
 func _build_duel_card(root: Control) -> void:
@@ -1297,7 +1404,7 @@ func _on_duel(d: Dictionary) -> void:
 	var mine := a == my_sid or b == my_sid
 	match str(d.k):
 		"defi":
-			duel_card.set_meta("text", "%s te défie en duel !" % d.get("n", "Un héros"))
+			duel_card.set_meta("text", ("%s défie ton groupe en duel !" if int(d.get("g", 0)) == 1 else "%s te défie en duel !") % d.get("n", "Un héros"))
 			_duel_t = float(d.get("sec", 30))
 			duel_card.visible = true
 			if braise != null:
@@ -1309,8 +1416,18 @@ func _on_duel(d: Dictionary) -> void:
 			ring.r = float(d.r) / 100.0
 			tele_layer.add_child(ring)
 			_duel_rings[id] = ring
+			var camps: Array = d.get("camps", [[a], [b]])
+			for side in 2:
+				if (camps[side] as Array).has(my_sid):
+					mine = true
+					for x in camps[1 - side]:
+						if int(x) != a and int(x) != b:
+							_duel_camp.append(int(x))
+							if pawns.has(int(x)):
+								pawns[int(x)].foe = true
 			if mine:
-				_duel_foe = b if a == my_sid else a
+				_duel_foe = b if (camps[0] as Array).has(my_sid) else a
+				_duel_chef = a if (camps[0] as Array).has(my_sid) else b
 				_duel_id = id
 				combat.in_duel = true
 				duel_card.visible = false
@@ -1320,8 +1437,16 @@ func _on_duel(d: Dictionary) -> void:
 				_show_toast("⚔️ Duel ! Reste dans le cercle… %d" % int(d.get("sec", 3)))
 			elif pawns.has(a) and pawns.has(b):
 				_add_chat_line("", "⚔️ %s et %s commencent un duel !" % [pawns[a].hero_name, pawns[b].hero_name], true)
+		"sort":
+			var s := int(d.get("s", 0))
+			if pawns.has(s):
+				_add_chat_line("", "⚔️ %s est hors du duel." % pawns[s].hero_name, true)
+				pawns[s].foe = false
+			_duel_camp.erase(s)
+			if s == target_sid:
+				_set_target(0)
 		"compte":
-			if mine:
+			if mine or _duel_id == id:
 				var n := int(d.get("n", 0))
 				_show_toast("⚔️ Combattez !" if n <= 0 else "⚔️ %d…" % n)
 		"fin":
@@ -1339,6 +1464,11 @@ func _on_duel(d: Dictionary) -> void:
 				2: line = "⚔️ Le temps est écoulé : match nul !"
 				_: line = "⚔️ Le duel est interrompu."
 			_add_chat_line("", line, true)
+			for x in _duel_camp:
+				if pawns.has(x):
+					pawns[x].foe = false
+			if id == _duel_id:
+				_duel_camp.clear()
 			if id == _duel_id and _duel_foe != 0:
 				if pawns.has(_duel_foe):
 					pawns[_duel_foe].foe = false
@@ -1347,11 +1477,11 @@ func _on_duel(d: Dictionary) -> void:
 				_duel_foe = 0
 				_duel_id = 0
 				combat.in_duel = false
-				if w == my_sid:
+				if w == my_sid or w == _duel_chef:
 					_show_toast("🏆 Victoire !")
 					if braise != null:
 						braise.say("Braise fait un looping : « On a gagné ! On a gagné ! »")
-				elif l == my_sid:
+				elif l == my_sid or l == _duel_chef:
 					_show_toast("Défaite… tu feras mieux la prochaine fois.")
 					if braise != null:
 						braise.say("Braise : « Pas grave. On s'entraîne sur les sangliers ? »")
@@ -1371,6 +1501,7 @@ func _open_sheet() -> void:
 	sheet.voie.connect(func(i): Net.send(Net.OP_VOIE, {"v": i}))
 	sheet.talents.connect(func(t): Net.send(Net.OP_TALENTS, {"t": t}))
 	sheet.closed.connect(func(): sheet = null)
+	sheet.set_gloire(social.gloire, social.hauts)
 	hud.get_child(0).add_child(sheet)
 
 

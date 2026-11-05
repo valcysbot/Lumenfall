@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.6 « Mille trésors » (5 novembre 2026) · **Acte en cours :** Acte V, objets, métiers et économie
+**Version actuelle :** V0.7 « Mille serments » (6 novembre 2026) · **Acte en cours :** Acte VI, social, guildes, PvP
 
 ---
 
@@ -15,7 +15,7 @@
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
 | IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✓ validé par Elowan |
 | V | Objets, métiers et économie | ✱ V0.6 livrée, soirée de jeu à venir |
-| VI | Social, guildes, PvP | ○ |
+| VI | Social, guildes, PvP | ✱ V0.7 livrée, soirée de jeu à venir |
 | VII | Donjons, raids, quêtes et histoire | ○ |
 | VIII | Familiers, montures, maison, mini-jeux, événements | ○ |
 | IX | Le monde complet, les 8 langues, le site, le bot | ○ |
@@ -222,6 +222,43 @@
 
 ---
 
+## 🛡️ Acte VI, social, guildes, PvP
+
+### ✓ Quêtes accomplies
+
+- ✓ **Le Conseil des Alliances** : 41 questions en 7 chapitres, toutes répondues le 5 novembre 2026 ([archive](docs/conseil-des-alliances.html)).
+- ✓ **Le groupe** (`server/world/groupe.go`) : on invite depuis le cadre de la cible (👥 Groupe), la liste d'amis ou `/inviter Nom`. Jusqu'à 5 héros, un chef qui passe la main s'il part. L'expérience se partage, avec **+10 % par membre en plus** ; le butin se tire toujours aux dés. Les cadres du groupe à gauche de l'écran (vie, ressource, cible), et des points sur la carte.
+- ✓ **Le chat** : 6 canaux (Région, Groupe, Guilde, Chuchotements, Commerce, Faction) dans des onglets (Tout, 📍, 👥, 🏰, 🤫, 💰, 🛡), commandes `/r`, `/g`, `/gu`, `/c`, `/f`, `/w Nom`. Les bulles au-dessus des têtes seulement pour la Région, à côté. Des **phrases rapides** pour le téléphone. Un **filtre à gros mots** (✦✦✦), actif par défaut, que chacun peut couper dans les réglages.
+- ✓ **Les émotes** (touche B, bouton 😀, ou `/danse`, `/salut`…) : 12 émotes, plus **une danse par peuple** (15 danses différentes, avec leurs étincelles).
+- ✓ **Les amis** (par compte, touche O ou 👥 Social) : demande et acceptation, en ligne ou non, la région où ils sont, leurs points sur la carte. **Ignorer** (on ne voit plus ses messages ni ses invitations) et **Signaler** (enregistré pour les modérateurs, table `lf_signalements`).
+- ✓ **Les guildes** (`server/world/guilde.go`) : on fonde seul, **au registre de Fiacre**, pour 10 argent. 50 membres, les deux factions bienvenues. 5 rangs qu'on renomme, chacun avec ses droits (inviter, renvoyer, message du jour, agenda, coffre, rangs). Un **blason composé** (5 formes, 16 couleurs, 30 figures) sur la cape, à côté du nom et dans les fenêtres. Un **coffre de guilde** chez Fiacre, jusqu'à 3 onglets, avec un journal de qui pose et prend quoi. **Le niveau de guilde** (jusqu'à 10) monte avec ce que font ses membres : +5 % d'expérience à grouper entre membres au niveau 2, un 2ᵉ onglet de coffre au 3, un 3ᵉ au 5, et de nouvelles figures de blason à chaque niveau. Message du jour, liste des membres, agenda des sorties.
+- ✓ **Le drapeau de guerre** (`server/world/pvp.go`, bouton 🏳️/🚩) : levé, on peut attaquer et être attaqué par les héros de l'autre faction qui l'ont levé aussi. Il ne se baisse qu'après 30 secondes sans combat. **Tomber sous un héros ne coûte rien** : ni usure, ni Faiblesse, même en hardcore.
+- ✓ **Les règles du PvP** : les contrôles (étourdi, gel, ralenti, silence, aveugle) s'affaiblissent quand on les enchaîne (100 %, 50 %, 25 %, puis immunité, 15 secondes pour revenir à zéro), et les soins font **−30 %** sur un héros en plein PvP.
+- ✓ **Les duels de groupe** : le chef défie un autre chef, jusqu'à 5 contre 5.
+- ✓ **Le Cercle des Braves** (`server/world/cercle.go`) : l'anneau près de Bréval. On s'inscrit seul en 1 c. 1, ou en groupe en 2 c. 2 et 3 c. 3 ; deux salles (**la Fosse** et **la Cour des Lanternes**, dans les intérieurs). Une **cote Elo** par format (départ 1500), des **saisons de 4 semaines**, et les deux meilleurs de chaque format gagnent un titre de saison.
+- ✓ **Les Insignes de bravoure** (`server/world/bravoure.go`) : gagnés au Cercle et à la guerre, ils s'échangent à l'intendance contre des titres (« le Brave », « Vétéran du Cercle », « Lame d'Erydor ») et des **coffrets d'équipement aussi forts que le butin** (arme, main gauche, armure, bijou, rare de ton niveau, épique dès le niveau 20, liés).
+- ✓ **La gloire** (`server/world/gloire.go`) : **56 hauts faits** en 5 catégories (combat, exploration, métiers, social, PvP), des titres à porter sous son nom, l'équipement visible sur la fiche publique d'un héros, et le **tableau d'honneur** sur la place (les meilleures cotes, les plus grands vainqueurs, les guildes).
+- ✓ **Les outils de récolte**, facultatifs : pioche, faucille, couteau à dépecer et hache, forgés chez Doran. Avec l'outil, on récolte 30 % plus vite et parfois un de plus.
+- ✓ **La carte du Val** (touche M, bouton 🗺️) : toi, ton groupe, ta guilde, tes amis, le Cercle et le tableau d'honneur.
+- ✓ **La livraison** : le serveur demande au moins la v0.7.0.
+
+### ✱ Quêtes en cours
+
+- ✱ **La taille du groupe** : la question est posée à Elowan ; le jeu tourne à 5 en attendant.
+- ✱ **La soirée de jeu entre amis** : grouper, fonder une guilde, se battre au Cercle, puis corriger vos retours.
+
+### ⚠️ Points d'attention
+
+- **Les teintures attendront les maisons** (Acte VIII) : l'intendance de bravoure vend pour l'instant des titres et des coffrets.
+- **Le Cercle a besoin de monde** : en 3 c. 3, il faut 6 héros inscrits en même temps. Entre amis, le 1 c. 1 et le 2 c. 2 partiront plus vite.
+- **La cote Elo est réglée au jugé** (facteur 32) : à revoir après une saison.
+- **Pas de recherche de groupe** (choix d'Elowan) : on se trouve par le chat, les amis et la guilde.
+- **Pas de téléportation vers un ami** (choix d'Elowan) : on le voit sur la carte, il faut y aller à pied.
+- **Signaler** enregistre le message et l'auteur, mais aucun outil de modération ne les lit encore (Acte IX, avec le bot).
+- **Il faut la v0.7.0** pour entrer dans le monde.
+
+---
+
 ## ⚖️ Décisions prises
 
 | Date | Décision | Choix |
@@ -394,11 +431,64 @@
 | 05/11/2026 | Oublier un métier | **Tout repart à zéro** : niveau et recettes perdus, après une confirmation (choix d'Elowan) |
 | 05/11/2026 | Rater | Récolte, dépeçage et fabrication peuvent rater : **5 %** au niveau demandé (moitié de la chance de rareté), −0,5 % par niveau au-dessus, 1 % au moins. Une fabrication ratée gâche la moitié des matériaux (au moins un) et donne un peu d'expérience (demande d'Elowan) |
 
+| 05/11/2026 | Inviter dans le groupe | Depuis la cible, la liste d'amis ou `/inviter` ⭐ |
+| 05/11/2026 | Taille du groupe | 5 en attendant la réponse d'Elowan |
+| 05/11/2026 | Expérience en groupe | Partagée, +10 % par membre en plus ⭐ |
+| 05/11/2026 | Butin en groupe | **Toujours les dés** (choix d'Elowan) |
+| 05/11/2026 | Cadres du groupe | À gauche, et des points sur la carte ⭐ |
+| 05/11/2026 | Recherche de groupe | **Non** (choix d'Elowan) |
+| 05/11/2026 | Chat | 6 canaux en onglets, bulles seulement pour la Région proche, phrases rapides ⭐ |
+| 05/11/2026 | Gros mots | Un filtre actif par défaut, que chacun peut couper ⭐ |
+| 05/11/2026 | Émotes | 12 émotes et une danse par peuple ⭐ |
+| 05/11/2026 | Amis | Par compte, avec demande acceptée, en ligne et région visibles ⭐ |
+| 05/11/2026 | Protection | Ignorer et Signaler ⭐ |
+| 05/11/2026 | Rejoindre un ami | **Pas de téléportation**, mais on le voit sur la carte (choix d'Elowan) |
+| 05/11/2026 | Fonder une guilde | Seul, 10 argent, au registre de Fiacre ⭐ |
+| 05/11/2026 | Taille d'une guilde | 50 membres, les deux factions ensemble (choix d'Elowan) |
+| 05/11/2026 | Rangs | 5 rangs renommables, avec leurs droits ⭐ |
+| 05/11/2026 | Blason | Composé : forme, couleurs, figure ⭐ |
+| 05/11/2026 | Coffre de guilde | 3 onglets chez Fiacre, avec un journal ⭐ |
+| 05/11/2026 | Niveau de guilde | Oui, avec des avantages (choix d'Elowan) |
+| 05/11/2026 | Vie de guilde | Message du jour, liste des membres, agenda ⭐ |
+| 05/11/2026 | PvP sauvage | Un drapeau de guerre qu'on lève soi-même ⭐ |
+| 05/11/2026 | Duels et arène | Ouverts à tous ⭐ |
+| 05/11/2026 | Mort en PvP | **Ne coûte rien** ⭐ |
+| 05/11/2026 | Le Cercle des Braves | 1 c. 1, 2 c. 2 et 3 c. 3, deux salles ⭐ |
+| 05/11/2026 | Équilibre PvP | Contrôles qui s'affaiblissent, soins −30 % ⭐ |
+| 05/11/2026 | Classement | Cote Elo, saisons de 4 semaines, titres de saison (choix d'Elowan, avance les saisons prévues à l'Acte VIII) |
+| 05/11/2026 | Insignes | Titres, teintures, et des objets **aussi forts que le butin** (choix d'Elowan) ; teintures à l'Acte VIII |
+| 05/11/2026 | Duels de groupe | Jusqu'à 5 c. 5 ⭐ |
+| 05/11/2026 | Gloire | Titres, une cinquantaine de hauts faits, équipement sur la fiche publique, tableau d'honneur ⭐ |
+| 05/11/2026 | Outils de récolte | **Facultatifs** : plus rapides, parfois un de plus (choix d'Elowan) |
+| 05/11/2026 | Livraison | **Tout dans la V0.7 « Mille serments »** (choix d'Elowan) |
+| 05/11/2026 | Validation de l'Acte VI | Après une soirée de jeu ⭐ |
+
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.7 · « Mille serments » (6 novembre 2026)
+
+L'Acte VI arrive d'un coup : on n'est plus jamais seul à Erydor.
+
+- 👥 **Le groupe** : vise un héros et « 👥 Groupe », ou `/inviter Nom`. Jusqu'à 5, l'expérience partagée avec un bonus de 10 % par compagnon, et leurs cadres à gauche de l'écran.
+- 💬 **Le chat en onglets** : Région, Groupe (`/g`), Guilde (`/gu`), Chuchotements (`/w Nom`), Commerce (`/c`), Faction (`/f`). Des phrases rapides sur téléphone, et un filtre à gros mots que tu peux couper.
+- 💃 **Les émotes** (touche B, ou 😀) : salut, rire, applaudir, s'asseoir, dormir… et chaque peuple a **sa propre danse**.
+- 🫂 **Les amis** (touche O, ou 👥 Social) : qui est en ligne, où, et leur point sur la carte. Tu peux aussi ignorer ou signaler.
+- 🏰 **Les guildes** : fonde la tienne au registre de Fiacre (10 argent), compose ton blason, nomme tes rangs, partage un coffre, écris le message du jour et l'agenda des sorties. Ta guilde monte de niveau avec vous.
+- 🚩 **Le drapeau de guerre** : lève-le pour te battre contre les héros de l'autre faction qui l'ont levé aussi. Tomber sous un héros ne coûte rien.
+- 🏟️ **Le Cercle des Braves**, près de Bréval : 1 c. 1, 2 c. 2 ou 3 c. 3, une cote, des saisons de 4 semaines et des titres pour les meilleurs. Les **Insignes** gagnés s'échangent contre des titres et des coffrets d'équipement.
+- ⚔️ **Les duels de groupe**, jusqu'à 5 contre 5.
+- 🏅 **La gloire** : 56 hauts faits, des titres sous ton nom (onglet 🏅 de ta fiche), l'équipement des autres sur leur fiche, et le tableau d'honneur sur la place.
+- ⛏️ **Les outils de récolte** chez Doran (facultatifs) : on récolte plus vite.
+- 🗺️ **La carte du Val** (touche M, ou 🗺️).
+- ⚠️ Il faut la v0.7.0 pour entrer dans le monde.
+
+![Le Cercle des Braves](docs/captures/v0.7/cercle-des-braves.png)
+
+Captures : [fonder une guilde](docs/captures/v0.7/fonder-une-guilde.png) · [la carte du Val](docs/captures/v0.7/carte.png).
 
 ### V0.6.1 · Petits correctifs (5 novembre 2026)
 

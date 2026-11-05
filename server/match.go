@@ -86,6 +86,7 @@ var worldMaps = []string{defaultMap}
 var worldMapsByID = map[string]*world.Map{}
 var worldCamps = map[string][]world.Camp{}
 var worldMetiers = map[string]*world.MetiersData{}
+var worldCercles = map[string]*world.CercleData{}
 
 func init() {
 	for _, id := range worldMaps {
@@ -107,6 +108,11 @@ func init() {
 		worldMapsByID[id] = m
 		worldCamps[id] = camps
 		worldMetiers[id] = md
+		cd, err := world.LoadCercle(m)
+		if err != nil {
+			panic(err)
+		}
+		worldCercles[id] = cd
 	}
 }
 
@@ -137,9 +143,13 @@ type player struct {
 	lastChat  int64
 	lastPath  int64
 	lastEmote int64
-	fallen    int64         // tick de la mort hardcore (0 : vivant)
-	coffre    *world.Coffre // le coffre du compte, à l'auberge
-	panel     [2]string     // le panneau ouvert (boutique, atelier:forge…), rafraîchi quand le sac change
+	fallen    int64           // tick de la mort hardcore (0 : vivant)
+	coffre    *world.Coffre   // le coffre du compte, à l'auberge
+	panel     [2]string       // le panneau ouvert (boutique, atelier:forge…), rafraîchi quand le sac change
+	ignored   map[string]bool // les comptes que ce joueur ignore
+	friends   map[string]bool // les comptes de ses amis
+	guild     *world.Guilde   // sa guilde (partagée par les membres en ligne)
+	rang      int             // son rang dans la guilde
 }
 
 // arrival : un héros validé, en attente d'arriver, avec le coffre de son compte.
@@ -157,6 +167,11 @@ type worldState struct {
 	npcs    []*world.NPC // habitants ; le n° i a pour numéro npcSIDBase+i
 	arena   *world.Arena // le combat : héros et monstres
 	rng     *rand.Rand
+	social  *social // l'Acte VI : guildes, amis, discussions
+	// Le contexte de l'appel en cours (posé à chaque entrée du match).
+	ctx    context.Context
+	db     *sql.DB
+	logger runtime.Logger
 	// Mesure de charge.
 	loopTime time.Duration
 	loops    int
@@ -190,9 +205,13 @@ func (w *worldMatch) MatchInit(ctx context.Context, logger runtime.Logger, db *s
 	if md := worldMetiers[mapID]; md != nil {
 		_ = arena.SetMetiers(md) // vérifiés au démarrage
 	}
-	return &worldState{m: m, players: map[string]*player{}, pending: map[string]arrival{}, nextSID: 1,
-			weather: world.NewWeather(now, now.UnixNano()), npcs: npcs, arena: arena, rng: rng},
-		tickRate, string(label)
+	arena.Cercle.Data = worldCercles[mapID]
+	arena.Cercle.Season = func() int { return seasonAt(time.Now()) }
+	world.Now = func() int64 { return time.Now().Unix() }
+	st := &worldState{m: m, players: map[string]*player{}, pending: map[string]arrival{}, nextSID: 1,
+		weather: world.NewWeather(now, now.UnixNano()), npcs: npcs, arena: arena, rng: rng, social: newSocial()}
+	arena.Ignores = func(x, y int) bool { return st.ignores(st.bySID(x), st.bySID(y)) }
+	return st, tickRate, string(label)
 }
 
 func (w *worldMatch) MatchJoinAttempt(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, p runtime.Presence, meta map[string]string) (interface{}, bool, string) {
@@ -210,6 +229,7 @@ func (w *worldMatch) MatchJoinAttempt(ctx context.Context, logger runtime.Logger
 
 func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, presences []runtime.Presence) interface{} {
 	s := state.(*worldState)
+	s.ctx, s.db, s.logger = ctx, db, logger
 	for _, p := range presences {
 		arr, ok := s.pending[p.GetSessionId()]
 		delete(s.pending, p.GetSessionId())
@@ -238,6 +258,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		pl.fighter = s.arena.AddHero(pl.sid, h.Name, &pl.body, world.HeroInit{
 			Level: h.Level, XP: h.xp, Gold: h.gold, Potions: h.potions, Trophies: h.trophies,
 			Class: h.Class, Spec: h.Spec, Race: h.Race, Attrs: h.attrs, Hardcore: h.Hardcore, Quest: h.quest, Talents: h.talents, Inv: inv,
+			Gloire: h.gloire,
 		})
 		pl.fighter.Hero.Account = p.GetUserId()
 		s.players[p.GetSessionId()] = pl
@@ -258,6 +279,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		}
 		_ = d.BroadcastMessage(opSnapshot, mustJSON(map[string]interface{}{
 			"you": pl.sid, "map": s.m.ID, "tick_rate": tickRate, "players": everyone, "sky": s.sky(),
+			"cercle": s.arena.Cercle.Data,
 		}), []runtime.Presence{p}, nil, true)
 		// Attention : une liste vide voudrait dire « tout le monde » pour Nakama.
 		if others := s.others(p.GetSessionId()); len(others) > 0 {
@@ -267,6 +289,10 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 		inv.TakeDirty()
 		sendSac(d, pl)
 		sendWorldItems(d, s, pl)
+		s.socialJoin(ctx, logger, db, d, pl)
+		if pl.guild != nil {
+			_ = d.BroadcastMessage(opJoin, mustJSON(describe(pl)), nil, nil, true)
+		}
 		if n := len(s.players); n > s.peak {
 			s.peak = n
 		}
@@ -276,6 +302,7 @@ func (w *worldMatch) MatchJoin(ctx context.Context, logger runtime.Logger, db *s
 
 func (w *worldMatch) MatchLeave(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, presences []runtime.Presence) interface{} {
 	s := state.(*worldState)
+	s.ctx, s.db, s.logger = ctx, db, logger
 	for _, p := range presences {
 		w.removePlayer(ctx, logger, db, d, s, p.GetSessionId())
 	}
@@ -290,6 +317,7 @@ func (w *worldMatch) removePlayer(ctx context.Context, logger runtime.Logger, db
 	delete(s.players, sessionID)
 	s.arena.TradeCancel(pl.sid)
 	s.arena.RemoveHero(pl.sid)
+	s.socialLeave(ctx, logger, db, d, pl)
 	if pl.coffre != nil && pl.coffre.TakeDirty() {
 		if err := saveCoffre(ctx, db, pl.presence.GetUserId(), pl.coffre); err != nil {
 			logger.Error("Sauvegarde du coffre de %q: %v", pl.hero.Name, err)
@@ -305,6 +333,7 @@ func (w *worldMatch) removePlayer(ctx context.Context, logger runtime.Logger, db
 
 func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, d runtime.MatchDispatcher, tick int64, state interface{}, messages []runtime.MatchData) interface{} {
 	s := state.(*worldState)
+	s.ctx, s.db, s.logger = ctx, db, logger
 	start := time.Now()
 
 	counts := map[string]int{}
@@ -362,6 +391,7 @@ func (w *worldMatch) MatchLoop(ctx context.Context, logger runtime.Logger, db *s
 	}
 	w.sendCombat(d, s, tick)
 	w.buryFallen(ctx, logger, db, d, s, tick)
+	s.socialTick(ctx, logger, db, d, tick)
 	// Les habitants vivent leur vie ; on ne bouscule pas les joueurs pour eux.
 	for i, n := range s.npcs {
 		if n.Visible && n.Body.Moving() && n.Body.Step(s.m, dt) {
@@ -464,18 +494,7 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 			pl.body.Run = in.R
 		}
 	case opChat:
-		var in struct {
-			M string `json:"m"`
-		}
-		if json.Unmarshal(data, &in) != nil || tick-pl.lastChat < chatCooldown {
-			return
-		}
-		text := cleanChat(in.M)
-		if text == "" {
-			return
-		}
-		pl.lastChat = tick
-		_ = d.BroadcastMessage(opChatOut, mustJSON(map[string]interface{}{"s": pl.sid, "n": pl.hero.Name, "m": text}), nil, nil, true)
+		s.chat(d, pl, tick, data)
 	case opEmote:
 		var in struct {
 			E string `json:"e"`
@@ -484,7 +503,9 @@ func (w *worldMatch) handle(d runtime.MatchDispatcher, s *worldState, pl *player
 			return
 		}
 		pl.lastEmote = tick
-		_ = d.BroadcastMessage(opEmoteOut, mustJSON(map[string]interface{}{"s": pl.sid, "e": in.E}), nil, nil, true)
+		s.emote(d, pl, in.E)
+	case opSocial:
+		w.social(d, s, pl, tick, data)
 	case opTarget:
 		var in struct {
 			T int `json:"t"`
@@ -625,7 +646,7 @@ func (w *worldMatch) miroir(d runtime.MatchDispatcher, s *worldState, pl *player
 func (w *worldMatch) buryFallen(ctx context.Context, logger runtime.Logger, db *sql.DB, d runtime.MatchDispatcher, s *worldState, tick int64) {
 	for id, pl := range s.players {
 		f := pl.fighter
-		if pl.fallen == 0 && f.Dead && f.Hero.Hardcore {
+		if pl.fallen == 0 && f.Dead && f.Hero.Hardcore && !f.Hero.PvPDeath() {
 			pl.fallen = tick
 			if err := deleteHero(ctx, db, pl.hero.ID); err != nil {
 				logger.Error("Effacement du héros hardcore %q: %v", pl.hero.Name, err)
@@ -697,7 +718,24 @@ func describe(pl *player) map[string]interface{} {
 		"lv": f.Level, "hp": f.HP, "hpm": f.MaxHP, "fx": f.Bits(),
 		"r": f.Hero.Race, "cl": f.Hero.Class.ID, "v": f.Hero.Spec, "dieu": pl.hero.God,
 		"hc": f.Hero.Hardcore, "lk": pl.hero.Look, "eq": eqLook(f),
+		"f": f.Faction(), "dr": f.Hero.Flag, "ti": titreOf(f), "gu": guildTag(pl),
 	}
+}
+
+// titreOf : le titre que le héros affiche sous son nom.
+func titreOf(f *world.Fighter) string {
+	if g := f.Hero.Gloire; g != nil && g.Titre != "" {
+		return world.TitreText(g.Titre)
+	}
+	return ""
+}
+
+// guildTag : le nom et le blason de la guilde du héros.
+func guildTag(pl *player) map[string]interface{} {
+	if pl.guild == nil {
+		return nil
+	}
+	return map[string]interface{}{"n": pl.guild.Nom, "bl": pl.guild.Blason}
 }
 
 // eqLook : ce que le héros porte, tel que les autres le voient (apparences comprises).
@@ -724,8 +762,17 @@ func fiche(pl *player) map[string]interface{} {
 		"s": pl.sid, "n": pl.hero.Name, "lv": f.Level, "r": hs.Race, "cl": hs.Class.ID, "v": voie,
 		"dieu": pl.hero.God, "f": world.Races[hs.Race].Faction, "hc": hs.Hardcore, "a": pl.hero.Look.Accord,
 		"at": hs.Attrs, "hpm": f.MaxHP, "tr": tro, "lk": pl.hero.Look, "ta": hs.Talents,
-		"eq": eqLook(f), "obj": ficheObjets(f),
+		"eq": eqLook(f), "obj": ficheObjets(f), "ti": titreOf(f), "gu": guildTag(pl), "gl": ficheGloire(hs.Gloire),
 	}
+}
+
+// ficheGloire : la gloire telle que les autres la voient.
+func ficheGloire(g *world.Gloire) map[string]interface{} {
+	v := world.GloireView(g)
+	if v != nil {
+		delete(v, "prog")
+	}
+	return v
 }
 
 // describeMonster présente un monstre : sa sorte ("m") donne son allure au client.
@@ -742,7 +789,8 @@ func (pl *player) save() heroPos {
 	f := pl.fighter
 	return heroPos{ID: pl.hero.ID, X: pl.body.X, Y: pl.body.Y, Level: f.Level, XP: f.Hero.XP, Gold: f.Hero.Gold,
 		Potions: f.Hero.Potions, Trophies: f.Hero.Trophies, Voie: f.Hero.Spec, Attrs: f.Hero.Attrs,
-		Quest: f.Hero.Quest, Look: pl.hero.Look, Miroir: pl.hero.miroir, Talents: f.Hero.Talents, Inv: f.Hero.Inv}
+		Quest: f.Hero.Quest, Look: pl.hero.Look, Miroir: pl.hero.miroir, Talents: f.Hero.Talents, Inv: f.Hero.Inv,
+		Gloire: f.Hero.Gloire}
 }
 
 // describeNPC présente un habitant comme un héros, avec son identifiant

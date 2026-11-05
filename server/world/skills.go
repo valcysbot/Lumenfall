@@ -323,7 +323,7 @@ func (a *Arena) applyTo(h, f *Fighter, ap Apply, pow int) {
 			delete(m.Mon.threat, f.SID)
 		}
 	}
-	f.Apply(ap.E, ap.Dur, pow, h.SID)
+	a.applyCC(h, f, ap.E, ap.Dur, pow)
 	if ap.E == Compagnon && f.Hero != nil {
 		f.Hero.petCD = 0.5
 	}

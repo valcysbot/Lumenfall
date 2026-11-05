@@ -26,7 +26,9 @@
    "bulles": ["Hmpf. Encore un qui marche sur mes croquis.", "Cette rivière n'était pas là hier. J'en suis sûr.", "Ne touche pas à ma plume."],
    "dialogue": {
     "debut": {"texte": "Quoi ? Tu vois bien que je travaille. Bon. Tu as deux minutes, pas plus.",
-     "choix": [{"texte": "Que dessinez-vous ?", "vers": "cartes"}, {"texte": "Vous avez une carte pour moi ?", "vers": "carte"}, {"texte": "Je vous laisse.", "vers": ""}]},
+     "choix": [{"texte": "Que dessinez-vous ?", "vers": "cartes"}, {"texte": "Vous avez une carte pour moi ?", "vers": "carte"}, {"texte": "Le registre des guildes ?", "vers": "registre"}, {"texte": "Je vous laisse.", "vers": ""}]},
+    "registre": {"texte": "Mon registre, oui. Une page par guilde, dix argent la page, et l'encre n'est pas gratuite. Le coffre des guildes est là aussi, sous mon étal. Pas de miettes dedans, je vous prie.",
+     "choix": [{"texte": "Ouvrir une page (ma guilde)", "action": "guilde"}, {"texte": "Le coffre de ma guilde", "action": "gcoffre"}, {"texte": "Plus tard.", "vers": "debut"}]},
     "cartes": {"texte": "Des cartes du Val. Et le plus étrange : elles s'emboîtent parfaitement avec celles des autres villages, comme les pièces d'un même grand dessin. Je ne sais pas pourquoi. Ça m'agace.",
      "choix": [{"texte": "Un grand dessin de quoi ?", "vers": "dessin"}, {"texte": "Intrigant…", "vers": "debut"}]},
     "dessin": {"texte": "Si je le savais, je ne serais pas bougon. Enfin, moins bougon. Reviens quand tu auras vu du pays.",
@@ -121,7 +123,11 @@
    "bulles": ["Tout est calme. Trop calme.", "Garde ton épée propre, recrue.", "Personne ne passe la Lisière sans mon accord."],
    "dialogue": {
     "debut": {"texte": "Halte ! Ah, un nouveau visage. Capitaine Bréval, de la garde de Bourg-Lanterne. Tu cherches des ennuis, {nom} ?",
-     "choix": [{"texte": "Non, des aventures.", "vers": "aventures"}, {"texte": "Que se passe-t-il à la Lisière Grise ?", "vers": "lisiere"}, {"texte": "Repos, Capitaine.", "vers": ""}]},
+     "choix": [{"texte": "Non, des aventures.", "vers": "aventures"}, {"texte": "Que se passe-t-il à la Lisière Grise ?", "vers": "lisiere"}, {"texte": "Le Cercle des Braves ?", "vers": "cercle"}, {"texte": "Repos, Capitaine.", "vers": ""}]},
+    "cercle": {"texte": "Le cercle de pierres derrière la forge de Doran. On s'y bat pour l'honneur, à un, deux ou trois par camp, et personne n'y meurt pour de bon. Les meilleurs gagnent des Insignes de bravoure ; l'intendance les échange contre de beaux titres et du bon matériel.",
+     "choix": [{"texte": "Et la guerre des factions ?", "vers": "guerre"}, {"texte": "J'y vais !", "vers": ""}]},
+    "guerre": {"texte": "Lève ton drapeau de guerre (🏳️ en haut de l'écran) et, hors du village, les héros des autres factions qui ont levé le leur peuvent t'attaquer. Tomber sous leurs coups ne coûte rien. Au village, on range les lames. C'est la loi.",
+     "choix": [{"texte": "Compris, Capitaine.", "vers": "debut"}]},
     "aventures": {"texte": "C'est souvent la même chose. Entraîne-toi, écoute les anciens, et ne va pas à l'est seul. Pas encore.",
      "choix": [{"texte": "Bien reçu.", "vers": "debut"}]},
     "lisiere": {"texte": "Les arbres y perdent leurs couleurs. Mes hommes en reviennent fatigués, comme vidés. L'un d'eux a oublié le nom de sa propre fille. Reste loin de là pour l'instant.",

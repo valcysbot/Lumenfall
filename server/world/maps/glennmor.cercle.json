@@ -1,0 +1,8 @@
+{
+  "anneau": [72.5, 101.5],
+  "honneur": [101.5, 100.5],
+  "salles": [
+    {"nom": "la Fosse", "x0": 130, "y0": 231, "w": 20, "h": 12},
+    {"nom": "la Cour des Lanternes", "x0": 156, "y0": 231, "w": 20, "h": 12}
+  ]
+}

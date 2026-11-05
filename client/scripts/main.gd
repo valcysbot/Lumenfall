@@ -9,7 +9,8 @@ extends Node
 ##    --capture=heroes --effacer --confirmer
 ##    Acte V : --objet=a:…,… (actions envoyées au serveur, séparées par « ; »)
 ##    --recolter (ramasse ou récolte le plus proche) --panneau=boutique|maitre:doran|atelier:forge|coffre|miroir
-##    --sac[=metiers] --choisir=i (un objet du sac) --echanger=Nom --accepter_echange)
+##    --sac[=metiers] --choisir=i (un objet du sac) --echanger=Nom --accepter_echange
+##    Acte VI : --social=a:…,… --fenetre=guilde --emote=danser --cercle --carte)
 
 const LoginScreen := preload("res://scripts/login_screen.gd")
 const HeroScreen := preload("res://scripts/hero_screen.gd")
@@ -260,6 +261,28 @@ func _capture() -> void:
 		var pp: PackedStringArray = args.panneau.split(":")
 		Net.send(Net.OP_OBJET, {"a": "panneau", "b": pp[0], "r": pp[1] if pp.size() > 1 else ""})
 		await get_tree().create_timer(1.0).timeout
+	# Acte VI : --social=a:…,… (actions sociales séparées par « ; »), --fenetre=groupe|amis|guilde|ignores,
+	# --emote=danser, --cercle (ouvre le Cercle des Braves), --carte.
+	if args.has("social"):
+		for a in args.social.split(";", false):
+			var msg := {}
+			for kv in a.split(",", false):
+				var p: PackedStringArray = kv.split(":", true, 1)
+				msg[p[0]] = int(p[1]) if p[1].is_valid_int() else p[1]
+			Net.send(Net.OP_SOCIAL, msg)
+			await get_tree().create_timer(0.5).timeout
+	if args.has("emote"):
+		Net.send(Net.OP_EMOTE, {"e": args.emote})
+		await get_tree().create_timer(1.2).timeout
+	if args.has("fenetre"):
+		current.social.toggle_window(args.fenetre)
+		await get_tree().create_timer(1.0).timeout
+	if args.has("cercle"):
+		current.social.open_cercle()
+		await get_tree().create_timer(1.0).timeout
+	if args.has("carte"):
+		current.social.toggle_carte()
+		await get_tree().create_timer(0.5).timeout
 	if args.has("sac"):
 		if current.objets.sac_win == null:
 			current.objets.open_sac("")

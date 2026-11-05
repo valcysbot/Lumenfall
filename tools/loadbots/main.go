@@ -31,7 +31,7 @@ var (
 	serveur = flag.String("serveur", "http://127.0.0.1:7350", "adresse du serveur Nakama")
 	cle     = flag.String("cle", "lumenfall-dev-key", "clé serveur Nakama (socket.server_key)")
 	prefixe = flag.String("prefixe", "bot", "préfixe des comptes de test")
-	version = flag.String("version", "0.6.1", "version du jeu annoncée (celle de client/project.godot)")
+	version = flag.String("version", "0.7.0", "version du jeu annoncée (celle de client/project.godot)")
 )
 
 var (

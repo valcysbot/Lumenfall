@@ -89,6 +89,51 @@ CREATE TABLE IF NOT EXISTS lf_economie (
 	montant BIGINT NOT NULL DEFAULT 0,
 	PRIMARY KEY (jour, raison, sens)
 )`)
+	if err != nil {
+		return err
+	}
+	// Acte VI : la guilde et la gloire de chaque héros, les guildes, les amis
+	// (par compte), les comptes ignorés, les signalements et les saisons du Cercle.
+	_, err = db.ExecContext(ctx, `
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS guilde BIGINT;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS rang   SMALLINT NOT NULL DEFAULT 4;
+ALTER TABLE lf_heroes ADD COLUMN IF NOT EXISTS gloire JSONB;
+CREATE INDEX IF NOT EXISTS lf_heroes_guilde ON lf_heroes (guilde) WHERE guilde IS NOT NULL;
+CREATE TABLE IF NOT EXISTS lf_guildes (
+	id         BIGSERIAL PRIMARY KEY,
+	nom        TEXT NOT NULL,
+	nom_key    TEXT NOT NULL UNIQUE,
+	data       JSONB NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS lf_amis (
+	a          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	b          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	etat       SMALLINT NOT NULL DEFAULT 0,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	PRIMARY KEY (a, b)
+);
+CREATE TABLE IF NOT EXISTS lf_ignores (
+	user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	ignored    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	PRIMARY KEY (user_id, ignored)
+);
+CREATE TABLE IF NOT EXISTS lf_signalements (
+	id         BIGSERIAL PRIMARY KEY,
+	de         UUID NOT NULL,
+	contre     UUID NOT NULL,
+	heros      TEXT NOT NULL,
+	raison     TEXT NOT NULL,
+	messages   JSONB NOT NULL,
+	lu         BOOLEAN NOT NULL DEFAULT false,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS lf_saisons (
+	numero     INTEGER PRIMARY KEY,
+	closed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+)`)
 	return err
 }
 
@@ -118,17 +163,27 @@ type Hero struct {
 	xp, gold, potions int
 	trophies          map[string]int
 	inv               *world.Inventaire // nil : le héros n'a pas encore de sac (Acte IV)
+	guilde            int64             // 0 : sans guilde
+	rang              int
+	gloire            *world.Gloire
 }
 
 // heroCols : les colonnes lues pour un héros, dans l'ordre de scanHero.
 const heroCols = `id, slot, name, color, map, x, y, level, xp, gold, potions, trophies,
-	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir, talents, inventaire`
+	race, classe, voie, dieu, hardcore, attrs, quest, look, miroir, talents, inventaire,
+	COALESCE(guilde, 0), rang, gloire`
 
 func scanHero(row interface{ Scan(...any) error }, h *Hero) error {
-	var tro, at, look, tal, inv []byte
+	var tro, at, look, tal, inv, gl []byte
 	if err := row.Scan(&h.ID, &h.Slot, &h.Name, &h.Color, &h.Map, &h.X, &h.Y, &h.Level, &h.xp, &h.gold, &h.potions, &tro,
-		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir, &tal, &inv); err != nil {
+		&h.Race, &h.Class, &h.Spec, &h.God, &h.Hardcore, &at, &h.quest, &look, &h.miroir, &tal, &inv,
+		&h.guilde, &h.rang, &gl); err != nil {
 		return err
+	}
+	h.gloire = world.NewGloire()
+	if len(gl) > 0 {
+		_ = json.Unmarshal(gl, h.gloire)
+		h.gloire.Fix()
 	}
 	if len(inv) > 0 {
 		h.inv = &world.Inventaire{}
@@ -250,6 +305,9 @@ func rpcHeroDelete(ctx context.Context, logger runtime.Logger, db *sql.DB, nk ru
 	if world.NameKey(world.NormalizeName(in.Name)) != world.NameKey(h.Name) {
 		return "", runtime.NewError("Le nom tapé ne correspond pas : le héros est toujours là.", codeInvalidArgument)
 	}
+	if err := leaveGuildOnDelete(ctx, db, h.ID); err != nil {
+		logger.Error("hero_delete (guilde): %v", err)
+	}
 	if err := deleteHero(ctx, db, h.ID); err != nil {
 		logger.Error("hero_delete: %v", err)
 		return "", runtime.NewError("Impossible d'effacer ce héros.", codeInternal)
@@ -349,10 +407,10 @@ func saveHeroes(ctx context.Context, db *sql.DB, mapID string, ps []heroPos) err
 	_, err := db.ExecContext(ctx, `
 UPDATE lf_heroes h SET map = $1, x = v.x, y = v.y, level = v.level, xp = v.xp, gold = v.gold,
 	potions = v.potions, trophies = v.trophies, voie = v.voie, attrs = v.attrs, quest = v.quest,
-	look = v.look, miroir = v.miroir, talents = v.talents, inventaire = v.inventaire, updated_at = now()
+	look = v.look, miroir = v.miroir, talents = v.talents, inventaire = v.inventaire, gloire = v.gloire, updated_at = now()
 FROM jsonb_to_recordset($2::jsonb) AS v(id uuid, x real, y real, level smallint, xp integer, gold bigint,
 	potions smallint, trophies jsonb, voie smallint, attrs jsonb, quest smallint, look jsonb, miroir smallint, talents jsonb,
-	inventaire jsonb)
+	inventaire jsonb, gloire jsonb)
 WHERE h.id = v.id`, mapID, string(rows))
 	return err
 }
@@ -374,12 +432,13 @@ type heroPos struct {
 	Miroir   int               `json:"miroir"`
 	Talents  world.Talents     `json:"talents"`
 	Inv      *world.Inventaire `json:"inventaire"`
+	Gloire   *world.Gloire     `json:"gloire"`
 }
 
 // minClientVersion est la plus ancienne version du jeu acceptée dans le monde.
 // À monter quand le serveur envoie quelque chose qu'un ancien jeu ne sait pas
 // afficher (une nouvelle région, par exemple).
-const minClientVersion = "0.6.0"
+const minClientVersion = "0.7.0"
 
 // versionAtLeast compare deux versions « 0.2.0 ». Une version absente ou
 // illisible compte comme trop ancienne.

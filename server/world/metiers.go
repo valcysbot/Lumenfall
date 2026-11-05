@@ -249,6 +249,11 @@ func buildRecipes() {
 	simpleRecipe("cuir", "cuir_gris", "cuir_gris", 1, 10, Need{"cuir_terne", 1}, Need{"tanin", 1})
 	simpleRecipe("joaillerie", "gemme_quartz", "gemme_quartz", 1, 1, Need{"quartz", 1})
 	simpleRecipe("joaillerie", "gemme_ambre", "gemme_ambre", 1, 10, Need{"ambre", 1})
+	// Les outils de récolte.
+	simpleRecipe("forge", "pioche", "pioche", 1, 1, Need{"lingot_cuivre", 3}, Need{"bois_chene", 1})
+	simpleRecipe("forge", "faucille", "faucille", 1, 1, Need{"lingot_cuivre", 2}, Need{"bois_chene", 1})
+	simpleRecipe("forge", "couteau_depecage", "couteau_depecage", 1, 1, Need{"lingot_cuivre", 2}, Need{"cuir_tanne", 1})
+	simpleRecipe("forge", "hache_bucheron", "hache_bucheron", 1, 1, Need{"lingot_cuivre", 3}, Need{"bois_chene", 1})
 
 	m := func(kind string, tier int) string { return tierMat[kind][tier] }
 	// Les armures.

@@ -53,11 +53,38 @@ func init() {
 		Desc: "À utiliser : +10 places dans ton sac, pour toujours."})
 	addBase(&Base{ID: "sac_aventurier", Name: "Sac d'aventurier", Kind: KSac, Icon: "🎒", Armor: -1, Stack: 5, Places: 14, Value: 400,
 		Desc: "À utiliser : +14 places dans ton sac, pour toujours."})
+
+	// Les outils de récolte (Acte VI) : facultatifs, ils récoltent plus vite et un peu plus.
+	for _, o := range []struct{ id, nom, ic, metier string }{
+		{"pioche", "Pioche", "⛏️", "minage"},
+		{"faucille", "Faucille", "🌾", "herboristerie"},
+		{"couteau_depecage", "Couteau à dépecer", "🔪", "depecage"},
+		{"hache_bucheron", "Hache de bûcheron", "🪓", "bucheronnage"},
+	} {
+		addBase(&Base{ID: o.id, Name: o.nom, Kind: KMateriau, Icon: o.ic, Armor: -1, Stack: 1, Value: 120, Price: 450, Outil: o.metier,
+			Desc: "Un outil : dans ton sac, tu récoltes 30 % plus vite, avec une chance d'en avoir un de plus."})
+	}
+}
+
+// Les outils : plus rapides, et parfois un de plus.
+const (
+	OutilVitesse = 0.7
+	OutilBonusP  = 0.3
+)
+
+// HasOutil : le sac contient-il un outil pour ce métier ?
+func (inv *Inventaire) HasOutil(metier string) bool {
+	for id, b := range Bases {
+		if b.Outil == metier && inv.Count(id) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // Shop : ce qu'Aelis vend, dans l'ordre de son étal.
 var Shop = []string{"petite_potion", "potion", "galette_sauge", "parchemin_retour", "sac_toile",
-	"fil", "flux", "fiole", "sel", "tanin"}
+	"fil", "flux", "fiole", "sel", "tanin", "pioche", "faucille", "couteau_depecage", "hache_bucheron"}
 
 // BuffAffixes : ce que donnent le repas et l'élixir en cours.
 func (inv *Inventaire) BuffAffixes() []Affix {

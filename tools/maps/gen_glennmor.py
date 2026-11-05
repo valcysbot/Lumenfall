@@ -242,6 +242,26 @@ interieur(60, INTERIEURS, 9, 7, [("lit", 0, 1), ("table", 4, 3), ("cheminee", 5,
 interieur(110, INTERIEURS, 9, 7, [("lit", 7, 1), ("table", 3, 3), ("etagere", 1, 0), ("tonneau", 0, 4)],
           porte_de(trouve("maison_1", *maisons[1])))
 
+
+
+def salle(x0, y0, w, h):
+    """Une salle du Cercle des Braves : plancher, piste pavée au centre, pas de porte
+    (on y entre et on en sort par le Cercle)."""
+    sol[y0:y0 + h, x0:x0 + w] = "f"
+    sol[y0 + 2:y0 + h - 2, x0 + 3:x0 + w - 3] = "c"
+    for x in range(x0, x0 + w):
+        pose("mur_0", x, y0 - 1, sols="v")
+    for y in range(y0, y0 + h):
+        pose("mur_1", x0 - 1, y, sols="v")
+    # Des tonneaux et des caisses dans les coins, loin des deux départs.
+    for nom, dx, dy in [("tonneau", w // 2 - 1, 0), ("caisse", w // 2, 0), ("tonneau", w // 2, h - 1)]:
+        pose(nom, x0 + dx, y0 + dy, sols="f")
+
+
+# Les deux salles du Cercle des Braves (Acte VI) : la Fosse et la Cour des Lanternes.
+salle(130, INTERIEURS + 1, 20, 12)
+salle(156, INTERIEURS + 1, 20, 12)
+
 # Les cases de porte, dehors, doivent rester libres et sur un sol praticable.
 for p in portes:
     x, y = p["de"]

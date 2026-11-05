@@ -308,6 +308,8 @@ func _principal(i: int) -> void:
 			_send({"a": "vendre", "i": i})
 		"coffre":
 			_send({"a": "coffre_depot", "i": i})
+		"gcoffre":
+			Net.send(Net.OP_SOCIAL, {"a": "gcoffre_depot", "i": i, "o": Panneau.onglet_guilde})
 		"echange":
 			offer.emit(str(it.id))
 		_:
@@ -334,7 +336,7 @@ func _detail() -> Control:
 			else "Survole un objet pour le voir. Glisse-le sur ton héros, ou double-clic (ou clic droit) pour l'équiper ou l'utiliser."
 		if ctx == "boutique":
 			aide += " Aelis est là : clic droit pour vendre."
-		elif ctx == "coffre":
+		elif ctx == "coffre" or ctx == "gcoffre":
 			aide += " Le coffre est ouvert : clic droit pour y déposer."
 		elif ctx == "echange":
 			aide += " Échange en cours : clic droit pour proposer un objet."
@@ -365,6 +367,12 @@ func _detail() -> Control:
 		add.call("Vendre (%s)" % Objets.monnaie(int(it.get("px", 0)) * maxi(1, int(it.get("n", 1)))), {"a": "vendre", "i": i}, true)
 	elif ctx == "coffre":
 		add.call("Déposer au coffre", {"a": "coffre_depot", "i": i}, true)
+	elif ctx == "gcoffre":
+		var b := UI.button("Au coffre de la guilde", true)
+		b.custom_minimum_size = Vector2(170, 42)
+		b.focus_mode = Control.FOCUS_NONE
+		b.pressed.connect(func(): Net.send(Net.OP_SOCIAL, {"a": "gcoffre_depot", "i": i, "o": Panneau.onglet_guilde}))
+		acts.add_child(b)
 	elif ctx == "echange" and not bool(it.get("l", false)):
 		var b := UI.button("Proposer", true)
 		b.custom_minimum_size = Vector2(170, 42)
