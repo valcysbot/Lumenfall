@@ -544,6 +544,11 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 			break
 		}
 		k := n.Kind
+		if inv.Rate(a.rng, k.Metier, k.Req) {
+			a.refuse(h, "Raté, rien cette fois ("+k.Name+"). Réessaie !")
+			a.metierUp(h, k.Metier, k.Req, 2)
+			break
+		}
 		a.give(h, MakeStack(a.rng, k.Gives, k.Min+a.rng.Intn(k.Max-k.Min+1)))
 		if k.Bonus != "" && a.rng.Float64() < k.BonusP {
 			a.give(h, MakeStack(a.rng, k.Bonus, 1))
@@ -562,7 +567,11 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 		}
 		sk := Skins[m.Mon.Kind.ID]
 		m.Mon.skinned = true
-		a.give(h, MakeStack(a.rng, sk.Hide, sk.N[0]+a.rng.Intn(sk.N[1]-sk.N[0]+1)))
+		if inv.Rate(a.rng, "depecage", sk.Req) {
+			a.refuse(h, "Raté : le cuir s'est déchiré.")
+		} else {
+			a.give(h, MakeStack(a.rng, sk.Hide, sk.N[0]+a.rng.Intn(sk.N[1]-sk.N[0]+1)))
+		}
 		if sk.Meat != "" {
 			a.give(h, MakeStack(a.rng, sk.Meat, 1+a.rng.Intn(2)))
 		}
@@ -571,6 +580,20 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 		r := w.Recipe
 		if a.atelierNear(h, r.Metier) == nil {
 			a.refuse(h, "Tu t'es éloigné de l'atelier.")
+			break
+		}
+		if err := inv.CanCraft(r); err != nil {
+			a.refuse(h, err.Error())
+			break
+		}
+		if inv.Rate(a.rng, r.Metier, r.Req) {
+			inv.Gache(r)
+			a.refuse(h, "Raté ! Une partie des matériaux est gâchée.")
+			a.metierUp(h, r.Metier, r.Req, 3)
+			if w.Repeat > 0 && inv.CanCraft(r) == nil {
+				a.startWork(h, &Work{Kind: "fabrique", Recipe: r, Choice: w.Choice, Left: CraftTime, Repeat: w.Repeat - 1}, r.Name())
+				return
+			}
 			break
 		}
 		it, lucky, err := inv.Craft(a.rng, r, hs.Class.ID, h.Name, w.Choice)

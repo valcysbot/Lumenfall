@@ -137,8 +137,10 @@ func on_state(op: int, d: Dictionary) -> bool:
 					w._show_toast("📜 Nouvelle recette apprise !")
 				1:
 					w._show_toast("%s Tu apprends un métier : %s !" % [ic, nom])
+				-2:
+					w._show_toast("%s Tu reprends ton métier : %s, là où tu l'avais laissé !" % [ic, nom])
 				0:
-					w._show_toast("%s Métier oublié : %s." % [ic, nom])
+					w._show_toast("%s %s mis de côté : niveau et recettes gardés." % [ic, nom])
 				_:
 					w._show_toast("%s %s : niveau %d !" % [ic, nom, int(d.lv)])
 					w._add_chat_line("", "%s %s passe au niveau %d." % [ic, nom, int(d.lv)], true)

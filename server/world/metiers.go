@@ -49,7 +49,45 @@ const (
 	LuckPerLevel   = 0.005
 	LuckMax        = 0.25
 	ForgetLevelMin = 0
+	EchecBase      = 0.05 // chance de rater une récolte ou une fabrication (moitié de LuckBase)
+	EchecPerLevel  = 0.005
+	EchecMin       = 0.01
 )
+
+// echecsActifs : les tests qui comptent des objets fabriqués les coupent.
+var echecsActifs = true
+
+// EchecChance : la chance de rater, au niveau lv pour une tâche du niveau req.
+// 5 % au niveau demandé, un peu moins à chaque niveau au-dessus, jamais moins de 1 %.
+func EchecChance(lv, req int) float64 {
+	return math.Max(EchecMin, EchecBase-EchecPerLevel*float64(lv-req))
+}
+
+// Rate dit si la tâche est ratée cette fois.
+func (inv *Inventaire) Rate(rng *rand.Rand, id string, req int) bool {
+	if !echecsActifs {
+		return false
+	}
+	lv := 1
+	if me := inv.Metiers[id]; me != nil && me.Lv > 0 {
+		lv = me.Lv
+	}
+	return rng.Float64() < EchecChance(lv, req)
+}
+
+// Gache : une fabrication ratée gâche la moitié des matériaux (au moins un).
+func (inv *Inventaire) Gache(r *Recipe) {
+	lost := 0
+	for _, n := range r.Needs {
+		if k := n.N / 2; k > 0 && inv.Take(n.Base, k) {
+			lost += k
+		}
+	}
+	if lost == 0 && len(r.Needs) > 0 {
+		inv.Take(r.Needs[0].Base, 1)
+	}
+	inv.dirty = true
+}
 
 // MetierXP : l'expérience pour passer du niveau l au suivant.
 func MetierXP(l int) int { return 10 + 4*l }
@@ -359,7 +397,7 @@ type MetiersData struct {
 // s'il a monté (0 sinon). Une tâche bien plus facile que son niveau ne rapporte rien.
 func (inv *Inventaire) GainMetier(id string, req, xp int) int {
 	me := inv.Metiers[id]
-	if me == nil || me.Lv <= 0 || me.Lv >= MetierMax {
+	if me == nil || me.Lv <= 0 || me.Repos || me.Lv >= MetierMax {
 		return 0
 	}
 	if d := me.Lv - req; d >= 10 {
@@ -393,6 +431,11 @@ func (inv *Inventaire) Learn(id string) error {
 		return errors.New("Tu connais déjà deux métiers d'artisanat. Il faut en oublier un d'abord.")
 	}
 	inv.Artisanats = append(inv.Artisanats, id)
+	if me := inv.Metiers[id]; me != nil && me.Lv > 0 && me.Repos {
+		me.Repos = false // repris : le niveau et les recettes étaient gardés
+		inv.dirty = true
+		return nil
+	}
 	inv.Metiers[id] = &Metier{Lv: 1}
 	for _, r := range RecipesOf(id) {
 		if r.Start {
@@ -403,14 +446,14 @@ func (inv *Inventaire) Learn(id string) error {
 	return nil
 }
 
-// Forget oublie un métier d'artisanat (son niveau et ses recettes sont perdus).
+// Forget met un métier d'artisanat de côté : il libère sa place, mais son
+// niveau et ses recettes sont gardés pour le jour où on le reprend.
 func (inv *Inventaire) Forget(id string) error {
 	for i, a := range inv.Artisanats {
 		if a == id {
 			inv.Artisanats = append(inv.Artisanats[:i], inv.Artisanats[i+1:]...)
-			inv.Metiers[id] = &Metier{}
-			for _, r := range RecipesOf(id) {
-				delete(inv.Recettes, r.ID)
+			if me := inv.Metiers[id]; me != nil {
+				me.Repos = true
 			}
 			inv.dirty = true
 			return nil
@@ -422,7 +465,7 @@ func (inv *Inventaire) Forget(id string) error {
 // Knows dit si le héros pratique ce métier.
 func (inv *Inventaire) Knows(id string) bool {
 	me := inv.Metiers[id]
-	return me != nil && me.Lv > 0
+	return me != nil && me.Lv > 0 && !me.Repos
 }
 
 // CanCraft vérifie qu'une recette est connue et que les matériaux sont là.

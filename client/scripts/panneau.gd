@@ -289,7 +289,10 @@ func _maitre() -> void:
 		if bool(m.recolte):
 			col.add_child(UI.label("Une récolte : tout le monde la connaît déjà. Monte de niveau en récoltant.", 13, UI.MUTED))
 		elif not bool(m.connu):
-			var b := _btn("Apprendre ce métier", true)
+			var repos := bool(m.get("repos", false)) and int(m.lv) > 0
+			var b := _btn("Reprendre ce métier (niveau %d)" % int(m.lv) if repos else "Apprendre ce métier", true)
+			if repos:
+				col.add_child(UI.label("Tu l'avais mis de côté : tu retrouves ton niveau et tes recettes.", 13, UI.MOSS))
 			var plein := art.size() >= int(data.get("max", 2)) and id != "cuisine"
 			b.disabled = plein
 			if plein:
@@ -318,7 +321,7 @@ func _maitre() -> void:
 						_send({"a": "oublier", "r": id})
 					else:
 						armed[0] = true
-						f.text = "Vraiment ? Niveau et recettes perdus (re-clic)"
+						f.text = "Sûr ? Il libère sa place ; niveau et recettes gardés (re-clic)"
 						f.add_theme_color_override("font_color", UI.DANGER))
 				col.add_child(f)
 		_body.add_child(card)

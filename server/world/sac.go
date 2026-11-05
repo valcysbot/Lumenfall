@@ -37,8 +37,9 @@ type Buff struct {
 
 // Metier : un niveau de métier.
 type Metier struct {
-	Lv int `json:"lv"`
-	XP int `json:"xp"`
+	Lv    int  `json:"lv"`
+	XP    int  `json:"xp"`
+	Repos bool `json:"repos,omitempty"` // oublié : niveau et recettes gardés, on peut le reprendre
 }
 
 // Inventaire : tout ce qu'un héros possède.

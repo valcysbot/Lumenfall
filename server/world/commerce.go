@@ -161,7 +161,11 @@ func (a *Arena) LearnMetier(sid int, id string) error {
 	if err := inv.Learn(id); err != nil {
 		return err
 	}
-	a.emit(Event{Kind: EvMetier, Tgt: sid, Text: id, Value: 1})
+	v := 1
+	if inv.Metiers[id].Lv > 1 {
+		v = -2 // repris là où on l'avait laissé
+	}
+	a.emit(Event{Kind: EvMetier, Tgt: sid, Text: id, Value: v})
 	return nil
 }
 
