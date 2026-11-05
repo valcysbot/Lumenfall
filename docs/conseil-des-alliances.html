@@ -1,0 +1,536 @@
+<title>Le Conseil des Alliances</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une salle de guilde nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.q .why:empty { display: none; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Loup solitaire<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/41</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte VI, social, guildes et PvP</div>
+    <h1>Le Conseil des Alliances</h1>
+    <p class="lead">Les sacs sont pleins, les forges chauffent, Aelis compte ses pièces. Mais chaque héros d'Erydor marche encore seul : pas de groupe, pas d'amis, pas de bannière, et pour se battre entre héros, seulement les duels. L'Acte VI rassemble tout ce monde : le groupe, le chat, les amis, les guildes, le PvP et la gloire. Braise et moi avons 41 questions pour toi, en 7 chapitres. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Encore toi ! J'ai fabriqué une bannière pour l'occasion. C'est un drap avec un dessin de moi dessus. Il est très ressemblant.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "groupe", icon: "👥", title: "Le groupe", sub: "Aujourd'hui, un « groupe », c'est juste les héros qui ont tapé le même monstre. Il n'y a ni invitation, ni chef, ni cadres des alliés. On commence par là.",
+    chest: { title: "Fragment XXXV : la table du fond", lore: "À la Chope Pleine, la table du fond a cinq chaises et une entaille par expédition revenue entière. Mabon refuse d'en ajouter une sixième. « Au-delà de cinq, dit-il, on ne part plus à l'aventure, on part en procession. »" },
+    qs: [
+      { id: "taille", t: "Combien de héros dans un groupe ?", why: "La taille du groupe règle tout le reste : les boss, les donjons de l'Acte VII, le partage du butin.", rec: 0, o: [
+        ["5 : de quoi avoir un protecteur, un soigneur et trois pour frapper", "Le classique des MMORPG, et les donjons de l'Acte VII seront pensés pour 5."],
+        ["4", "Plus facile à remplir entre amis."],
+        ["6", "Plus de monde, plus de chaos."] ] },
+      { id: "inviter", t: "Comment on invite ?", why: "Sur PC comme sur téléphone, sans taper de commande compliquée.", rec: 0, o: [
+        ["« 👥 Inviter » dans le cadre de la cible, depuis la liste d'amis ou en tapant /inviter Nom ; l'invité accepte ou refuse", "Trois chemins, tous en un geste."],
+        ["Seulement depuis le cadre de la cible", "Il faut être à côté du héros."] ] },
+      { id: "xp", t: "L'XP en groupe ?", why: "Aujourd'hui, chaque héros qui a tapé reçoit toute l'XP du monstre.", rec: 0, o: [
+        ["Partagée entre les membres proches, avec un bonus de groupe (+10 % par membre en plus)", "Jouer ensemble va un peu plus vite que seul, sans être obligatoire."],
+        ["Chacun garde toute l'XP, comme aujourd'hui", "Très généreux : à 5, on monte 5 fois plus vite."],
+        ["Partagée, sans bonus", "Le plus juste, mais jouer à plusieurs ne rapporte rien de plus."] ] },
+      { id: "butin", t: "Le butin du groupe ?", why: "Ton choix de l'Acte V : butin commun et dés. Il manque un chef pour régler le partage.", rec: 0, o: [
+        ["Le chef choisit le mode : dés pour tout (par défaut), dés à partir de peu commun (le commun va au tour de rôle), ou chacun son tour", "On garde tes dés, avec un peu de souplesse entre amis."],
+        ["Toujours les dés, sans réglage", "Rien ne change."],
+        ["Le chef peut aussi être « maître du butin » et tout distribuer", "Pratique en raid, tentant pour un chef gourmand."] ] },
+      { id: "ecran", t: "Voir ses alliés à l'écran ?", why: "En combat, il faut savoir qui va mal.", rec: 0, o: [
+        ["Les cadres des membres à gauche (vie, ressource, effets), leurs noms en bleu, et des points sur la mini-carte", "Le soigneur voit tout d'un coup d'œil, sur téléphone aussi."],
+        ["Seulement les noms en couleur au-dessus des têtes", "Écran plus léger, soigner devient difficile."] ] },
+      { id: "chercher", t: "Trouver un groupe ?", why: "Vous êtes une petite bande, mais d'autres viendront à la bêta.", rec: 0, o: [
+        ["Un tableau « Cherche groupe » à l'auberge et dans le menu : on écrit ce qu'on cherche (« Grand Sanglier, il manque un soigneur »), les autres répondent d'un clic", "Simple, et utile dès qu'on n'est pas tous amis."],
+        ["Un outil qui forme les groupes tout seul (protecteur, soigneur, dégâts)", "Très pratique avec beaucoup de joueurs, vide avec peu."],
+        ["Rien : on demande dans le chat", "Pas de travail en plus."] ] },
+    ] },
+  { id: "parler", icon: "💬", title: "Parler", sub: "Aujourd'hui, un seul chat pour tout le monde, des bulles au-dessus des têtes et quelques émotes.",
+    chest: { title: "Fragment XXXVI : le puits aux rumeurs", lore: "Il y a un puits sur la place de Bourg-Lanterne où personne ne puise d'eau. On s'y penche pour raconter des secrets. Tilda prétend que le puits répète tout. Le puits, lui, n'a jamais rien confirmé." },
+    qs: [
+      { id: "canaux", t: "Quels canaux de discussion ?", why: "Plus il y a de canaux, plus on choisit à qui l'on parle.", rec: 0, o: [
+        ["Région, Groupe, Guilde, Chuchotement (à un seul héros), Commerce et Faction, en onglets", "Chacun parle au bon public, et on peut masquer un onglet."],
+        ["Région, Groupe, Guilde et Chuchotement", "L'essentiel, moins d'onglets sur téléphone."],
+        ["Un chat unique avec des couleurs selon le canal", "Tout au même endroit, plus chargé."] ] },
+      { id: "bulles", t: "Les bulles au-dessus des têtes ?", why: "Aujourd'hui, chaque message du chat général fait une bulle.", rec: 0, o: [
+        ["Seulement pour ce qu'on dit à côté (canal Région, héros proches), pas pour le groupe ni la guilde", "Le village reste vivant, les secrets de guilde restent secrets."],
+        ["Pour tous les canaux", "Très bavard."],
+        ["Plus de bulles", "Plus calme, moins vivant."] ] },
+      { id: "telephone", t: "Écrire sur téléphone ?", why: "Taper au clavier en plein combat, c'est mourir.", rec: 0, o: [
+        ["Une roue de phrases rapides (Bonjour, Merci, Aide !, On y va, Attends, Bien joué) en plus du clavier", "On parle d'un pouce, même en combat."],
+        ["Le clavier seulement", "Rien de plus à dessiner."] ] },
+      { id: "filtre", t: "Les gros mots ?", why: "Avec des inconnus à la bêta, ça arrivera.", rec: 0, o: [
+        ["Un filtre qui remplace les grossièretés par des ✦✦✦, que chacun peut désactiver pour lui", "Protégé par défaut, libre entre adultes."],
+        ["Toujours filtré", "Plus sûr, parfois agaçant."],
+        ["Aucun filtre", "Entre amis, pas besoin."] ] },
+      { id: "emotes", t: "Plus d'émotes ?", why: "Aujourd'hui : saluer et quelques autres.", rec: 0, o: [
+        ["12 de plus dans une roue (rire, pleurer, applaudir, s'asseoir, dormir, montrer du doigt, s'incliner, danser…), une danse commune", "De quoi faire la fête après le boss."],
+        ["Les 12, et une danse propre à chacun des 15 peuples", "Superbe, mais 15 animations en 8 directions à dessiner."],
+        ["On garde celles d'aujourd'hui", "Rien à dessiner."] ] },
+      { id: "discord", t: "Relier le chat de guilde à Discord ?", why: "Vous vous parlez déjà sur Discord. Le bot Lumenfall est prévu à l'Acte IX.", rec: 0, o: [
+        ["Plus tard, avec le bot de l'Acte IX", "On garde l'acte concentré sur le jeu."],
+        ["Dès maintenant : le chat de guilde apparaît dans un salon Discord, et l'inverse", "Pratique pour parler au jeu depuis son téléphone, un gros morceau en plus."] ] },
+    ] },
+  { id: "amis", icon: "🤝", title: "Les amis", sub: "Retrouver ses compagnons, et tenir les fâcheux à distance.",
+    chest: { title: "Fragment XXXVII : les lanternes de la fenêtre", lore: "La tradition veut qu'à Bourg-Lanterne, on pose une lanterne à sa fenêtre quand un ami est en route. Le soir, on peut compter les voyageurs attendus. Mabon en allume une chaque nuit, « au cas où »." },
+    qs: [
+      { id: "liste", t: "La liste d'amis : par compte ou par héros ?", why: "Chaque compte a 3 héros.", rec: 0, o: [
+        ["Par compte : on voit son ami, quel que soit le héros qu'il joue, avec le nom du héros en cours", "On ne perd jamais un ami qui change de héros."],
+        ["Par héros", "Plus discret, mais il faut ajouter chaque héros."] ] },
+      { id: "ajouter", t: "Comment on devient amis ?", why: "", rec: 0, o: [
+        ["Une demande que l'autre accepte (cadre de la cible, ou en tapant son nom)", "Personne ne te suit sans ton accord."],
+        ["On ajoute qui on veut, sans accord", "Plus simple, moins respectueux."] ] },
+      { id: "voir", t: "Que voit-on de ses amis ?", why: "", rec: 0, o: [
+        ["En ligne ou non, son héros, sa région et son niveau, et un petit message quand il se connecte", "On sait tout de suite qui est là pour jouer."],
+        ["Seulement en ligne ou non", "Plus discret."] ] },
+      { id: "ignorer", t: "Ignorer et signaler ?", why: "Un jour, quelqu'un sera pénible.", rec: 0, o: [
+        ["Ignorer (plus de messages, d'invitations ni de défis de cette personne) et « Signaler », qui garde les derniers messages pour que tu les lises", "On se protège soi-même, et tu restes le juge."],
+        ["Seulement ignorer", "Le plus léger."] ] },
+      { id: "rejoindre", t: "Rejoindre un ami loin de soi ?", why: "Le monde va grandir à l'Acte IX.", rec: 0, o: [
+        ["Pas de téléportation : son point sur la carte et un parchemin de retour pour rentrer au village", "Le monde garde sa taille, on voyage ensemble."],
+        ["Un parchemin d'appel (chez Aelis) qui t'emmène vers un ami de ton groupe", "Pratique, le monde paraît plus petit."] ] },
+    ] },
+  { id: "guildes", icon: "🏰", title: "Les guildes", sub: "Une bannière, un nom, un coffre commun. L'hôtel des guildes de la bible est à Médiolane (Acte IX) ; en attendant, il faut un registre au village.",
+    chest: { title: "Fragment XXXVIII : le registre de Fiacre (suite)", lore: "Fiacre a ouvert une nouvelle page à son registre : « Compagnies et confréries ». La première ligne est déjà remplie : « Les Amis de Fiacre, un membre ». Il attend toujours le deuxième." },
+    qs: [
+      { id: "fonder", t: "Fonder une guilde ?", why: "Trop facile, chacun a la sienne ; trop dur, vous n'en aurez jamais.", rec: 0, o: [
+        ["Chez Fiacre, au registre du village : un nom, 10 argent et la signature d'un deuxième héros d'un autre compte", "À deux, c'est fait. Pas de guilde d'un seul joueur."],
+        ["Seul, contre 10 argent", "Le plus simple."],
+        ["5 signatures et 1 or", "Une vraie communauté, impossible entre 3 amis."] ] },
+      { id: "taille", t: "Combien de membres au plus ?", why: "", rec: 0, o: [
+        ["100", "Large pour la bêta, assez petit pour que tout le monde se connaisse."],
+        ["50", "Une guilde soudée."],
+        ["Sans limite", "Les grandes guildes peuvent écraser les autres."] ] },
+      { id: "factions", t: "Une guilde mêle-t-elle les factions ?", why: "Le val est neutre (choix de l'Acte IV). Les trois factions se font la guerre depuis l'an 1031.", rec: 0, o: [
+        ["Oui, toutes les factions ensemble", "Vous jouez entre amis quelle que soit votre faction ; le lore s'en accommode (le Serment de Médiolane)."],
+        ["Non, une guilde n'a qu'une faction", "Plus fidèle au lore, et vous ne pourriez pas jouer ensemble si vos peuples diffèrent."] ] },
+      { id: "rangs", t: "Les rangs de la guilde ?", why: "Qui peut inviter, exclure, prendre dans le coffre.", rec: 0, o: [
+        ["5 rangs que le chef renomme, chacun avec ses droits (inviter, exclure, coffre, message du jour)", "Chaque guilde a son ton : Capitaine, Sergent, Recrue…"],
+        ["3 rangs fixes : chef, officier, membre", "Simple."] ] },
+      { id: "blason", t: "Le blason de la guilde ?", why: "Tes héros portent déjà le blason de leur faction devant leur nom.", rec: 0, o: [
+        ["Un écu à composer (forme, motif parmi une trentaine, 2 couleurs), affiché sur la cape et à côté du nom de la guilde", "On reconnaît sa guilde de loin."],
+        ["Juste le nom, entre ‹ › sous le nom du héros", "Rien à dessiner."] ] },
+      { id: "coffre", t: "Un coffre de guilde ?", why: "Ton coffre de compte est chez Mabon.", rec: 0, o: [
+        ["Oui, chez Mabon aussi : 3 onglets, avec des droits par rang, et un journal de qui a pris quoi", "On met en commun, et personne ne vide le coffre en douce."],
+        ["Non, on s'échange de main à main", "Pas de travail en plus."] ] },
+      { id: "niveau", t: "La guilde progresse-t-elle ?", why: "", rec: 0, o: [
+        ["Oui : elle gagne de l'XP quand ses membres jouent ensemble, et débloque de petits plus (onglets de coffre, motifs de blason, +5 % d'XP en groupe de guilde)", "Une raison de jouer ensemble, sans écraser les petites guildes."],
+        ["Non, une guilde reste une guilde", "Plus simple, moins de but commun."] ] },
+      { id: "message", t: "La vie de la guilde ?", why: "", rec: 0, o: [
+        ["Un message du jour, la liste des membres (en ligne, région, rang) et un petit calendrier pour fixer les soirées", "Parfait pour vos soirées de jeu entre amis."],
+        ["Message du jour et liste des membres", "L'essentiel."] ] },
+    ] },
+  { id: "pvp", icon: "⚔️", title: "Le PvP", sub: "Aujourd'hui, seulement les duels sur invitation (V0.3.2). La bible dit que les factions se font la guerre ; le val, lui, est neutre.",
+    chest: { title: "Fragment XXXIX : le Cercle des Braves", lore: "Derrière la forge de Doran, un cercle de pierres plates sert d'arène depuis toujours. Les enfants y jouent aux héros. Les héros y jouent aux enfants : ils se disputent pour savoir qui a gagné." },
+    qs: [
+      { id: "sauvage", t: "Peut-on attaquer d'autres joueurs dans le monde ?", why: "Le PvP sauvage fait des histoires mémorables, et aussi des joueurs qui quittent le jeu.", rec: 0, o: [
+        ["Seulement avec le drapeau de guerre : hors du village, chacun peut lever son drapeau ; deux héros de factions ennemies, drapeau levé, peuvent se battre", "Ceux qui veulent la guerre la trouvent, les autres sont tranquilles."],
+        ["Oui, dans des zones contestées (la Lisière Grise), toujours", "Plus de frissons, plus de frustration."],
+        ["Non, jamais : duels et arène seulement", "Le plus paisible."] ] },
+      { id: "qui", t: "Qui peut se battre contre qui ?", why: "Si vous êtes tous de la même faction, la guerre de factions ne vous touche pas.", rec: 0, o: [
+        ["Factions ennemies avec le drapeau, et n'importe qui en duel ou en arène", "Le lore en monde ouvert, la liberté dans l'arène."],
+        ["Tout le monde avec le drapeau, même faction (guerres de guildes)", "Plus de cibles, plus de chaos."] ] },
+      { id: "mort", t: "Mourir sous les coups d'un joueur ?", why: "Tu as choisi qu'un héros hardcore soit supprimé à sa mort.", rec: 0, o: [
+        ["Retour au temple, sans usure ni Faiblesse, et jamais de suppression pour un héros hardcore tué par un joueur", "Le PvP reste un jeu, pas une perte."],
+        ["Comme une mort contre un monstre (usure, Faiblesse, hardcore supprimé)", "Chaque combat compte, beaucoup."] ] },
+      { id: "arene", t: "Une arène ?", why: "Avec peu de joueurs, les grands champs de bataille resteraient vides.", rec: 0, o: [
+        ["Le Cercle des Braves, au village : 1 contre 1, 2 contre 2 et 3 contre 3, avec une file d'attente et 2 petites cartes d'arène", "Ça marche dès 2 joueurs, et ça grandira avec la bêta."],
+        ["Des champs de bataille à 10 contre 10, avec des drapeaux à prendre", "Spectaculaire, mais il faut 20 joueurs en même temps."],
+        ["Pas d'arène, seulement les duels", "Rien de plus."] ] },
+      { id: "equilibre", t: "Équilibrer le PvP ?", why: "Tu as choisi que les talents restent tels quels en duel. Mais un étourdissement qui s'enchaîne sans fin, c'est injouable.", rec: 0, o: [
+        ["Une règle commune, pas de chiffres à part par classe : les contrôles (étourdir, ralentir) durent moins s'ils sont répétés, les soins font −30 % contre des joueurs", "Les classes restent les mêmes, sans enchaînements injustes."],
+        ["Tout tel quel, comme les duels aujourd'hui", "Simple, déséquilibré."],
+        ["Des réglages à part pour chaque classe en PvP", "Le plus juste, le plus long à régler."] ] },
+      { id: "classement", t: "Un classement ?", why: "", rec: 0, o: [
+        ["Une cote par format (comme aux échecs) et des saisons de 4 semaines, avec un titre pour les meilleurs", "On a toujours un but, et tout le monde repart à chaque saison."],
+        ["Un simple compteur de victoires", "Lisible, mais celui qui joue le plus gagne."],
+        ["Pas de classement", "Le plaisir du combat suffit."] ] },
+      { id: "recompenses", t: "Que gagne-t-on en PvP ?", why: "Si le PvP donne les meilleures armes, tout le monde est forcé d'en faire.", rec: 0, o: [
+        ["Des Insignes de bravoure, échangés contre des apparences, des titres, des teintures et des objets de même force que le butin", "On gagne du style et de quoi s'équiper, sans devoir y aller."],
+        ["Un équipement spécial, plus fort contre les joueurs", "Le classique, qui sépare PvP et PvE."],
+        ["Rien que la gloire", "Le plus pur, peu motivant."] ] },
+      { id: "duels", t: "Améliorer les duels ?", why: "", rec: 0, o: [
+        ["Duels de groupe (jusqu'à 5 contre 5), les autres héros peuvent regarder autour du cercle, et un tableau de tes victoires", "Les duels deviennent un petit spectacle entre amis."],
+        ["On les garde tels quels", "Ils marchent déjà."] ] },
+    ] },
+  { id: "gloire", icon: "🏅", title: "La gloire", sub: "Montrer ce qu'on a accompli.",
+    chest: { title: "Fragment XL : le mur des noms", lore: "Sous le porche du temple, Sœur Clémence grave le nom de chaque héros qui a abattu le Grand Sanglier. Elle grave petit. Elle dit qu'elle a de l'ambition pour le mur." },
+    qs: [
+      { id: "titres", t: "Des titres ?", why: "« Elowan le Tueur de Sangliers ».", rec: 0, o: [
+        ["Oui : gagnés par des exploits (boss, arène, métiers, guilde), on en choisit un dans sa fiche, affiché avec le nom", "On voit qui a fait quoi."],
+        ["Non", "Le nom suffit."] ] },
+      { id: "hauts-faits", t: "Des hauts faits ?", why: "Une liste d'exploits à cocher, pour ceux qui aiment tout finir.", rec: 0, o: [
+        ["Oui, une cinquantaine pour commencer (combat, exploration, métiers, social, PvP), avec des points et quelques titres", "Plein de petits buts, gratuits à jouer."],
+        ["Plus tard, à l'Acte VIII", "L'Acte VI reste centré sur les autres joueurs."] ] },
+      { id: "inspecter", t: "Voir l'équipement des autres ?", why: "La fiche publique montre déjà la voie et les talents.", rec: 0, o: [
+        ["Oui, sur la fiche publique : l'équipement porté et sa rareté", "On admire, on compare, on demande « tu l'as eu où ? »."],
+        ["Chacun choisit de le montrer ou non", "Plus discret."] ] },
+      { id: "tableau", t: "Un tableau d'honneur ?", why: "", rec: 0, o: [
+        ["Un tableau sur la place du village : plus hauts niveaux, meilleures cotes d'arène, guildes les plus actives", "On veut y voir son nom."],
+        ["Plus tard, sur le site de l'Acte IX", "Rien en jeu pour l'instant."] ] },
+    ] },
+  { id: "fin", icon: "🏁", title: "Livrer l'Acte VI", sub: "L'ordre de livraison, un reste de l'Acte V, et le nom de la prochaine version.",
+    chest: { title: "Fragment XLI : la cloche du serment", lore: "Quand une compagnie se forme à Bourg-Lanterne, on fait sonner la petite cloche de la place. Elle n'a jamais sonné. Fiacre la cire tous les matins, par principe." },
+    qs: [
+      { id: "livraison", t: "Une grosse livraison, ou par étapes ?", why: "Pour les Actes IV et V, tu as choisi tout d'un coup.", rec: 0, o: [
+        ["En 2 versions : V0.7 le groupe, le chat, les amis et les guildes ; V0.8 le PvP, l'arène et la gloire", "Vous fondez votre guilde plus tôt, et le PvP arrive sur des groupes qui marchent."],
+        ["Tout dans la V0.7", "Une seule attente, plus longue."] ] },
+      { id: "outils", t: "Les outils de récolte (reste de l'Acte V) ?", why: "Aujourd'hui, on récolte à mains nues.", rec: 0, o: [
+        ["Des outils facultatifs (pioche, faucille, couteau à dépecer, hache) qui récoltent plus vite et un peu plus, vendus par Aelis et forgés par les forgerons", "Un nouvel objet utile pour les forgerons, sans bloquer personne."],
+        ["Obligatoires pour récolter", "Plus réaliste, un achat de plus au départ."],
+        ["On reste à mains nues", "Rien ne change."] ] },
+      { id: "validation", t: "Quand l'Acte VI est-il validé ?", why: "", rec: 0, o: [
+        ["Après une soirée où vous fondez une guilde, partez en groupe et vous affrontez à l'arène, avec les retours corrigés", "On ferme l'acte sur du joué."],
+        ["Dès la dernière livraison", "On file vers les donjons de l'Acte VII."] ] },
+      { id: "nom", t: "Le nom de la V0.7 ?", why: "Après « Mille visages », « Mille chemins » et « Mille trésors ».", rec: 0, o: [
+        ["« Mille serments »", "Dans la lignée, et le Serment de Médiolane n'est pas loin."],
+        ["« Frères d'armes »", "Le groupe et la guilde."],
+        ["« Le Cercle des Braves »", "Le PvP en avant."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const STEP = 50;
+const LEVELS = ["Loup solitaire", "Compagnon de route", "Frère d'armes", "Porte-bannière", "Sergent de compagnie", "Champion du Cercle", "Seigneur de guilde", "Légende d'Erydor"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, contresigné au registre de Fiacre.", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou (pas un brillant).", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté.", "Un mélange ? J'adore les mélanges. Sauf la soupe de navets."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et je file sonner la cloche de la place. Fiacre l'a cirée ce matin.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / STEP) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? STEP : x % STEP;
+  document.getElementById("xpfill").style.width = (inLevel / STEP * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte VI)" : `${STEP - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Nouveau fragment pour le Grimoire d'Erydor, à valider comme les autres. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les ${TOTAL} réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, puis j'ouvre le registre des guildes, et ton héros pourra enfin se trouver des compagnons.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil-alliances", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil-alliances") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>

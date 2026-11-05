@@ -46,6 +46,7 @@ func _ready() -> void:
 	failed += _check_npcs()
 	failed += _check_monsters()
 	failed += _check_objets()
+	failed += _check_social()
 	if not ResourceLoader.exists(Braise.DIR + "braise.png"):
 		printerr("Braise n'a pas de planche")
 		failed += 1
@@ -154,7 +155,7 @@ func _check_npcs() -> int:
 		for key in tree:
 			for ch in tree[key].get("choix", []):
 				if ch.has("action"):
-					if not ch.action in ["boutique", "maitre", "coffre"]:
+					if not ch.action in ["boutique", "maitre", "coffre", "guilde", "gcoffre"]:
 						printerr("Dialogue de %s : action inconnue %s" % [n.id, ch.action])
 						failed += 1
 				elif ch.vers != "" and not tree.has(ch.vers):
@@ -248,3 +249,98 @@ func _check_objets() -> int:
 		printerr("Héros sans arme : il ne devrait pas en porter")
 		failed += 1
 	return failed
+
+
+## Acte VI : les blasons (les 30 motifs du serveur), une danse par peuple, le
+## filtre des gros mots, la fenêtre sociale et l'onglet de la gloire.
+func _check_social() -> int:
+	var failed := 0
+	var guilde := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://").path_join("../server/world/guilde.go"))
+	var re := RegEx.new()
+	re.compile("var BlasonMotifs = \\[\\]string\\{([^}]*)\\}")
+	var m := re.search(guilde)
+	if m == null:
+		printerr("Motifs des blasons introuvables côté serveur")
+		failed += 1
+	else:
+		var ids := []
+		for x in m.get_string(1).split(",", false):
+			ids.append(x.strip_edges().trim_prefix("\"").trim_suffix("\""))
+		ids = ids.filter(func(x): return x != "")
+		if ids.size() != Blason.MOTIFS.size():
+			printerr("Blasons : %d motifs côté serveur, %d côté client" % [ids.size(), Blason.MOTIFS.size()])
+			failed += 1
+		for i in mini(ids.size(), Blason.MOTIFS.size()):
+			if ids[i] != Blason.MOTIFS[i][0]:
+				printerr("Motif de blason dans le désordre : ", ids[i])
+				failed += 1
+	if Blason.COULEURS.size() != 16 or Blason.FORMES.size() != 5:
+		printerr("Blasons : 16 couleurs et 5 formes attendues")
+		failed += 1
+	for r in Heros.ORDRE_PEUPLES:
+		if not Pawn.DANSES.has(r):
+			printerr("Peuple sans danse : ", r)
+			failed += 1
+	var so := MondeSocial.new()
+	so._re = RegEx.new()
+	so._re.compile("(*UCP)(?i)\\b(" + "|".join(MondeSocial.GROS_MOTS) + ")\\b")
+	if so.filter_text("Oh putain, quelle Merde !") != "Oh ✦✦✦, quelle ✦✦✦ !" or so.filter_text("Une constitution de conque") != "Une constitution de conque":
+		printerr("Filtre des gros mots incorrect : ", so.filter_text("Oh putain, quelle Merde !"))
+		failed += 1
+	# La fenêtre sociale s'ouvre sur chaque onglet.
+	so.groupe = {"chef": 1, "max": 5, "m": [{"s": 1, "n": "Elowyn", "cl": "paladin", "lv": 3}, {"s": 2, "n": "Brann", "cl": "mage", "lv": 4}]}
+	so.amis = [{"u": "a", "n": "Brann", "on": true, "ami": true, "cl": "mage", "lv": 4, "r": "Le Val"}, {"u": "b", "n": "Gaspard", "ig": true}]
+	so.guilde = {"nom": "Les Lanternes", "bl": {"f": 1, "m": 13, "c1": 5, "c2": 2}, "lv": 2, "xp": 300, "xpn": 1600, "motd": "Salut !",
+		"rangs": [{"nom": "Chef", "dr": 63}, {"nom": "Officier", "dr": 63}, {"nom": "Vétéran", "dr": 21}, {"nom": "Membre", "dr": 16}, {"nom": "Recrue", "dr": 0}],
+		"agenda": [{"t": 1893456000000, "ti": "Soirée au Cercle", "au": "Elowyn"}], "membres": [{"h": "x", "n": "Elowyn", "rg": 0, "on": true, "lv": 3}],
+		"moi": "x", "rg": 0, "max": 50, "motifs": [], "onglets": 1, "bonus": true}
+	var fake := FakeWorld.new()
+	so.world = fake
+	for tab in ["groupe", "amis", "guilde", "ignores"]:
+		var w = load("res://scripts/social_window.gd").new()
+		w.social = so
+		w._tab = tab
+		add_child(w)
+		if w._body.get_child_count() < 2:
+			printerr("Onglet social vide : ", tab)
+			failed += 1
+		w.queue_free()
+	so.guilde = {"aucune": true, "px": 1000, "motifs": []}
+	var w2 = load("res://scripts/social_window.gd").new()
+	w2.social = so
+	w2._tab = "guilde"
+	add_child(w2)
+	if w2._body.get_child_count() < 4:
+		printerr("Fondation de guilde vide")
+		failed += 1
+	w2.queue_free()
+	var sheet := HeroSheet.new()
+	sheet.me = {"cl": "mage", "v": 0, "lv": 23, "at": [], "pt": 0}
+	sheet._tab = "gloire"
+	sheet.set_gloire({"hf": {"premier_sang": 1}, "pts": 5, "ti": [["chasseur", "Chasseur du val"]], "t": "", "prog": {}, "ins": 30},
+		[{"id": "premier_sang", "nom": "Premier sang", "ds": "Vaincre un monstre.", "ic": "🗡️", "cat": "combat", "pts": 5, "n": 1}])
+	add_child(sheet)
+	if sheet._body.get_child_count() < 4:
+		printerr("Onglet de la gloire vide")
+		failed += 1
+	sheet.queue_free()
+	so.free()
+	fake.free()
+	return failed
+
+
+## Un faux écran du monde, pour essayer les fenêtres sans serveur.
+class FakeWorld extends Node:
+	var my_sid := 1
+	var pawns := {}
+	var sheet = null
+	var braise = null
+
+	func _show_toast(_t: String) -> void:
+		pass
+
+	func _open_chat() -> void:
+		pass
+
+	func _add_chat_line(_w: String, _t: String, _s := false, _c := "") -> void:
+		pass

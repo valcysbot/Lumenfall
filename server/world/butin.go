@@ -346,6 +346,9 @@ func (a *Arena) Pick(sid, gid int) {
 		return
 	}
 	delete(a.Ground, gid)
+	if g.It.R >= Epique {
+		a.Count(h, "rarete:"+strconv.Itoa(g.It.R), 1)
+	}
 	a.emit(Event{Kind: EvGround, Value: gid, Text: "prend", Src: sid, Tgt: sid})
 	a.emit(Event{Kind: EvItem, Tgt: sid, Text: g.It.Name(), Value: g.It.R, Flags: g.It.Count()})
 }
@@ -461,8 +464,24 @@ func (a *Arena) Gather(sid, id int) {
 		a.refuse(h, ErrSacPlein.Error())
 	default:
 		h.Body.Face(n.X, n.Y)
-		a.startWork(h, &Work{Kind: "recolte", Node: id, Left: GatherTime}, n.Kind.Name)
+		a.startWork(h, &Work{Kind: "recolte", Node: id, Left: a.gatherTime(inv, n.Kind.Metier)}, n.Kind.Name)
 	}
+}
+
+// gatherTime : le temps d'une récolte (plus court avec le bon outil).
+func (a *Arena) gatherTime(inv *Inventaire, metier string) float64 {
+	if inv.HasOutil(metier) {
+		return GatherTime * OutilVitesse
+	}
+	return GatherTime
+}
+
+// outilBonus : avec le bon outil, parfois un de plus.
+func (a *Arena) outilBonus(inv *Inventaire, metier string) int {
+	if inv.HasOutil(metier) && a.rng.Float64() < OutilBonusP {
+		return 1
+	}
+	return 0
 }
 
 // Skin : dépecer le corps d'une bête.
@@ -486,7 +505,7 @@ func (a *Arena) Skin(sid, msid int) {
 		a.refuse(h, "Il faut le niveau "+strconv.Itoa(sk.Req)+" en Dépeçage.")
 	default:
 		h.Body.Face(m.Body.X, m.Body.Y)
-		a.startWork(h, &Work{Kind: "depece", Mon: msid, Left: GatherTime}, "Dépeçage")
+		a.startWork(h, &Work{Kind: "depece", Mon: msid, Left: a.gatherTime(h.Hero.Inv, "depecage")}, "Dépeçage")
 	}
 }
 
@@ -549,7 +568,7 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 			a.metierUp(h, k.Metier, k.Req, 2)
 			break
 		}
-		a.give(h, MakeStack(a.rng, k.Gives, k.Min+a.rng.Intn(k.Max-k.Min+1)))
+		a.give(h, MakeStack(a.rng, k.Gives, k.Min+a.rng.Intn(k.Max-k.Min+1)+a.outilBonus(inv, k.Metier)))
 		if k.Bonus != "" && a.rng.Float64() < k.BonusP {
 			a.give(h, MakeStack(a.rng, k.Bonus, 1))
 		}
@@ -559,6 +578,7 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 			a.emit(Event{Kind: EvNode, Value: n.ID, Flags: 0})
 		}
 		a.metierUp(h, k.Metier, k.Req, 8)
+		a.Count(h, "recolte", 1)
 	case "depece":
 		m := a.Get(w.Mon)
 		if m == nil || m.Mon == nil || m.Mon.skinned || m.Mon.gone {
@@ -570,12 +590,13 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 		if inv.Rate(a.rng, "depecage", sk.Req) {
 			a.refuse(h, "Raté : le cuir s'est déchiré.")
 		} else {
-			a.give(h, MakeStack(a.rng, sk.Hide, sk.N[0]+a.rng.Intn(sk.N[1]-sk.N[0]+1)))
+			a.give(h, MakeStack(a.rng, sk.Hide, sk.N[0]+a.rng.Intn(sk.N[1]-sk.N[0]+1)+a.outilBonus(inv, "depecage")))
 		}
 		if sk.Meat != "" {
 			a.give(h, MakeStack(a.rng, sk.Meat, 1+a.rng.Intn(2)))
 		}
 		a.metierUp(h, "depecage", sk.Req, 8)
+		a.Count(h, "depece", 1)
 	case "fabrique":
 		r := w.Recipe
 		if a.atelierNear(h, r.Metier) == nil {
@@ -606,6 +627,10 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 			flags |= 1 << 16 // la chance a souri
 		}
 		a.emit(Event{Kind: EvItem, Tgt: h.SID, Text: it.Name(), Value: it.R, Flags: flags, Skill: 1})
+		a.Count(h, "fabrique", 1)
+		if it.R >= Epique {
+			a.Count(h, "rarete:"+strconv.Itoa(it.R), 1)
+		}
 		xp := 10
 		if Bases[r.Out].Kind == KMateriau {
 			xp = 5
@@ -630,6 +655,7 @@ func (a *Arena) tickWork(h *Fighter, dt float64) {
 func (a *Arena) metierUp(h *Fighter, id string, req, xp int) {
 	if lv := h.Hero.Inv.GainMetier(id, req, xp); lv > 0 {
 		a.emit(Event{Kind: EvMetier, Tgt: h.SID, Text: id, Value: lv})
+		a.CountMax(h, "metier", lv)
 	}
 }
 

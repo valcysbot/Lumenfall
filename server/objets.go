@@ -308,6 +308,8 @@ func (s *worldState) openPanel(d runtime.MatchDispatcher, pl *player, what, arg 
 	}
 	pl.panel = [2]string{what, arg}
 	switch what {
+	case "gcoffre":
+		s.sendGuildCoffre(d, pl)
 	case "boutique":
 		var arts []map[string]interface{}
 		for _, id := range world.Shop {

@@ -60,6 +60,7 @@ type HeroInit struct {
 	Quest                    int
 	Talents                  Talents
 	Inv                      *Inventaire
+	Gloire                   *Gloire // nil : un héros d'essai, sans hauts faits
 }
 
 // HeroState : ce qu'un héros a de plus qu'un monstre.
@@ -78,6 +79,14 @@ type HeroState struct {
 	Gear     Gear        // ce que donnent l'équipement, le repas et l'élixir
 	Work     *Work       // récolte, fabrication ou parchemin en cours
 	Account  string      // le compte (pour le coffre et les échanges)
+	Guild    int         // sa guilde (0 : aucune), réglée par le match
+	GuildLv  int         // le niveau de sa guilde
+	Flag     bool        // pvp.go : le drapeau de guerre est levé
+	Gloire   *Gloire     // gloire.go : hauts faits, titres, cotes (nil : héros d'essai)
+	pvp      float64     // secondes depuis le dernier coup échangé avec un héros
+	flagCD   float64     // secondes avant de pouvoir baisser le drapeau
+	dr       map[Effect]*diminish
+	pvpDeath bool // tombé sous les coups d'un héros : pas d'usure ni de Faiblesse
 
 	Target    int
 	Res       float64 // la ressource de la classe
@@ -157,6 +166,11 @@ const (
 	EvMetier         // Tgt : métier Text au niveau Value (1 : appris, -1 : recette apprise)
 	EvLook           // l'équipement de Src a changé (les autres doivent le voir)
 	EvTrade          // échange entre Src et Tgt : Text = demande, ouvre, maj, fin:…
+	EvGroup          // groupe.go : Text = invite, rejoint, quitte, maj (Src : groupe ou héros)
+	EvGuildXP        // la guilde Src gagne Value points (un groupe de guilde a vaincu un monstre)
+	EvFlag           // pvp.go : le drapeau de guerre de Src est levé (Value 1) ou baissé (0)
+	EvCercle         // cercle.go : Text = file, debut, compte, sort, fin (Value : numéro du combat)
+	EvGloire         // gloire.go : Tgt réussit le haut fait Text
 )
 
 // Event flags (EvHit).
@@ -203,12 +217,23 @@ type Arena struct {
 	duelID   int
 	groundID int
 	invites  map[int]invite // défi reçu par chaque héros
+
+	// L'Acte VI : les groupes, le Cercle des Braves.
+	Groups   map[int]*Group
+	groupOf  map[int]*Group
+	groupInv map[int]invite
+	groupID  int
+	Cercle   *Cercle
+	// Ignores(x, y) : x ignore-t-il y ? (réglé par le match ; nil : personne)
+	Ignores func(x, y int) bool
 }
 
 // NewArena prépare l'arène d'une carte et fait apparaître ses monstres.
 func NewArena(m *Map, camps []Camp, rng *rand.Rand) *Arena {
 	a := &Arena{M: m, Heroes: map[int]*Fighter{}, Camps: camps, rng: rng, invites: map[int]invite{},
-		Temple: m.Spawn, Village: m.Spawn, Ground: map[int]*GroundItem{}, Trades: map[int]*Trade{}, Ledger: NewLedger()}
+		Temple: m.Spawn, Village: m.Spawn, Ground: map[int]*GroundItem{}, Trades: map[int]*Trade{}, Ledger: NewLedger(),
+		Groups: map[int]*Group{}, groupOf: map[int]*Group{}, groupInv: map[int]invite{}}
+	a.Cercle = newCercle(a)
 	for ci, c := range camps {
 		for i := 0; i < c.Count; i++ {
 			f := &Fighter{SID: MonsterSIDBase + len(a.Monsters), Body: &Body{Dir: rng.Intn(8)}, Mon: &Monster{Camp: ci}}
@@ -260,7 +285,8 @@ func (a *Arena) AddHero(sid int, name string, body *Body, in HeroInit) *Fighter 
 	}
 	hs := &HeroState{Class: c, Spec: in.Spec, Race: in.Race, Attrs: in.Attrs, Hardcore: in.Hardcore, Quest: in.Quest, Talents: in.Talents,
 		Endurance: MaxEndurance, Potions: in.Potions, XP: in.XP, Gold: in.Gold, Trophies: in.Trophies,
-		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y, Inv: in.Inv}
+		combat: CombatTime, me: true, Res: c.Res.Start, lastX: body.X, lastY: body.Y, Inv: in.Inv,
+		Gloire: in.Gloire, pvp: CombatTime}
 	if hs.Inv != nil {
 		hs.Inv.Fix()
 		hs.Potions = min(hs.Potions, FreePotions)
@@ -308,6 +334,9 @@ func (f *Fighter) Restat() {
 
 // RemoveHero retire un héros (départ) : les monstres l'oublient.
 func (a *Arena) RemoveHero(sid int) {
+	a.GroupLeave(sid)
+	a.Cercle.leave(sid)
+	delete(a.groupInv, sid)
 	delete(a.Heroes, sid)
 	delete(a.invites, sid)
 	for _, m := range a.Monsters {
@@ -501,6 +530,9 @@ func (a *Arena) hit(src, tgt *Fighter, base float64, elem Element, skill int, cr
 			ev.Flags |= FlagBlock
 		}
 	}
+	if src.Hero != nil && tgt.Hero != nil && src != tgt {
+		a.pvpHit(src, tgt)
+	}
 	n := int(math.Max(1, math.Round(dmg)))
 	// Un bouclier absorbe d'abord.
 	if sh := &tgt.fx[Bouclier]; sh.left > 0 && sh.power > 0 {
@@ -571,6 +603,9 @@ func (a *Arena) heal(src, tgt *Fighter, n, skill int) {
 	if tgt.Dead || n <= 0 {
 		return
 	}
+	if tgt.Hero != nil && tgt.Hero.InPvP() {
+		n = max(1, int(math.Round(float64(n)*PvPHealMul)))
+	}
 	n = min(n, tgt.MaxHP-tgt.HP)
 	if n <= 0 {
 		return
@@ -632,11 +667,20 @@ func (a *Arena) kill(f, killer *Fighter) {
 	a.interrupt(f)
 	a.stopWork(f, "")
 	hs.Blocking = false
-	if hs.Inv != nil {
+	// Tomber sous les coups d'un héros (drapeau de guerre) ne coûte rien.
+	hs.pvpDeath = killer != nil && killer != f && killer.Hero != nil
+	if hs.pvpDeath {
+		if a.AtWar(killer, f) || (killer.Hero.Flag && hs.Flag) {
+			a.Count(killer, "guerre", 1)
+		}
+	} else {
+		a.Count(f, "mort", 1)
+	}
+	if hs.Inv != nil && !hs.pvpDeath {
 		hs.Inv.Wear() // l'équipement s'use à chaque mort ; Doran le répare
 		f.Restat()
 	}
-	if hs.Hardcore {
+	if hs.Hardcore && !hs.pvpDeath {
 		// Hardcore : une seule vie. Le match efface le héros.
 		ev.Flags |= FlagHardcore
 	}
@@ -649,23 +693,19 @@ func (a *Arena) kill(f, killer *Fighter) {
 	a.emit(ev)
 }
 
-// reward : tous les héros qui ont combattu le monstre gagnent l'expérience,
-// leur argent et leurs matériaux ; les objets tombent au sol pour le groupe.
+// reward : tous les héros qui ont combattu le monstre, et les membres de leur
+// groupe qui sont assez près, gagnent l'expérience (partagée dans le groupe),
+// leur argent et leurs matériaux ; les objets tombent au sol pour eux.
 func (a *Arena) reward(m *Fighter) {
 	k := m.Mon.Kind
-	var heroes []*Fighter
-	sids := make([]int, 0, len(m.Mon.threat))
-	for sid := range m.Mon.threat {
-		sids = append(sids, sid)
-	}
-	sort.Ints(sids)
-	for _, sid := range sids {
-		h := a.Heroes[sid]
-		if h == nil {
-			continue
+	heroes := a.sharers(m)
+	guildXP := map[int]int{}
+	for _, h := range heroes {
+		n, mate := a.partyCount(h, heroes)
+		xp := a.shareXP(m, h, n, mate)
+		if mate {
+			guildXP[h.Hero.Guild] = max(guildXP[h.Hero.Guild], 1+KillXP(m.Level, h.Level, k.XPMul)/10)
 		}
-		heroes = append(heroes, h)
-		xp := KillXP(m.Level, h.Level, k.XPMul)
 		// L'argent compte en cuivres : un ancien « or » vaut un argent.
 		gold := (k.Gold[0]*Argent + a.rng.Intn((k.Gold[1]-k.Gold[0])*Argent+1))
 		trophy := ""
@@ -685,6 +725,15 @@ func (a *Arena) reward(m *Fighter) {
 		a.Ledger.In["butin"] += gold
 		a.emit(Event{Kind: EvLoot, Tgt: h.SID, Src: m.SID, Value: gold, XP: xp, Text: trophy})
 		a.GainXP(h, xp)
+		a.countKill(h, m)
+	}
+	ids := make([]int, 0, len(guildXP))
+	for id := range guildXP {
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+	for _, id := range ids {
+		a.emit(Event{Kind: EvGuildXP, Src: id, Value: guildXP[id]})
 	}
 	var withBag []*Fighter
 	for _, h := range heroes {
@@ -709,6 +758,7 @@ func (a *Arena) GainXP(h *Fighter, xp int) {
 			h.HP = h.MaxHP
 		}
 		a.emit(Event{Kind: EvLevel, Src: h.SID, Value: h.Level})
+		a.CountMax(h, "niveau", h.Level)
 		if h.Level == SpecLevel && hs.Spec < 0 {
 			a.emit(Event{Kind: EvVoie, Tgt: h.SID, Text: "quete", Value: hs.Quest})
 		}
@@ -755,6 +805,8 @@ func (a *Arena) Tick(dt float64) {
 	a.tickGround(dt)
 	a.tickNodes(dt)
 	a.tickTrades()
+	a.tickGroups(dt)
+	a.Cercle.tick(dt)
 	for _, h := range a.Heroes {
 		a.tickEffects(h, dt)
 		a.tickHero(h, dt)
@@ -851,13 +903,16 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 	hs := h.Hero
 	if h.Dead {
 		hs.respawn -= dt
-		if hs.respawn <= 0 && !hs.Hardcore {
+		if hs.respawn <= 0 && (!hs.Hardcore || hs.pvpDeath) {
 			h.Dead = false
 			h.HP = h.MaxHP
 			h.Body.Frozen = false
 			x, y := spotNear(a.M, a.Temple[0], a.Temple[1], 1.5, a.rng)
 			h.Body.Teleport(x, y)
-			h.Apply(Faiblesse, FaiblesseTime, 0, h.SID)
+			if !hs.pvpDeath {
+				h.Apply(Faiblesse, FaiblesseTime, 0, h.SID)
+			}
+			hs.pvpDeath = false
 			hs.Res = hs.Class.Res.Start
 			hs.lastX, hs.lastY = x, y
 			h.dirty = true
@@ -866,6 +921,7 @@ func (a *Arena) tickHero(h *Fighter, dt float64) {
 		}
 		return
 	}
+	a.tickPvP(h, dt)
 	for k := range hs.CD {
 		hs.CD[k] = math.Max(0, hs.CD[k]-dt)
 	}

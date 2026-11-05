@@ -131,6 +131,7 @@ type Base struct {
 	Use    *Usage // provisions
 	Places int    // sacs : places en plus
 	Recipe string // recettes : la recette apprise
+	Outil  string // outils de récolte : le métier qu'ils aident
 }
 
 // Bases : tous les modèles connus, par identifiant.

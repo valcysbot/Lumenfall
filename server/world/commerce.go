@@ -398,6 +398,8 @@ func (a *Arena) TradeOK(sid int) {
 	ha.Hero.Gold += mb - ma
 	hb.Hero.Gold += ma - mb
 	ha.Hero.me, hb.Hero.me = true, true
+	a.Count(ha, "echange", 1)
+	a.Count(hb, "echange", 1)
 	a.endTrade(t, "fait")
 }
 

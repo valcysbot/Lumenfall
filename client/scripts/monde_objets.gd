@@ -253,7 +253,7 @@ func _open_panneau(d: Dictionary) -> void:
 	panneau.set_data(d)
 	panneau.set_sac(sac_data)
 	var p := str(d.get("p", ""))
-	open_sac(p if p in ["boutique", "coffre"] else "")
+	open_sac(p if p in ["boutique", "coffre", "gcoffre"] else "")
 
 
 func _on_echange(d: Dictionary) -> void:
@@ -359,6 +359,10 @@ func npc_action(npc: String, what: String) -> void:
 			Net.send(Net.OP_OBJET, {"a": "panneau", "b": "maitre", "r": npc})
 		"coffre":
 			Net.send(Net.OP_OBJET, {"a": "panneau", "b": "coffre"})
+		"guilde":
+			w.social.toggle_window("guilde")
+		"gcoffre":
+			Net.send(Net.OP_SOCIAL, {"a": "gcoffre"})
 
 
 # --- Agir dans le monde : ramasser, récolter, dépecer, aller à l'atelier ----------------

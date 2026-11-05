@@ -29,6 +29,9 @@ const ACTIONS := [
 	["rapide_2", "Raccourci 2 (provision)", KEY_G],
 	["ramasser", "Ramasser, récolter (le plus proche)", KEY_E],
 	["saluer", "Saluer", KEY_H],
+	["social", "Groupe, amis et guilde", KEY_O],
+	["emotes", "Émotes et phrases rapides", KEY_B],
+	["carte", "La carte du val", KEY_SEMICOLON],   # M sur un clavier AZERTY
 	["courir", "Courir (maintenir)", KEY_SHIFT],
 	["garde", "Lever le bouclier (maintenir)", 0x4000002],   # SOURIS + clic droit
 ]

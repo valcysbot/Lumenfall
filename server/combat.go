@@ -67,6 +67,8 @@ func (w *worldMatch) sendCombat(d runtime.MatchDispatcher, s *worldState, tick i
 			sendDuel(d, a, e, only)
 		case world.EvGround, world.EvItem, world.EvNode, world.EvMetier, world.EvLook, world.EvTrade:
 			sendActeV(d, s, e, only)
+		case world.EvGroup, world.EvGuildXP, world.EvFlag, world.EvGloire, world.EvCercle:
+			s.sendActeVI(s.ctx, s.logger, s.db, d, e)
 		case world.EvError:
 			if to := only(e.Tgt); to != nil {
 				_ = d.BroadcastMessage(opRefuse, mustJSON(map[string]string{"m": e.Text}), to, nil, true)
@@ -153,6 +155,7 @@ func sendDuel(d runtime.MatchDispatcher, a *world.Arena, e world.Event, only fun
 		}
 		msg["n"] = name
 		msg["sec"] = int(world.DuelInviteTime)
+		msg["g"] = e.Flags // 1 : un duel de groupe
 		_ = d.BroadcastMessage(opDuel, mustJSON(msg), to, nil, true)
 		return
 	case "debut":
@@ -163,6 +166,9 @@ func sendDuel(d runtime.MatchDispatcher, a *world.Arena, e world.Event, only fun
 		msg["c"] = [2]int{cent(du.X), cent(du.Y)}
 		msg["r"] = cent(world.DuelRadius)
 		msg["sec"] = int(world.DuelCountdown)
+		msg["camps"] = du.Sides
+	case "sort":
+		msg["s"] = e.Src
 	case "compte":
 		msg["n"] = e.Flags
 	case "fin":

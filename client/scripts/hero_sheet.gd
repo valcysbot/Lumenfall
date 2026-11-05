@@ -11,6 +11,8 @@ signal closed
 var me := {}        # le dernier état privé (opMe) : cl, v, q, qm, at, pt, lv, or
 var hero := {}      # race, dieu, look, name : ce que le monde montre du héros
 var public := {}    # la fiche d'un autre héros (opFiche) ; vide pour la sienne
+var gloire := {}    # Acte VI : hauts faits, titres, cotes, Insignes
+var hauts: Array = []
 
 var _body: VBoxContainer
 var _tab := "attributs"
@@ -56,7 +58,7 @@ func _ready() -> void:
 		title.text = "📜 Ton héros"
 		var tabs := HBoxContainer.new()
 		tabs.add_theme_constant_override("separation", 6)
-		for t in [["attributs", "💪 Attributs"], ["voie", "🌟 Voie"], ["talents", "🌳 Talents"]]:
+		for t in [["attributs", "💪 Attributs"], ["voie", "🌟 Voie"], ["talents", "🌳 Talents"], ["gloire", "🏅 Gloire"]]:
 			var b := UI.button(t[1])
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var id: String = t[0]
@@ -132,6 +134,8 @@ func _render() -> void:
 		_render_attrs()
 	elif _tab == "talents":
 		_render_talents()
+	elif _tab == "gloire":
+		_render_gloire()
 	else:
 		_render_voie()
 
@@ -188,6 +192,105 @@ func _render_public() -> void:
 		_line("🌳 Talents", 17, UI.LUMEN)
 		var l := _line(" · ".join(picked), 15, UI.PARCH)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# L'Acte VI : son titre, sa guilde, sa gloire, son équipement.
+	if str(p.get("ti", "")) != "":
+		_line("🎖️ « %s »" % p.ti, 16, UI.LUMEN)
+	var gu = p.get("gu")
+	if gu is Dictionary:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.add_child(Blason.Vue.new(gu.get("bl", {}), 32))
+		row.add_child(UI.label("Guilde : %s" % gu.get("n", ""), 16, UI.MOSS))
+		_body.add_child(row)
+	var gl = p.get("gl")
+	if gl is Dictionary:
+		var cotes: Dictionary = gl.get("cote", {}) if gl.get("cote") is Dictionary else {}
+		var cs := []
+		for f in ["1", "2", "3"]:
+			if cotes.has(f):
+				cs.append("%s c. %s : %d" % [f, f, int(cotes[f])])
+		_line("🏅 %d points de hauts faits · 🏟️ %d victoires au Cercle · ⚔️ %d duels gagnés%s" % [int(gl.get("pts", 0)),
+			int(gl.get("cv", 0)), int(gl.get("dv", 0)), ("" if cs.is_empty() else " · " + ", ".join(cs))], 15, UI.PARCH)
+	var obj = p.get("obj")
+	if obj is Dictionary and not obj.is_empty():
+		_line("🎒 Son équipement", 17, UI.LUMEN)
+		var grid := GridContainer.new()
+		grid.columns = 6
+		grid.add_theme_constant_override("h_separation", 4)
+		grid.add_theme_constant_override("v_separation", 4)
+		for e in Objets.EMPLACEMENTS:
+			var it = obj.get(e[0])
+			var case_ := Objets.Case.new(it if it is Dictionary else {}, e[2], 54)
+			case_.tooltip_text = e[1] if not (it is Dictionary) else ""
+			grid.add_child(case_)
+		_body.add_child(grid)
+
+
+## L'Acte VI : la gloire du héros (hauts faits et titres).
+func set_gloire(g: Dictionary, h: Array) -> void:
+	gloire = g
+	hauts = h
+	if is_inside_tree() and _tab == "gloire" and public.is_empty():
+		_render()
+
+
+const CATEGORIES := [["combat", "⚔️ Combat"], ["exploration", "🧭 Exploration"], ["metiers", "🔨 Métiers"],
+	["social", "🤝 Social"], ["pvp", "🏟️ PvP"]]
+
+
+func _render_gloire() -> void:
+	if hauts.is_empty():
+		Net.send(Net.OP_SOCIAL, {"a": "hauts_faits"})
+		_line("Braise feuillette son carnet…", 16, UI.MUTED)
+		return
+	var hf: Dictionary = gloire.get("hf", {}) if gloire.get("hf") is Dictionary else {}
+	var prog: Dictionary = gloire.get("prog", {}) if gloire.get("prog") is Dictionary else {}
+	var total := 0
+	for h in hauts:
+		total += int(h.get("pts", 0))
+	_line("🏅 %d points sur %d · %d hauts faits sur %d · 🎖️ %d Insignes de bravoure" % [int(gloire.get("pts", 0)), total, hf.size(), hauts.size(), int(gloire.get("ins", 0))], 17, UI.LUMEN)
+	# Le titre affiché sous ton nom.
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.add_child(UI.label("Ton titre :", 16, UI.PARCH))
+	var opt := OptionButton.new()
+	opt.focus_mode = Control.FOCUS_NONE
+	opt.add_item("(aucun)")
+	opt.set_item_metadata(0, "")
+	var cur := str(gloire.get("t", ""))
+	var tis: Array = gloire.get("ti", []) if gloire.get("ti") is Array else []
+	for i in tis.size():
+		opt.add_item(str(tis[i][1]))
+		opt.set_item_metadata(i + 1, str(tis[i][0]))
+		if str(tis[i][0]) == cur:
+			opt.selected = i + 1
+	opt.item_selected.connect(func(i): Net.send(Net.OP_SOCIAL, {"a": "titre", "n": opt.get_item_metadata(i)}))
+	row.add_child(opt)
+	_body.add_child(row)
+	if tis.is_empty():
+		_line("Les titres se gagnent avec certains hauts faits, au Cercle des Braves, ou à l'intendance de bravoure.", 14, UI.MUTED)
+	for cat in CATEGORIES:
+		_line(cat[1], 18, UI.EMBER)
+		for h in hauts:
+			if str(h.get("cat", "")) != cat[0]:
+				continue
+			var done := hf.has(str(h.id))
+			var box := HBoxContainer.new()
+			box.add_theme_constant_override("separation", 8)
+			var ic := UI.label(str(h.get("ic", "")), 22, UI.PARCH)
+			ic.autowrap_mode = TextServer.AUTOWRAP_OFF
+			ic.modulate.a = 1.0 if done else 0.35
+			box.add_child(ic)
+			var col := VBoxContainer.new()
+			col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var t := "%s%s · %d pts" % ["✓ " if done else "", h.get("nom", ""), int(h.get("pts", 0))]
+			col.add_child(UI.label(t, 15, UI.LUMEN if done else UI.PARCH))
+			var ds := str(h.get("ds", ""))
+			if not done and int(h.get("n", 1)) > 1:
+				ds += "  (%d / %d)" % [int(prog.get(str(h.id), 0)), int(h.get("n", 1))]
+			col.add_child(UI.label(ds, 13, UI.MUTED))
+			box.add_child(col)
+			_body.add_child(box)
 
 
 ## La « répartition conseillée » : la même méthode que le serveur (stats.go, Recommend).

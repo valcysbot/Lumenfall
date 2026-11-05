@@ -13,6 +13,7 @@ signal block(on: bool)
 signal challenge
 signal fiche
 signal trade
+signal social(a: String)   # Acte VI : inviter dans le groupe, demander en ami, inviter dans la guilde
 
 const NSKILLS := 8
 
@@ -53,6 +54,7 @@ var _target_fx: Label
 var _duel_btn: Button
 var _fiche_btn: Button
 var _trade_btn: Button
+var _social_row: HBoxContainer
 var _cast_box: PanelContainer
 var _cast_bar: ProgressBar
 var _cast_label: Label
@@ -171,6 +173,20 @@ func _build_target() -> void:
 	_trade_btn.tooltip_text = "Proposer un échange face à face (assez près l'un de l'autre)."
 	_trade_btn.pressed.connect(func(): trade.emit())
 	col.add_child(_trade_btn)
+	_social_row = HBoxContainer.new()
+	_social_row.add_theme_constant_override("separation", 4)
+	for b in [["👥 Groupe", "inviter", "L'inviter dans ton groupe"], ["🫂 Ami", "ami", "Lui demander d'être ton ami"],
+			["🏰 Guilde", "guilde_inviter", "L'inviter dans ta guilde"]]:
+		var btn := UI.button(b[0])
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.custom_minimum_size = Vector2(0, 40)
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.tooltip_text = b[2]
+		var a: String = b[1]
+		btn.pressed.connect(func(): social.emit(a))
+		_social_row.add_child(btn)
+	col.add_child(_social_row)
 	_target_box.visible = false
 	add_child(_target_box)
 
@@ -446,6 +462,7 @@ func _process(delta: float) -> void:
 		_duel_btn.visible = target.kind == "" and target.npc == "" and not target.is_me and not in_duel
 		_fiche_btn.visible = target.race != "" and not target.is_me
 		_trade_btn.visible = target.race != "" and not target.is_me and not in_duel
+		_social_row.visible = target.race != "" and not target.is_me and not in_duel
 		(_target_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color = UI.DANGER if foe else Color("5fbf6a")
 		_target_fx.text = fx_text(target.fx)
 		_target_fx.visible = _target_fx.text != ""

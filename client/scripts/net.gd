@@ -52,6 +52,9 @@ const OP_ECHANGE := 42
 const OP_PANNEAU := 43
 const OP_RECU := 44
 const OP_METIER_UP := 45
+# Le social, les guildes et le PvP (Acte VI).
+const OP_SOCIAL := 46
+const OP_SOCIAL_OUT := 47
 
 const SESSION_PATH := "user://session.cfg"
 

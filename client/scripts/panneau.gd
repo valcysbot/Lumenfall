@@ -17,6 +17,7 @@ var _title: Label
 var _choix := ""         # atelier : le bonus choisi pour la prochaine fabrication
 var _repete := 1
 var _scroll_y := 0
+static var onglet_guilde := 0   # l'onglet ouvert du coffre de la guilde
 
 
 func _ready() -> void:
@@ -48,8 +49,12 @@ func _ready() -> void:
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_body)
 	# Lâcher un objet du sac sur le panneau : le vendre, le déposer au coffre.
-	set_drag_forwarding(Callable(), func(_p, d): return d is Dictionary and d.has("sac") and (kind == "boutique" or kind == "coffre"),
-		func(_p, d): _send({"a": "vendre" if kind == "boutique" else "coffre_depot", "i": int(d.sac)}))
+	set_drag_forwarding(Callable(), func(_p, d): return d is Dictionary and d.has("sac") and (kind == "boutique" or kind == "coffre" or kind == "gcoffre"),
+		func(_p, d):
+			if kind == "gcoffre":
+				Net.send(Net.OP_SOCIAL, {"a": "gcoffre_depot", "i": int(d.sac), "o": onglet_guilde})
+			else:
+				_send({"a": "vendre" if kind == "boutique" else "coffre_depot", "i": int(d.sac)}))
 	_render()
 
 
@@ -101,6 +106,9 @@ func _render() -> void:
 		"miroir":
 			_title.text = "🪞 Le miroir de Solenn"
 			_miroir()
+		"gcoffre":
+			_title.text = "🧰 Le coffre de « %s »" % data.get("g", "ta guilde")
+			_gcoffre()
 	(func(): sc.scroll_vertical = _scroll_y).call_deferred()
 
 
@@ -362,6 +370,69 @@ func _coffre() -> void:
 			if e is InputEventMouseButton and e.pressed and (e.button_index == MOUSE_BUTTON_LEFT or e.button_index == MOUSE_BUTTON_RIGHT) and it is Dictionary:
 				_send({"a": "coffre_retrait", "i": k}))
 		grid.add_child(c)
+
+
+# --- Le coffre de la guilde (Acte VI), au registre de Fiacre ------------------------
+
+func _gcoffre() -> void:
+	var tabs: Array = data.get("onglets", []) if data.get("onglets") is Array else []
+	onglet_guilde = clampi(onglet_guilde, 0, maxi(0, tabs.size() - 1))
+	var retrait := bool(data.get("retrait", false))
+	_line("Tout membre peut déposer (clic droit sur un objet du sac). Reprendre demande le droit « coffre ». Un objet lié ne va pas au coffre." if retrait \
+		else "Tout membre peut déposer (clic droit sur un objet du sac). Ton rang ne permet pas encore de reprendre.", 14)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	for i in 3:
+		var b := _btn("Onglet %d" % (i + 1), i == onglet_guilde)
+		b.disabled = i >= tabs.size()
+		if i >= tabs.size():
+			b.tooltip_text = "Débloqué au niveau %d de la guilde" % (3 if i == 1 else 5)
+		var k := i
+		b.pressed.connect(func():
+			onglet_guilde = k
+			_render())
+		row.add_child(b)
+	_body.add_child(row)
+	var money := HBoxContainer.new()
+	money.add_theme_constant_override("separation", 6)
+	money.add_child(UI.label("🪙 " + Objets.monnaie(int(data.get("or", 0))), 17, UI.LUMEN))
+	var amount := SpinBox.new()
+	amount.min_value = 1
+	amount.max_value = 100000
+	amount.value = 1
+	amount.suffix = "argent"
+	amount.custom_minimum_size = Vector2(130, 40)
+	money.add_child(amount)
+	var dep := _btn("Donner")
+	dep.pressed.connect(func(): Net.send(Net.OP_SOCIAL, {"a": "gcoffre_or", "q": int(amount.value) * 100}))
+	money.add_child(dep)
+	if retrait:
+		var ret := _btn("Reprendre")
+		ret.pressed.connect(func(): Net.send(Net.OP_SOCIAL, {"a": "gcoffre_or", "q": -int(amount.value) * 100}))
+		money.add_child(ret)
+	_body.add_child(money)
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	_body.add_child(grid)
+	var items: Array = Objets.liste(tabs[onglet_guilde]) if onglet_guilde < tabs.size() else []
+	for i in items.size():
+		var it = items[i]
+		var c := Objets.Case.new(it if it is Dictionary else {}, "", 54)
+		var k := i
+		c.gui_input.connect(func(e):
+			if retrait and e is InputEventMouseButton and e.pressed and (e.button_index == MOUSE_BUTTON_LEFT or e.button_index == MOUSE_BUTTON_RIGHT) and it is Dictionary:
+				Net.send(Net.OP_SOCIAL, {"a": "gcoffre_retrait", "o": onglet_guilde, "k": k}))
+		grid.add_child(c)
+	var journal: Array = data.get("journal", []) if data.get("journal") is Array else []
+	if not journal.is_empty():
+		_line("📖 Le journal", 16, UI.LUMEN)
+		var verbes := {"depot": "dépose", "retrait": "reprend", "or+": "donne", "or-": "reprend"}
+		for j in range(journal.size() - 1, maxi(-1, journal.size() - 16), -1):
+			var l: Dictionary = journal[j]
+			var n := int(l.get("n", 1))
+			_line("%s %s %s%s" % [l.get("qui", "?"), verbes.get(str(l.get("a", "")), "?"), l.get("q", ""), (" ×%d" % n) if n > 1 else ""], 13, UI.PARCH)
 
 
 # --- Le miroir de Solenn : les apparences --------------------------------------------

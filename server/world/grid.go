@@ -26,6 +26,8 @@ type Map struct {
 	Blocking string     `json:"blocking"`
 	Rows     []string   `json:"rows"`
 	Doors    []Door     `json:"doors"`
+	// IndoorsFrom : la première ligne des intérieurs (et des salles du Cercle), loin au sud.
+	IndoorsFrom int `json:"indoors_from"`
 
 	blocked []bool
 	doors   map[[2]int]*Door
