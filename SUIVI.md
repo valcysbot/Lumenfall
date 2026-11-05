@@ -2,7 +2,7 @@
 
 *Le document de suivi du projet : ce qui est fait, ce qui reste, et les décisions prises. Mis à jour à chaque livraison.*
 
-**Version actuelle :** V0.5.2 « Mille chemins » (3 novembre 2026) · **Acte en cours :** Acte IV, les héros
+**Version actuelle :** V0.5.3 « Mille chemins » (5 novembre 2026) · **Acte en cours :** Acte V, objets, métiers et économie
 
 ---
 
@@ -13,7 +13,7 @@
 | I | Les fondations : dépôt, serveur, base de données, connexion Discord, héros qui bougent ensemble, serveur de test | ✓ validé par Elowan |
 | II | Le monde vivant : rendu HD-2D, héros en couches 8 directions, première région, jour / nuit, météo, PNJ | ✓ validé par Elowan |
 | III | Le combat : ciblage, compétences, effets, éléments, monstres, boss, mort | ✓ validé par Elowan |
-| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✱ V0.5 livrée, validation après une soirée de jeu entre amis |
+| IV | Les héros : 15 races, 17 classes, spécialisations, personnalisation | ✓ validé par Elowan |
 | V | Objets, métiers et économie | ○ |
 | VI | Social, guildes, PvP | ○ |
 | VII | Donjons, raids, quêtes et histoire | ○ |
@@ -141,7 +141,7 @@
 
 ### ✱ Quêtes en cours
 
-- ✱ **La soirée de jeu entre amis** avec les talents, puis les retours corrigés (écris-les-moi ici). L'Acte IV sera validé ensuite, et le fil de l'Acte V s'ouvrira tout seul.
+- ✓ **La soirée de jeu entre amis** avec les talents, et ses retours corrigés en V0.5.1, V0.5.2 et V0.5.3. Acte IV validé par Elowan le 5 novembre 2026.
 
 ### 🗡️ Les 51 voies
 
@@ -318,12 +318,24 @@
 | 02/11/2026 | Mort hardcore | **Déjà vérifiée par Elowan : « c'est niquel »** |
 | 02/11/2026 | Validation de l'Acte IV | Après une soirée de jeu entre amis et les retours corrigés ⭐ |
 | 02/11/2026 | Nom de la V0.5 | « Mille chemins » ⭐ |
+| 05/11/2026 | La flèche vers la prochaine étape | **Retirée, elle n'aidait pas** (retour d'Elowan) ; le panneau 🎯 reste |
+| 05/11/2026 | Cible automatique | Le monstre qui te frappe devient ta cible, sauf si ta cible se bat déjà contre toi ⭐ |
 
 ⭐ = recommandation de Claude suivie.
 
 ---
 
 ## 📦 Notes de version
+
+### V0.5.3 · « Mille chemins » (5 novembre 2026)
+
+Les derniers retours de l'Acte IV :
+
+- 🖱️ **Toutes tes touches** : dans ⚙ Réglages → « Changer mes touches », une action peut aller sur une touche du clavier, un bouton de la souris (clic droit, molette, boutons 4 et 5…) ou un bouton de manette. Seul le clic gauche reste réservé (marcher et viser). Le bouclier devient une action comme les autres (clic droit par défaut), et le stick gauche d'une manette fait marcher ton héros. Les aides du tutoriel affichent tes touches à toi.
+- 🎯 **La cible suit le combat** : si tu avais choisi un monstre et qu'un autre t'attaque, tu passes sur celui qui te frappe, sans Tab. Si ta cible se bat déjà contre toi, elle reste.
+- 🧭 **La flèche dorée est retirée** : elle n'aidait pas. Le panneau 🎯 de la prochaine étape reste.
+
+Capture : [les touches, avec la souris et la manette](docs/captures/v0.5.3/touches.png).
 
 ### V0.5.2 · « Mille chemins » (3 novembre 2026)
 

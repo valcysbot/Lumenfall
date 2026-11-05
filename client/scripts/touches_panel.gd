@@ -22,7 +22,9 @@ func _ready() -> void:
 	x.pressed.connect(queue_free)
 	head.add_child(x)
 	col.add_child(head)
-	_hint = UI.label("Clique sur une action, puis appuie sur sa nouvelle touche.", 14, UI.MUTED)
+	_hint = UI.label("Clique sur une action, puis appuie sur sa nouvelle touche. La souris (sauf le clic gauche) et la manette marchent aussi.", 14, UI.MUTED)
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.custom_minimum_size.x = 380
 	col.add_child(_hint)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -55,22 +57,24 @@ func _render() -> void:
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
 		var b := UI.button("…" if _waiting == a[0] else Touches.label(a[0]), _waiting == a[0])
-		b.custom_minimum_size = Vector2(90, 36)
+		b.custom_minimum_size = Vector2(120, 36)
 		b.focus_mode = Control.FOCUS_NONE
 		var id: String = a[0]
 		b.pressed.connect(func():
 			_waiting = id
-			_hint.text = "Appuie sur la nouvelle touche (Échap pour annuler)."
+			_hint.text = "Appuie sur une touche, un bouton de souris ou de manette (Échap pour annuler)."
 			_render())
 		row.add_child(b)
 		_list.add_child(row)
 
 
 func _input(event: InputEvent) -> void:
-	if _waiting == "" or not event is InputEventKey or not event.pressed or event.echo:
+	if _waiting == "" or not event.is_pressed() or event.is_echo():
 		return
+	var k := Touches.code_of(event)
+	if k == 0:
+		return   # le clic gauche sert à cliquer : il reste libre
 	get_viewport().set_input_as_handled()
-	var k: int = event.physical_keycode
 	if k == KEY_ESCAPE or k == KEY_ENTER:
 		_hint.text = "Échap et Entrée restent réservées (fermer, discuter)." if k == KEY_ENTER else "Clique sur une action, puis appuie sur sa nouvelle touche."
 	else:

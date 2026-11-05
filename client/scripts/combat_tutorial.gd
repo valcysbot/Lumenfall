@@ -10,22 +10,22 @@ signal finished
 ## id : le geste attendu (world_screen.gd appelle did(id)) ; btn : le bouton qui brille.
 const STEPS := [
 	{"id": "cible", "btn": "cible",
-		"pc": "Un monstre ! [color=#ffd77a]Clique dessus[/color] pour le viser (ou [color=#ffd77a]Tab[/color]). Un cercle doré apparaît sous lui.",
+		"pc": "Un monstre ! [color=#ffd77a]Clique dessus[/color] pour le viser (ou [color=#ffd77a]{cible}[/color]). Un cercle doré apparaît sous lui.",
 		"tel": "Un monstre ! [color=#ffd77a]Touche-le du doigt[/color] pour le viser (ou le bouton 🎯). Un cercle doré apparaît sous lui."},
 	{"id": "frappe", "btn": 1,
-		"pc": "Lance ta première compétence : touche [color=#ffd77a]1[/color]. Si elle se lance au corps à corps, tu cours jusqu'à lui, puis tu frappes. Entre deux compétences, ton héros attaque aussi tout seul.",
+		"pc": "Lance ta première compétence : touche [color=#ffd77a]{comp_1}[/color]. Si elle se lance au corps à corps, tu cours jusqu'à lui, puis tu frappes. Entre deux compétences, ton héros attaque aussi tout seul.",
 		"tel": "Lance ta première compétence : le bouton [color=#ffd77a]1[/color] de l'éventail. Si elle se lance au corps à corps, tu cours jusqu'à lui. Entre deux compétences, ton héros attaque aussi tout seul."},
 	{"id": "garde", "btn": "garde",
-		"pc": "Il riposte ! [color=#ffd77a]Maintiens le clic droit[/color] pour lever ton bouclier 🛡️ : les coups de face font beaucoup moins mal.",
+		"pc": "Il riposte ! [color=#ffd77a]Maintiens {garde}[/color] pour lever ton bouclier 🛡️ : les coups de face font beaucoup moins mal.",
 		"tel": "Il riposte ! [color=#ffd77a]Garde le doigt sur 🛡️[/color] pour lever ton bouclier : les coups de face font beaucoup moins mal."},
 	{"id": "roulade", "btn": "roulade",
-		"pc": "Une [color=#ff7a5a]zone rouge[/color] au sol annonce un gros coup : [color=#ffd77a]roule[/color] pour en sortir avec [color=#ffd77a]Espace[/color] 💨 (vers où tu marches). Deux roulades, puis on souffle. Essaie !",
+		"pc": "Une [color=#ff7a5a]zone rouge[/color] au sol annonce un gros coup : [color=#ffd77a]roule[/color] pour en sortir avec [color=#ffd77a]{roulade}[/color] 💨 (vers où tu marches). Deux roulades, puis on souffle. Essaie !",
 		"tel": "Une [color=#ff7a5a]zone rouge[/color] au sol annonce un gros coup : [color=#ffd77a]roule[/color] pour en sortir avec le gros bouton 💨 (vers où pousse le joystick). Deux roulades, puis on souffle. Essaie !"},
 	{"id": "potion", "btn": "potion",
-		"pc": "Ta vie, c'est la [color=#7fe08a]barre verte[/color] en haut à gauche. Elle baisse ? Bois une [color=#ffd77a]potion[/color] 🧪 : touche [color=#ffd77a]R[/color]. Elles se remplissent au village.",
+		"pc": "Ta vie, c'est la [color=#7fe08a]barre verte[/color] en haut à gauche. Elle baisse ? Bois une [color=#ffd77a]potion[/color] 🧪 : touche [color=#ffd77a]{potion}[/color]. Elles se remplissent au village.",
 		"tel": "Ta vie, c'est la [color=#7fe08a]barre verte[/color] en haut à gauche. Elle baisse ? Bois une [color=#ffd77a]potion[/color] 🧪. Elles se remplissent au village."},
 	{"id": "fin", "btn": null,
-		"pc": "Bravo ! Tes autres compétences ([color=#ffd77a]2[/color] à [color=#ffd77a]8[/color]) s'apprennent en montant de niveau ; la [color=#ffd77a]8[/color] est l'ultime de ta voie, au niveau 10. Elles dépensent la ressource de ta classe (la barre colorée sous ta vie). Survole un bouton pour relire ce qu'il fait, et appuie sur [color=#ffd77a]C[/color] pour placer tes points d'attributs.",
+		"pc": "Bravo ! Tes autres compétences ([color=#ffd77a]{comp_2}[/color] à [color=#ffd77a]{comp_8}[/color]) s'apprennent en montant de niveau ; la [color=#ffd77a]{comp_8}[/color] est l'ultime de ta voie, au niveau 10. Elles dépensent la ressource de ta classe (la barre colorée sous ta vie). Survole un bouton pour relire ce qu'il fait, et appuie sur [color=#ffd77a]{fiche}[/color] pour placer tes points d'attributs.",
 		"tel": "Bravo ! Tes autres compétences s'apprennent en montant de niveau ; la plus haute de l'éventail est l'ultime de ta voie, au niveau 10. Elles dépensent la ressource de ta classe (la barre colorée sous ta vie). Le bouton 📜 ouvre ta fiche, pour placer tes points d'attributs."},
 ]
 
@@ -118,7 +118,7 @@ func did(id: String) -> bool:
 func _show() -> void:
 	var s: Dictionary = STEPS[step]
 	_title.text = "🐉 Braise t'apprend · %d / %d" % [step + 1, STEPS.size()]
-	_text.text = s.tel if touch else s.pc
+	_text.text = s.tel if touch else _avec_tes_touches(s.pc)
 	_ok.visible = s.id == "fin"
 	var btn = s.btn
 	if str(btn) == "cible" and not touch:
@@ -130,3 +130,13 @@ func _process(delta: float) -> void:
 	if _cheer_t > 0:
 		_cheer_t -= delta
 		_cheer.modulate.a = clampf(_cheer_t, 0, 1)
+
+
+## Les touches du texte suivent celles choisies dans ⌨ Touches.
+func _avec_tes_touches(t: String) -> String:
+	for a in Touches.ACTIONS:
+		var nom := Touches.label(a[0])
+		if a[0] == "garde" and nom == "Clic droit":
+			nom = "le clic droit"
+		t = t.replace("{%s}" % a[0], nom)
+	return t

@@ -71,8 +71,8 @@ Les planches des peuples n'ont pas de couleurs : le rouge de chaque pixel code u
 - Les règles (éléments, effets, menace, mort, XP) : `server/world/combat.go` et `server/world/arena.go` ; le Grand Sanglier : `server/world/boss.go`.
 - Le bestiaire (vie, dégâts, vitesse, butin) : `server/world/monster.go`. Où vivent les monstres : `server/world/maps/glennmor.monstres.json` (le serveur vérifie au démarrage que chaque camp est praticable).
 - Les dessins des bêtes : `python3 tools/sprites/forge_betes.py` (environ 3 minutes), ou seulement quelques-unes : `python3 tools/sprites/forge_betes.py loup sanglier`.
-- Les coups annoncés des petits monstres (charge, bond, piqué) et leurs pas de côté : `server/world/monstres.go`. La prochaine étape conseillée et sa flèche : `client/data/objectifs/glennmor.json`.
-- Les touches : `client/scripts/touches.gd` (gardées dans `user://reglages.cfg`). Capture du panneau : `--capture=world --touches`.
+- Les coups annoncés des petits monstres (charge, bond, piqué) et leurs pas de côté : `server/world/monstres.go`. La prochaine étape conseillée : `client/data/objectifs/glennmor.json`.
+- Les touches (clavier, souris sauf le clic gauche, manette) : `client/scripts/touches.gd` (gardées dans `user://reglages.cfg`). Capture du panneau : `--capture=world --touches`.
 - Capture d'un combat : `--capture=world --cible=sanglier --competences=1,5,roulade` (ajoute `--tactile` pour la disposition téléphone).
 - Les duels : `server/world/duel.go`. Capture d'un duel à deux clients : lance d'abord `--capture=world --device=capture-lumenfall-0002 --name=Brann --accepter --reste=20`, puis un second `--capture=world --defier=Brann --competences=1,5,1`.
 

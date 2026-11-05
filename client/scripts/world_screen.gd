@@ -73,8 +73,6 @@ var sheet: HeroSheet        # la fiche du héros ouverte (C), ou nil
 var miroir_btn: Button
 var _me := {}               # le dernier état privé du héros (opMe)
 var objectif: Label          # « 🎯 la prochaine étape », sous les boutons
-var _fleche: Node2D          # la flèche autour du héros, vers la prochaine étape
-var _vers = null             # le lieu de la prochaine étape (cases), ou null
 var sheet_btn: Button       # « 📜 Héros » : un point lumineux quand des talents attendent
 var _miroir: Miroir
 const MIROIR_REACH := 7.0   # cases : assez près de Sœur Clémence pour le miroir de Solenn
@@ -110,9 +108,6 @@ func _ready() -> void:
 	fx_layer = Node2D.new()
 	fx_layer.z_index = 50
 	add_child(fx_layer)
-	_fleche = Node2D.new()
-	_fleche.draw.connect(_draw_fleche)
-	fx_layer.add_child(_fleche)
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
@@ -630,8 +625,6 @@ func _process(delta: float) -> void:
 		_maybe_tutorial()
 	if my_sid != -1 and pawns.has(my_sid):
 		camera.position = pawns[my_sid].position
-		_fleche.position = pawns[my_sid].position + Vector2(0, -20)
-		_fleche.queue_redraw()
 	# Un coup critique fait trembler l'écran ; le coup fatal d'un élite ralentit le temps (sur ton écran seulement).
 	if _shake > 0:
 		_shake = maxf(0, _shake - delta / maxf(0.05, Engine.time_scale))
@@ -688,10 +681,15 @@ func _interpolate() -> void:
 func _read_direction() -> void:
 	var d := Vector2.ZERO
 	if not chat_edit.has_focus():
-		if Input.is_physical_key_pressed(Touches.key("haut")) or Input.is_key_pressed(KEY_UP): d.y -= 1
-		if Input.is_physical_key_pressed(Touches.key("bas")) or Input.is_key_pressed(KEY_DOWN): d.y += 1
-		if Input.is_physical_key_pressed(Touches.key("gauche")) or Input.is_key_pressed(KEY_LEFT): d.x -= 1
-		if Input.is_physical_key_pressed(Touches.key("droite")) or Input.is_key_pressed(KEY_RIGHT): d.x += 1
+		if Touches.pressed("haut") or Input.is_key_pressed(KEY_UP): d.y -= 1
+		if Touches.pressed("bas") or Input.is_key_pressed(KEY_DOWN): d.y += 1
+		if Touches.pressed("gauche") or Input.is_key_pressed(KEY_LEFT): d.x -= 1
+		if Touches.pressed("droite") or Input.is_key_pressed(KEY_RIGHT): d.x += 1
+		# Le stick gauche d'une manette.
+		for j in Input.get_connected_joypads():
+			var st := Vector2(Input.get_joy_axis(j, JOY_AXIS_LEFT_X), Input.get_joy_axis(j, JOY_AXIS_LEFT_Y))
+			if st.length() > 0.3:
+				d = st.limit_length(1.0)
 	if joystick != null and joystick.value.length() > 0.2:
 		d = joystick.value
 	var w := Iso.screen_dir_to_world(d.normalized() if d.length() > 1 else d)
@@ -719,7 +717,7 @@ func _through_door() -> void:
 
 
 func _running() -> bool:
-	return _run_toggle or (not chat_edit.has_focus() and Input.is_physical_key_pressed(Touches.key("courir")))
+	return _run_toggle or (not chat_edit.has_focus() and Touches.pressed("courir"))
 
 
 func _wave() -> void:
@@ -740,13 +738,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_ESCAPE and chat_edit.visible:
 			chat_edit.visible = false
 			chat_edit.release_focus()
-		elif event.physical_keycode == Touches.key("saluer") and not chat_edit.has_focus():
-			_wave()
 		elif not chat_edit.has_focus() and _combat_key(event):
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		_set_block(event.pressed)
+	elif (event is InputEventMouseButton or event is InputEventJoypadButton) and event.pressed \
+			and not chat_edit.has_focus() and _combat_key(event):
+		get_viewport().set_input_as_handled()
+		return
+	# Le bouclier (clic droit par défaut) : levé tant que le bouton est tenu.
+	if not event.is_echo() and Touches.action_for_event(event) == "garde":
+		_set_block(event.is_pressed())
+		return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_by(1.1)
@@ -937,12 +939,16 @@ func _set_tuto_done(on: bool) -> void:
 	cfg.set_value("jeu", "tuto_combat", on)
 	cfg.save(WorldSky.SETTINGS)
 
-## Les touches de combat (par défaut 1 à 8, R, Espace, Tab, C ; à changer dans ⌨ Touches) et Échap.
-func _combat_key(event: InputEventKey) -> bool:
+## Les touches de combat (par défaut 1 à 8, R, Espace, Tab, C ; à changer dans ⌨ Touches,
+## clavier, souris ou manette) et Échap.
+func _combat_key(event: InputEvent) -> bool:
+	var act := Touches.action_for_event(event)
+	if act == "saluer":
+		_wave()
+		return true
 	if dialogue.visible:
 		return false   # 1 à 4 choisissent une réponse
-	var k := event.physical_keycode
-	var act := Touches.action_for(k)
+	var k := Touches.code_of(event) if event is InputEventKey else 0
 	if act.begins_with("comp_"):
 		_use_skill(int(act.substr(5)))
 	elif k >= KEY_KP_1 and k <= KEY_KP_8:
@@ -1118,14 +1124,15 @@ func _on_hit(src: int, tgt: int, value: int, flags: int, skill: int) -> void:
 	if src == my_sid or tgt == my_sid:
 		_fight_t = _clock
 	if tgt == my_sid and _hostile(src):
-		# Celui qui te frappe devient ta cible, si tu n'en avais pas.
+		# Celui qui te frappe devient ta cible, sauf si ta cible actuelle se bat
+		# déjà contre toi (sinon on sauterait de l'un à l'autre à chaque coup).
 		_assaillants[src] = _clock
-		if not _hostile(target_sid):
+		if src != target_sid and not (_hostile(target_sid) and _t_attaque(target_sid)):
 			_set_target(src)
 	if crit and (src == my_sid or tgt == my_sid):
 		_shake = 0.25
 	if tgt == my_sid and braise != null and randf() < 0.06:
-		braise.say(["Braise : « Aïe ! Je souffle sur la plaie ! »", "Braise : « Lève ton bouclier ! Clic droit ! »", "Braise : « Roule ! Roule ! »"].pick_random())
+		braise.say(["Braise : « Aïe ! Je souffle sur la plaie ! »", "Braise : « Lève ton bouclier ! %s ! »" % Touches.label("garde"), "Braise : « Roule ! Roule ! »"].pick_random())
 
 
 func _on_anim(sid: int, anim: String) -> void:
@@ -1218,6 +1225,11 @@ func _prochain_assaillant() -> int:
 			best = sid
 			quand = _assaillants[sid]
 	return best
+
+
+## Ce monstre t'a-t-il frappé ces 6 dernières secondes ?
+func _t_attaque(sid: int) -> bool:
+	return float(_assaillants.get(sid, -1e9)) > _clock - 6.0
 
 
 func _hostile(sid: int) -> bool:
@@ -1342,7 +1354,6 @@ func _update_objectif() -> void:
 	if FileAccess.file_exists(path):
 		data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	var texte := ""
-	_vers = null
 	if not data.is_empty() and not _me.is_empty():
 		var lv := int(_me.get("lv", 1))
 		var v := int(_me.get("v", -1))
@@ -1362,26 +1373,8 @@ func _update_objectif() -> void:
 					break
 		if texte == "" and etape.has("texte"):
 			texte = str(etape.texte)
-		if etape.has("vers"):
-			_vers = Vector2(etape.vers[0], etape.vers[1])
 	objectif.text = "🎯 " + texte
 	objectif.get_parent().visible = texte != ""
-
-
-## La flèche dorée autour du héros, vers la prochaine étape (cachée quand on y est).
-func _draw_fleche() -> void:
-	if _vers == null or not pawns.has(my_sid) or dialogue.visible:
-		return
-	var me: Pawn = pawns[my_sid]
-	if Iso.to_world(me.position).distance_to(_vers) < 14.0:
-		return
-	var d: Vector2 = (Iso.to_screen(_vers) - me.position).normalized()
-	var p := d * (62.0 + 4.0 * sin(_clock * 4.0))
-	var n := Vector2(-d.y, d.x)
-	var pts := PackedVector2Array([p + d * 22, p + n * 13, p - d * 2, p - n * 13])
-	_fleche.draw_colored_polygon(pts, Color(UI.LUMEN, 0.95))
-	pts.append(pts[0])
-	_fleche.draw_polyline(pts, Color(0, 0, 0, 0.7), 2.0, true)
 
 
 ## Le point lumineux sur « 📜 Héros » : des points de talent attendent d'être placés.
