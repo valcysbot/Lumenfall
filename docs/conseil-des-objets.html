@@ -1,0 +1,535 @@
+<title>Le Conseil des Objets</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout : une salle d'armes nocturne. Barre d'XP collante en haut, chapitres en onglets, cartes de questions en colonne, Braise en bas. */
+:root {
+  --night: #15131d;
+  --stone: #201c2b;
+  --stone-2: #2a2538;
+  --line: #3b3450;
+  --parch: #efe6d6;
+  --muted: #a99fba;
+  --ember: #f08a3c;
+  --ember-soft: #f08a3c26;
+  --lumen: #e8c66a;
+  --lumen-soft: #e8c66a22;
+  --moss: #86c493;
+  --f-display: "Uncial Antiqua", "Palatino Linotype", Georgia, serif;
+  --f-head: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(ellipse at 50% -10%, #3a2516 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--parch);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stone); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Barre d'XP */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stone); border-bottom: 1px solid var(--line); }
+.hud .wrap { display: flex; align-items: center; gap: 14px; padding-block: 10px; flex-wrap: wrap; }
+.lvl { font-family: var(--f-head); font-weight: 700; color: var(--lumen); white-space: nowrap; }
+.lvl small { display: block; font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; }
+.xpbar { flex: 1; min-width: 140px; height: 12px; background: var(--night); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.xpfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ember), var(--lumen)); transition: width .5s ease; }
+.xptxt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badges { display: flex; gap: 6px; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--night); border: 1px dashed var(--line); filter: grayscale(1); opacity: .45; transition: all .4s; }
+.badge.on { filter: none; opacity: 1; border: 1px solid var(--lumen); box-shadow: 0 0 10px var(--lumen-soft); }
+
+/* En-tête */
+header.hero { padding-block: 36px 18px; }
+.eyebrow { font-family: var(--f-head); letter-spacing: .12em; color: var(--ember); font-size: 14px; text-transform: uppercase; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 7vw, 50px); line-height: 1.08; margin: 6px 0 12px; text-wrap: balance; color: var(--lumen); }
+.lead { color: var(--parch); max-width: 62ch; margin: 0; }
+.legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 14px; }
+
+/* Onglets des chapitres */
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding-block: 8px 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; font-family: var(--f-head); font-size: 15px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--night); background: var(--lumen); border-color: var(--lumen); }
+.tab .cnt { font-family: var(--f-body); font-variant-numeric: tabular-nums; font-size: 13px; margin-left: 6px; opacity: .8; }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Chapitre */
+.chap-head { padding-block: 22px 6px; }
+.chap-head h2 { font-family: var(--f-head); font-size: 26px; margin: 0; color: var(--parch); }
+.chap-head p { color: var(--muted); margin: 4px 0 0; }
+.qlist { display: flex; flex-direction: column; gap: 16px; padding-block: 12px 20px; }
+
+.q { background: var(--stone); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: border-color .3s; }
+.q.done { border-color: #86c49366; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q h3 { font-family: var(--f-body); font-weight: 700; font-size: 19px; margin: 0; text-wrap: balance; }
+.q .num { font-family: var(--f-head); color: var(--muted); font-size: 13px; white-space: nowrap; }
+.q .why { color: var(--muted); font-size: 15px; margin: 0; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { text-align: left; font: inherit; color: var(--parch); background: var(--stone-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.opt:hover { border-color: var(--muted); }
+.opt b { font-weight: 700; }
+.opt span { grid-column: 1; color: var(--muted); font-size: 15px; }
+.opt .star { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--lumen); font-size: 13px; white-space: nowrap; }
+.opt.sel { border-color: var(--ember); background: var(--ember-soft); }
+.opt.sel span { color: var(--parch); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tool { font: inherit; font-size: 15px; color: var(--parch); background: transparent; border: 1px dashed var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.tool.sel { border-style: solid; border-color: var(--ember); background: var(--ember-soft); }
+.saved { margin-left: auto; color: var(--moss); font-size: 14px; opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; color: var(--parch); background: var(--night); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+
+/* Coffre */
+.chest { margin-block: 4px 24px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--stone); display: flex; gap: 16px; align-items: center; }
+.chest .ico { font-size: 40px; line-height: 1; }
+.chest.locked { opacity: .6; }
+.chest.open { border-color: var(--lumen); background: linear-gradient(135deg, var(--stone), #2c2416); }
+.chest.open .ico { animation: pop .6s ease; }
+.chest h4 { font-family: var(--f-head); margin: 0 0 4px; color: var(--lumen); font-size: 18px; }
+.chest p { margin: 0; }
+.chest .lore { font-style: italic; }
+.chest .tiny { color: var(--muted); font-size: 13px; margin-top: 6px; }
+@keyframes pop { 0% { transform: scale(.6) rotate(-12deg); } 60% { transform: scale(1.25) rotate(6deg); } 100% { transform: none; } }
+
+.finale { margin-block: 10px 30px; padding: 20px; border-radius: 14px; border: 1px solid var(--lumen); background: var(--lumen-soft); }
+.finale h3 { font-family: var(--f-display); font-weight: 400; color: var(--lumen); margin: 0 0 6px; font-size: 26px; }
+.finale p { margin: 0; }
+
+.store-note { color: var(--muted); font-size: 14px; padding-block: 4px; }
+
+/* Braise */
+.braise-space { height: 120px; }
+.braise { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding-bottom: env(safe-area-inset-bottom, 0px); pointer-events: none; }
+.braise .wrap { display: flex; align-items: flex-end; gap: 10px; padding-block: 10px; }
+.dragon { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 10px #f08a3c88); animation: float 3s ease-in-out infinite; }
+.bubble { pointer-events: auto; background: var(--stone-2); border: 1px solid var(--ember); border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 520px; font-size: 15px; box-shadow: 0 6px 24px #0009; }
+.bubble b { color: var(--ember); font-family: var(--f-head); }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.toast { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--lumen); color: var(--night); font-family: var(--f-head); font-weight: 700; padding: 8px 16px; border-radius: 99px; opacity: 0; transition: all .35s; z-index: 8; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .badges { order: 3; width: 100%; }
+  .dragon { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="hud">
+  <div class="wrap">
+    <div class="lvl" id="lvl">Niv. 1 · Ombre sans visage<small id="lvlnext">50 XP pour le niveau 2</small></div>
+    <div class="xpbar" aria-hidden="true"><div class="xpfill" id="xpfill"></div></div>
+    <div class="xptxt" id="xptxt">0 XP · 0/27</div>
+    <div class="badges" id="badges" aria-label="Badges de chapitre"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Lumenfall · Acte V, objets, métiers et économie</div>
+    <h1>Le Conseil des Objets</h1>
+    <p class="lead">L'Acte IV est validé : quinze peuples et dix-sept classes arpentent Erydor, chacun sur sa voie. Mais leurs sacs sont vides ! Une arme, cinq potions, un peu d'or et des crocs de loup qui ne servent à rien. L'Acte V remplit tout ça : l'équipement, le butin, les métiers, les marchands. Braise et moi avons 38 questions pour toi, en 7 chapitres. Chaque réponse est sauvegardée toute seule, et je la relis de mon côté.</p>
+    <div class="legend">
+      <span>⭐ ma recommandation</span>
+      <span>🤷 « À toi de voir » : je choisis la ⭐</span>
+      <span>📝 « Précision » : ajoute un mot</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chapitres"></nav>
+  <section id="chapter" aria-live="polite"></section>
+  <p class="store-note" id="storenote"></p>
+  <div class="braise-space"></div>
+</main>
+
+<div class="braise" aria-live="polite">
+  <div class="wrap">
+    <div class="dragon" aria-hidden="true">🐉</div>
+    <div class="bubble" id="bubble"><b>Braise :</b> Re-re-salut, héros ! J'ai vidé mon trésor sur la table pour t'aider à choisir. Bon, c'est surtout des cailloux brillants. Mais ce sont MES cailloux brillants.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHAPTERS = [
+  { id: "sac", icon: "🎒", title: "L'équipement", sub: "Ce que porte un héros. Aujourd'hui, il n'a que son arme de classe, 5 potions, de l'or et des trophées qui ne servent à rien. Tout commence ici.",
+    chest: { title: "Fragment XXVIII : l'enclume de Doran", lore: "L'enclume de Doran porte une entaille profonde. Il raconte qu'un chevalier y a fendu sa propre épée en voulant prouver qu'elle était incassable. Le chevalier est reparti avec une épée neuve, et Doran avec une très bonne histoire." },
+    qs: [
+      { id: "emplacements", t: "Combien d'emplacements d'équipement ?", why: "En l'Acte II, tu as choisi les pièces visibles : casque, torse, jambes, bottes, gants, cape et arme. On peut s'arrêter là ou ajouter des bijoux, qui ne se voient pas mais donnent de quoi chercher.", rec: 0, o: [
+        ["12 : les 7 pièces visibles, la main gauche (bouclier, livre, carquois…), les épaulières, une amulette et 2 anneaux", "Le classique des MMORPG : beaucoup de petites trouvailles."],
+        ["8 : les 7 pièces visibles et la main gauche", "Plus simple, tout se voit à l'écran."],
+        ["16 : les 12, plus ceinture, brassards, boucles d'oreilles et relique", "Très riche, mais un écran chargé sur téléphone."] ] },
+      { id: "types", t: "Les classes portent-elles des armures différentes ?", why: "Un Mage en armure de plaques, c'est drôle, mais ça brouille les rôles. Quatre types d'armure donnent aussi une allure à chaque classe.", rec: 0, o: [
+        ["Oui, 4 types (tissu, cuir, mailles, plaques), chaque classe a le sien", "Le Paladin brille en plaques, le Voleur glisse en cuir, le Mage flotte dans sa robe."],
+        ["Non, chacun porte ce qu'il veut, l'armure lourde ralentit un peu", "Plus libre, plus dur à équilibrer."],
+        ["Non, une seule sorte d'armure pour tous", "Le plus simple."] ] },
+      { id: "voir", t: "L'équipement se voit-il sur le héros ?", why: "La forge des peuples sait déjà dessiner les habits et 20 armes, en couches teintées.", rec: 0, o: [
+        ["Oui : chaque pièce change le dessin (forme selon le type d'armure, couleurs selon la rareté et la région)", "On reconnaît un héros bien équipé de loin."],
+        ["Seulement l'arme et le casque", "Moins de dessins, livré plus vite."],
+        ["Non, on garde la tunique choisie au miroir", "Rien à dessiner."] ] },
+      { id: "apparence", t: "Peut-on garder une allure qu'on aime ?", why: "Le chapeau parfait a souvent les pires chiffres.", rec: 0, o: [
+        ["Oui : chez le Miroir de Solenn, on copie l'apparence d'une pièce qu'on a déjà portée sur une autre, contre un peu d'or", "La mode sans sacrifier la force."],
+        ["Oui, gratuitement, depuis la fiche du héros", "Plus généreux, un puits d'or en moins."],
+        ["Non, ce qu'on porte est ce qu'on voit", "Le plus simple."] ] },
+      { id: "sac", t: "La taille du sac ?", why: "Un petit sac oblige à faire des choix, un grand sac évite les allers-retours au village.", rec: 0, o: [
+        ["30 places au départ, et des sacs plus grands à fabriquer ou à acheter (jusqu'à 90)", "Le sac grandit avec le héros, et ça fait un bel objet pour les couturiers."],
+        ["60 places pour tout le monde, sans changement", "Simple, on n'y pense plus."],
+        ["Un poids maximum plutôt que des places", "Réaliste, mais pénible à gérer."] ] },
+      { id: "usure", t: "L'équipement s'use-t-il ?", why: "L'usure crée un besoin régulier de forgerons et retire de l'or du jeu, mais elle agace certains joueurs.", rec: 0, o: [
+        ["Oui, un peu : il s'use à chaque mort, Doran le répare contre de l'or. Cassé, il ne donne plus rien mais ne disparaît jamais", "Mourir a un petit prix, sans jamais tout perdre."],
+        ["Oui, il s'use aussi en combattant", "Plus de travail pour les forgerons, plus de passages en ville."],
+        ["Non, jamais", "Aucune contrainte."] ] },
+    ] },
+  { id: "objets", icon: "💎", title: "Les objets", sub: "Raretés, chiffres, niveaux : ce qui rend une trouvaille excitante.",
+    chest: { title: "Fragment XXIX : la bague d'Aelis", lore: "Aelis porte une bague qu'elle refuse de vendre, à n'importe quel prix. Mabon dit qu'elle vient d'un amoureux. Nessa dit qu'elle vient d'un mort. Aelis dit qu'elle vient de la boutique d'en face, qui n'existe plus." },
+    qs: [
+      { id: "raretes", t: "Combien de raretés ?", why: "La couleur du nom dit tout de suite si la trouvaille est bonne.", rec: 0, o: [
+        ["6 : commun (gris), peu commun (vert), rare (bleu), épique (violet), légendaire (orange), et lumineux (doré), les objets uniques nés du Lumenfall", "Le classique, plus une rareté propre à Erydor."],
+        ["5 : de commun à légendaire", "Le classique tout court."],
+        ["3 : normal, rare, légendaire", "Plus simple, moins de frisson."] ] },
+      { id: "chiffres", t: "Les chiffres d'un objet ?", why: "Deux épées du même nom peuvent être identiques, ou chacune unique.", rec: 0, o: [
+        ["Une base fixe, et des bonus tirés au hasard (plus nombreux selon la rareté)", "Chaque trouvaille est à regarder, on cherche « la bonne »."],
+        ["Tout fixe : une épée est toujours la même épée", "Lisible, on sait ce qu'on cherche."],
+        ["Tout au hasard", "Beaucoup de surprises, beaucoup de déchets."] ] },
+      { id: "bonus", t: "Que donnent les bonus ?", why: "Les héros ont déjà 9 attributs, des résistances aux 6 éléments et des talents.", rec: 0, o: [
+        ["Des attributs, de la vie, des résistances, et des effets propres (critique, vol de vie, vitesse…) ; les légendaires changent une compétence", "Un légendaire se sent comme un talent en plus."],
+        ["Seulement des attributs et de la vie", "Simple et clair."],
+        ["Des attributs, et des pierres à sertir", "On personnalise son équipement, mais c'est plus long à construire."] ] },
+      { id: "niveau", t: "Un niveau pour porter un objet ?", why: "Le jeu n'a pas de niveau maximum.", rec: 0, o: [
+        ["Oui : chaque objet a un niveau, on le porte à partir de ce niveau", "Pas de héros niveau 2 en armure de boss."],
+        ["Non, mais un objet de trop haut niveau est affaibli", "Plus souple, plus compliqué à lire."],
+        ["Non, aucune limite", "Les amis puissants peuvent tout donner aux débutants."] ] },
+      { id: "lie", t: "Peut-on donner ou vendre ses objets à d'autres joueurs ?", why: "Si tout s'échange, les meilleurs objets finissent achetés plutôt que gagnés.", rec: 0, o: [
+        ["Oui, sauf les épiques et plus, liés au héros dès qu'on les ramasse", "Le commerce vit, et les grands objets restent des exploits."],
+        ["Oui, tous, mais un objet porté devient lié", "Plus de commerce, un peu moins de mérite."],
+        ["Tout s'échange, toujours", "Le marché le plus libre."] ] },
+      { id: "comparer", t: "Comparer avec ce qu'on porte ?", why: "Avec des bonus au hasard, on veut savoir vite si c'est mieux.", rec: 0, o: [
+        ["Oui : flèches vertes et rouges, et une note ⭐ selon ta voie (comme la répartition conseillée)", "On voit en un coup d'œil, même sans tout comprendre."],
+        ["Seulement les chiffres côte à côte", "Précis, mais il faut réfléchir."] ] },
+    ] },
+  { id: "butin", icon: "🪙", title: "Le butin", sub: "Ce qui tombe des monstres, et comment on le partage.",
+    chest: { title: "Fragment XXX : le magot du Sanglier", lore: "Personne ne sait pourquoi le Grand Sanglier de Mabon garde des pièces dans sa bauge. Fiacre pense qu'il les avale. Bréval pense qu'il les vole. Tam a juré d'aller vérifier, et Tilda a juré de le dénoncer avant." },
+    qs: [
+      { id: "partage", t: "En groupe, à qui va le butin ?", why: "Le partage du butin est la première source de disputes dans un MMORPG.", rec: 0, o: [
+        ["Chacun le sien : chaque héros qui a aidé reçoit son propre butin, invisible aux autres", "Zéro dispute, et on peut toujours donner ce qu'on a eu."],
+        ["Butin commun, on lance les dés (besoin / cupidité)", "Le classique, avec ses petits drames."],
+        ["Le premier qui ramasse", "Simple, et parfait pour se fâcher."] ] },
+      { id: "ramasser", t: "Comment on ramasse ?", why: "Sur téléphone, chaque clic compte.", rec: 0, o: [
+        ["Les objets brillent au sol à la couleur de leur rareté ; l'or et les matériaux vont tout seuls dans le sac, les objets d'un clic", "Le plaisir de voir tomber un objet violet, sans corvée."],
+        ["Tout va directement dans le sac", "Rapide, mais moins de frisson."],
+        ["On fouille le corps du monstre", "Classique, plus lent."] ] },
+      { id: "trophees", t: "Les trophées actuels (défenses, crocs, plumes) ?", why: "Ils tombent depuis l'Acte III et ne servent encore à rien.", rec: 0, o: [
+        ["Ils deviennent des matériaux pour les métiers, et ceux déjà gagnés vont dans le sac", "Personne ne perd ce qu'il a chassé."],
+        ["Ils se vendent à Aelis, c'est tout", "Simple."],
+        ["On les efface", "Page blanche."] ] },
+      { id: "boss", t: "Le butin du Grand Sanglier ?", why: "Un boss doit valoir le détour, et donner envie de revenir.", rec: 0, o: [
+        ["Une pièce épique à coup sûr pour chacun, et une petite chance d'un légendaire unique (« les Défenses de Mabon »)", "On sait pourquoi on y retourne."],
+        ["Un coffre commun avec quelques objets", "Plus rare, plus précieux."] ] },
+      { id: "dore", t: "Le Sanglier doré ?", why: "Il apparaît 3 fois sur 100 et s'enfuit.", rec: 0, o: [
+        ["Il lâche beaucoup d'or et un matériau rare (« soie dorée ») recherché par les artisans", "Une petite fête quand on l'attrape."],
+        ["Il lâche un objet rare au hasard", "Plus simple."] ] },
+    ] },
+  { id: "metiers", icon: "⚒️", title: "Les métiers", sub: "Récolter dans le monde, fabriquer au village. C'est le plus gros morceau de l'Acte V.",
+    chest: { title: "Fragment XXXI : le chaudron de Nessa", lore: "Nessa n'a jamais raté une potion. Elle a raté beaucoup d'autres choses, dont un toit, deux chèvres et un sourcil, mais jamais une potion." },
+    qs: [
+      { id: "liste", t: "Quels métiers ?", why: "Chaque métier, c'est des matériaux, des recettes, un PNJ maître et des objets à équilibrer.", rec: 0, o: [
+        ["4 de récolte (minage, herboristerie, dépeçage, bûcheronnage) et 6 d'artisanat (forge, couture, travail du cuir, alchimie, joaillerie, cuisine)", "Chaque pièce d'équipement a son artisan, et chaque artisan a besoin des autres."],
+        ["3 de récolte et 4 d'artisanat (forge, couture, alchimie, cuisine)", "Plus léger, livré plus vite."],
+        ["Les 10, plus la pêche et l'enchantement", "Le plus complet, le plus long."] ] },
+      { id: "combien", t: "Combien de métiers par héros ?", why: "Si un héros peut tout faire, il n'a besoin de personne.", rec: 0, o: [
+        ["Toutes les récoltes, mais 2 métiers d'artisanat par héros (la cuisine en plus, pour tous)", "On a besoin de ses amis, et les 3 héros du compte se complètent."],
+        ["Tous, sans limite", "Pratique seul, moins d'échanges."],
+        ["2 métiers en tout, récolte comprise", "Très dépendant des autres."] ] },
+      { id: "recolte", t: "Les filons et les plantes ?", why: "Partagés, ils créent des courses ; personnels, chacun a les siens.", rec: 0, o: [
+        ["Chacun les siens : un filon récolté disparaît seulement pour toi", "Pas de vol entre joueurs, on peut récolter ensemble."],
+        ["Partagés, le premier arrivé se sert", "Plus réaliste, plus tendu."] ] },
+      { id: "fabriquer", t: "Comment on fabrique ?", why: "Sur téléphone comme sur PC.", rec: 0, o: [
+        ["À l'atelier du village : on choisit la recette, une barre se remplit, et un petit coup de chance peut donner une qualité supérieure (+1 rareté)", "Simple, avec un frisson."],
+        ["Un petit jeu de rythme à chaque fabrication", "Amusant 10 fois, pénible 100 fois."],
+        ["N'importe où, depuis le sac", "Le plus pratique, mais les ateliers ne servent à rien."] ] },
+      { id: "progresser", t: "Comment progresse un métier ?", why: "Il faut que fabriquer donne envie, sans devenir une corvée.", rec: 0, o: [
+        ["Un niveau de métier qui monte en fabriquant et en récoltant ; les recettes s'apprennent auprès des maîtres ou tombent des monstres", "On cherche des recettes rares, comme du butin."],
+        ["Toutes les recettes d'un coup, le niveau du héros fait le reste", "Simple, mais peu de progression."] ] },
+      { id: "valeur", t: "Les objets fabriqués valent-ils le butin ?", why: "Si le butin est toujours meilleur, personne ne fabrique.", rec: 0, o: [
+        ["Aussi bons que le butin de rareté égale ; les meilleurs demandent des matériaux de boss", "Artisans et aventuriers ont besoin les uns des autres."],
+        ["Un peu moins bons, mais faciles à obtenir", "L'artisanat aide à démarrer."],
+        ["Les meilleurs du jeu", "Les artisans deviennent rois."] ] },
+      { id: "maitres", t: "Qui enseigne les métiers à Bourg-Lanterne ?", why: "Le village a déjà Doran le forgeron, Nessa l'herboriste et Aelis la marchande.", rec: 0, o: [
+        ["Doran (forge, minage, joaillerie), Nessa (herboristerie, alchimie), Gwenn (couture, cuir, dépeçage), Mabon (cuisine), et un bûcheron qui arrive au village", "Les habitants prennent du travail, et on les connaît déjà."],
+        ["Un seul maître des métiers pour tout", "Plus simple, moins vivant."] ] },
+    ] },
+  { id: "economie", icon: "⚖️", title: "Marchands et économie", sub: "Acheter, vendre, échanger entre joueurs, et éviter que l'or ne perde sa valeur.",
+    chest: { title: "Fragment XXXII : la pièce trouée", lore: "À Bourg-Lanterne, on paie encore avec des pièces trouées au milieu, pour les enfiler sur une ficelle. Mabon accepte aussi les histoires, s'il ne les connaît pas déjà. Il les connaît toutes." },
+    qs: [
+      { id: "monnaie", t: "La monnaie ?", why: "Aujourd'hui, tout se compte en or.", rec: 0, o: [
+        ["L'or seul, avec de grands nombres", "Le plus lisible."],
+        ["Or, argent, cuivre (100 cuivres = 1 argent, 100 argents = 1 or)", "Classique et plus « médiéval », un peu plus long à lire."],
+        ["L'or, et une monnaie d'honneur pour les donjons et le PvP plus tard", "Chaque activité a sa récompense."] ] },
+      { id: "marchands", t: "Les marchands PNJ ?", why: "Aelis tient le marché du village.", rec: 0, o: [
+        ["Aelis vend les bases (sacs, outils, matériaux simples, potions) et rachète tout à bas prix ; on peut racheter un objet vendu par erreur", "Toujours un débouché, jamais de regret."],
+        ["Ils vendent de l'équipement complet", "Pratique, mais le butin et l'artisanat valent moins."],
+        ["Ils ne font que racheter", "Tout passe par les joueurs."] ] },
+      { id: "echange", t: "L'échange entre joueurs ?", why: "Les héros se croisent déjà ; il manque la façon de se donner des choses.", rec: 0, o: [
+        ["Une fenêtre d'échange face à face : chacun pose ses objets et son or, les deux valident", "Sûr, aucune arnaque possible."],
+        ["Donner un objet d'un clic", "Plus rapide, risque de mauvais clic."],
+        ["Par courrier seulement", "Pratique à distance, moins vivant."] ] },
+      { id: "hdv", t: "Un hôtel des ventes ?", why: "La bible place le grand marché à Médiolane, qui n'existe pas encore.", rec: 0, o: [
+        ["Oui, dès maintenant, au marché de Bourg-Lanterne (il déménagera à Médiolane), avec une petite taxe sur chaque vente", "On vend même hors ligne, et la taxe garde l'or précieux."],
+        ["Plus tard, avec Médiolane (Acte IX)", "Pour l'instant, on échange de main à main."],
+        ["Jamais : seulement l'échange direct", "Une économie plus humaine, plus lente."] ] },
+      { id: "banque", t: "Un coffre à la banque ?", why: "Chaque compte a 3 héros.", rec: 0, o: [
+        ["Oui, un coffre partagé entre les 3 héros du compte, à l'auberge", "On passe ses trouvailles à ses autres héros."],
+        ["Un coffre par héros", "Plus simple, moins pratique."],
+        ["Non, seulement le sac", "Pas de coffre."] ] },
+      { id: "puits", t: "Comment garder l'or précieux ?", why: "Si l'or rentre plus vite qu'il ne sort, les prix explosent. Les sorties actuelles : le miroir, la voie, les talents.", rec: 0, o: [
+        ["Réparations, taxe de l'hôtel des ventes, apprentissage des recettes, et j'ajoute un suivi de l'or qui entre et sort pour régler", "Une économie surveillée, réglée sur des chiffres."],
+        ["Juste les réparations et la taxe", "Plus léger."] ] },
+    ] },
+  { id: "conso", icon: "🧪", title: "Potions et provisions", sub: "Les 5 potions remplies gratuitement par Sœur Clémence, et ce qu'on mange en route.",
+    chest: { title: "Fragment XXXIII : le ragoût de Mabon", lore: "La recette du ragoût de La Chope Pleine tient en une ligne : « un peu de tout, beaucoup de temps ». Les héros qui en mangent se battent mieux. Personne ne sait si c'est le ragoût ou la peur d'en reprendre." },
+    qs: [
+      { id: "potions", t: "Les potions de soin ?", why: "Aujourd'hui, 5 potions remplies gratuitement au village. Avec l'alchimie, elles peuvent devenir un produit.", rec: 0, o: [
+        ["Clémence remplit toujours 3 potions gratuites ; les autres s'achètent ou se fabriquent, en plusieurs tailles", "Les débutants sont protégés, les alchimistes ont des clients."],
+        ["On garde les 5 gratuites, l'alchimie fait d'autres potions (force, résistance…)", "Rien ne change pour le soin."],
+        ["Plus de potions gratuites", "L'alchimie devient indispensable."] ] },
+      { id: "nourriture", t: "La nourriture ?", why: "La cuisine peut donner des bonus courts, comme un petit talent temporaire.", rec: 0, o: [
+        ["Un plat à la fois, 30 minutes de bonus (vie, attribut, résistance), et on régénère plus vite assis", "Une raison de passer à l'auberge avant de partir."],
+        ["Seulement pour régénérer hors combat", "Simple."],
+        ["Pas de cuisine pour l'instant", "Un métier de moins."] ] },
+      { id: "barre", t: "Où vont les objets à utiliser ?", why: "La barre a 8 compétences, plus la potion sur R.", rec: 0, o: [
+        ["La touche R garde la potion choisie, et 2 emplacements rapides pour les autres objets (nourriture, parchemins)", "Pratique, sans encombrer l'éventail du téléphone."],
+        ["Tout passe par le sac", "Rien de plus à l'écran."] ] },
+    ] },
+  { id: "fin", icon: "🏁", title: "Livrer l'Acte V", sub: "L'écran du sac, l'ordre de livraison, et les héros d'aujourd'hui.",
+    chest: { title: "Fragment XXXIV : le registre de Fiacre", lore: "Fiacre tient un registre de tout ce qui se vend au village. Personne ne lui a demandé. Il dit que dans mille ans, quelqu'un voudra savoir combien coûtait une botte de navets en l'an 312. Il a sans doute raison." },
+    qs: [
+      { id: "ecran", t: "L'écran du sac ?", why: "La fiche du héros (C) a déjà 3 onglets.", rec: 0, o: [
+        ["Une fenêtre à part (touche I, bouton 🎒) : le héros au centre avec ses pièces, le sac à côté ; glisser-déposer sur PC, toucher puis « Équiper » sur téléphone", "Le grand classique, à l'aise sur les deux."],
+        ["Un 4ᵉ onglet dans la fiche du héros", "Tout au même endroit, mais à l'étroit."] ] },
+      { id: "existants", t: "Les héros d'aujourd'hui ?", why: "Ils ont des niveaux, de l'or et des trophées, mais aucun équipement.", rec: 0, o: [
+        ["On les garde : chacun reçoit un équipement commun de son niveau et de sa classe, et ses trophées deviennent des matériaux", "Personne ne perd rien."],
+        ["Nouveau départ pour tous", "Tout le monde à égalité."] ] },
+      { id: "livraison", t: "Une grosse livraison, ou par étapes ?", why: "Pour l'Acte IV, tout est arrivé d'un coup (ton choix), et ça a pris plus de temps.", rec: 0, o: [
+        ["En 3 versions : V0.6 l'équipement et le butin, V0.7 les métiers, V0.8 l'économie (échange, hôtel des ventes, coffre)", "Vous jouez plus tôt, et chaque morceau s'équilibre avec vos retours."],
+        ["Tout dans la V0.6", "Une seule attente, plus longue."] ] },
+      { id: "validation", t: "Quand l'Acte V est-il validé ?", why: "Les actes précédents ont été validés après avoir joué.", rec: 0, o: [
+        ["Après une soirée de jeu entre amis où vous échangez, fabriquez et vendez, avec les retours corrigés", "On ferme l'acte sur du solide."],
+        ["Dès la dernière livraison", "On file vers l'Acte VI."] ] },
+      { id: "nom", t: "Le nom de la V0.6 ?", why: "Après « Mille visages » et « Mille chemins ».", rec: 0, o: [
+        ["« Le butin »", "Simple et alléchant."],
+        ["« Mille trésors »", "Dans la lignée des deux précédentes."],
+        ["« L'enclume et la bourse »", "Les artisans et les marchands."] ] },
+    ] },
+];
+const TOTAL = CHAPTERS.reduce((n, c) => n + c.qs.length, 0);
+const STEP = 50;
+const LEVELS = ["Poches vides", "Ramasseur de cailloux", "Apprenti d'Aelis", "Compagnon de Doran", "Maître artisan", "Marchand de Bourg-Lanterne", "Trésorier du royaume", "Légende d'Erydor"];
+
+const BRAISE = {
+  rec: ["Excellent choix ! C'est aussi le mien. ⭐", "On pense pareil, toi et moi. Les grands esprits, tout ça.", "Approuvé par Braise, poinçonné par Doran.", "Parfait. Je note ça dans le grand registre, avec ma plus belle griffe."],
+  other: ["Oh, un choix audacieux ! J'aime l'audace. Noté.", "Pas ma ⭐, mais c'est toi le créateur. Je m'incline (et je prends des notes).", "Intéressant… Je vais y réfléchir en mangeant un caillou (pas un brillant).", "Noté ! Si ça coûte plus cher ou plus long, je te le dirai franchement."],
+  shrug: ["Je m'en occupe ! Je prends l'option ⭐.", "Confiance accordée. Je choisis la ⭐ et je ne brûle rien.", "Délégué au dragon. Excellente décision, si tu veux mon avis."],
+  prec: ["Ta précision est notée, merci !", "Un détail qui change tout. C'est noté.", "Un mélange ? J'adore les mélanges. Sauf la soupe de navets."],
+  chest: ["UN COFFRE ! Ouvre-le, ouvre-le !", "Chapitre bouclé ! Regarde ce que j'ai trouvé dans le coffre…"],
+  level: (n, name) => `NIVEAU ${n} ! Te voilà ${name}. Je fais un petit looping pour fêter ça.`,
+  done: "Le Conseil est clos ! Dis « c'est fait » dans le fil du projet, et je file allumer la forge. Doran a déjà mis son tablier.",
+};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let answers = {};   // qid -> { choix: index | "auto", precision: string }
+let current = CHAPTERS[0].id;
+let db = null, storeOk = false;
+const saving = {};
+const pendingSave = {};
+
+function xp() {
+  let x = 0;
+  for (const c of CHAPTERS) {
+    let all = true;
+    for (const q of c.qs) {
+      const a = answers[q.id];
+      if (a && a.choix !== undefined && a.choix !== null) { x += 10; if (a.precision && a.precision.trim()) x += 5; } else all = false;
+    }
+    if (all) x += 25;
+  }
+  return x;
+}
+const answeredCount = () => CHAPTERS.reduce((n, c) => n + c.qs.filter(q => isAnswered(q.id)).length, 0);
+const isAnswered = id => answers[id] && answers[id].choix !== undefined && answers[id].choix !== null;
+const chapDone = c => c.qs.every(q => isAnswered(q.id));
+const levelOf = x => Math.min(LEVELS.length, Math.floor(x / STEP) + 1);
+
+let lastLevel = 1;
+function renderHud(celebrate) {
+  const x = xp(), lv = levelOf(x);
+  const inLevel = lv >= LEVELS.length ? STEP : x % STEP;
+  document.getElementById("xpfill").style.width = (inLevel / STEP * 100) + "%";
+  document.getElementById("lvl").firstChild.textContent = `Niv. ${lv} · ${LEVELS[lv - 1]}`;
+  document.getElementById("lvlnext").textContent = lv >= LEVELS.length ? "Niveau maximum (pour l'Acte V)" : `${STEP - inLevel} XP pour le niveau ${lv + 1}`;
+  document.getElementById("xptxt").textContent = `${x} XP · ${answeredCount()}/${TOTAL}`;
+  const b = document.getElementById("badges"); b.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const el = document.createElement("div");
+    el.className = "badge" + (chapDone(c) ? " on" : "");
+    el.textContent = c.icon; el.title = c.title + (chapDone(c) ? " : badge obtenu" : " : à terminer");
+    b.appendChild(el);
+  }
+  if (celebrate && lv > lastLevel) { say(BRAISE.level(lv, LEVELS[lv - 1])); toast(`⬆ Niveau ${lv} !`); }
+  lastLevel = lv;
+}
+
+function renderTabs() {
+  const t = document.getElementById("tabs"); t.innerHTML = "";
+  for (const c of CHAPTERS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.id = "tab-" + c.id;
+    b.setAttribute("aria-selected", String(c.id === current));
+    const n = c.qs.filter(q => isAnswered(q.id)).length;
+    b.innerHTML = `${c.icon} ${c.title}<span class="cnt">${n}/${c.qs.length}</span>`;
+    b.onclick = () => { current = c.id; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); };
+    t.appendChild(b);
+  }
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+function renderChapter() {
+  const c = CHAPTERS.find(c => c.id === current);
+  const ci = CHAPTERS.indexOf(c);
+  let start = CHAPTERS.slice(0, ci).reduce((n, c) => n + c.qs.length, 0);
+  const sec = document.getElementById("chapter");
+  let html = `<div class="chap-head"><h2>${c.icon} Chapitre ${ci + 1} : ${c.title}</h2><p>${c.sub}</p></div><div class="qlist">`;
+  c.qs.forEach((q, i) => {
+    const a = answers[q.id] || {};
+    const showPrec = a.precision !== undefined && a.precision !== null && (a.precision !== "" || a._open);
+    html += `<article class="q${isAnswered(q.id) ? " done" : ""}" id="q-${q.id}">
+      <div class="q-top"><h3>${q.t}</h3><span class="num">${start + i + 1} / ${TOTAL}</span></div>
+      <p class="why">${q.why}</p>
+      <div class="opts">${q.o.map((o, k) => `<button class="opt${a.choix === k ? " sel" : ""}" id="o-${q.id}-${k}" data-q="${q.id}" data-k="${k}"><b>${o[0]}</b>${k === q.rec ? '<em class="star">⭐ ma reco</em>' : ""}<span>${o[1]}</span></button>`).join("")}</div>
+      <div class="tools">
+        <button class="tool${a.choix === "auto" ? " sel" : ""}" id="auto-${q.id}" data-auto="${q.id}">🤷 À toi de voir</button>
+        <button class="tool${showPrec ? " sel" : ""}" id="prec-${q.id}" data-prec="${q.id}">📝 Précision</button>
+        <span class="saved" id="saved-${q.id}">💾 Sauvegardé</span>
+      </div>
+      <textarea id="ta-${q.id}" data-ta="${q.id}" placeholder="Une nuance, une idée, une autre option… (jamais de mot de passe ni de clé ici)" ${showPrec ? "" : "hidden"}>${esc(a.precision || "")}</textarea>
+    </article>`;
+  });
+  html += `</div>`;
+  const done = chapDone(c);
+  html += done
+    ? `<div class="chest open"><div class="ico" aria-hidden="true">🎁</div><div><h4>Coffre ouvert · ${c.chest.title}</h4><p class="lore">« ${c.chest.lore} »</p><p class="tiny">Nouveau fragment pour le Grimoire d'Erydor, à valider comme les autres. Badge ${c.icon} obtenu, +25 XP.</p></div></div>`
+    : `<div class="chest locked"><div class="ico" aria-hidden="true">🧰</div><div><h4>Coffre verrouillé</h4><p>Réponds aux ${c.qs.length} questions du chapitre pour l'ouvrir. Il cache un fragment de l'histoire d'Erydor.</p></div></div>`;
+  if (answeredCount() === TOTAL) {
+    html += `<div class="finale"><h3>Le Conseil est clos !</h3><p>Les ${TOTAL} réponses sont gravées. Écris « c'est fait » dans le fil du projet : je relis tout, puis j'ouvre la forge, et ton héros pourra enfin remplir son sac.</p></div>`;
+  } else if (done && ci < CHAPTERS.length - 1) {
+    html += `<p><button class="tool" id="next-chap" data-next="${CHAPTERS[ci + 1].id}">Chapitre suivant : ${CHAPTERS[ci + 1].icon} ${CHAPTERS[ci + 1].title} →</button></p>`;
+  }
+  sec.innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const opt = e.target.closest("[data-k]");
+  if (opt) return choose(opt.dataset.q, Number(opt.dataset.k));
+  const au = e.target.closest("[data-auto]");
+  if (au) return choose(au.dataset.auto, "auto");
+  const pr = e.target.closest("[data-prec]");
+  if (pr) {
+    const id = pr.dataset.prec, ta = document.getElementById("ta-" + id);
+    ta.hidden = !ta.hidden; pr.classList.toggle("sel", !ta.hidden);
+    if (!ta.hidden) ta.focus();
+    return;
+  }
+  const nx = e.target.closest("[data-next]");
+  if (nx) { current = nx.dataset.next; renderTabs(); renderChapter(); window.scrollTo({ top: document.getElementById("tabs").offsetTop - 70, behavior: "smooth" }); }
+});
+
+const typing = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset && e.target.dataset.ta;
+  if (!id) return;
+  answers[id] = Object.assign({}, answers[id], { precision: e.target.value });
+  clearTimeout(typing[id]);
+  typing[id] = setTimeout(() => { save(id); if (e.target.value.trim()) say(pick(BRAISE.prec)); renderHud(true); renderTabs(); }, 900);
+});
+
+function choose(id, choix) {
+  const before = chapDoneById(id);
+  const ta = document.getElementById("ta-" + id);
+  answers[id] = Object.assign({}, answers[id], { choix, precision: ta ? ta.value : (answers[id] || {}).precision || "" });
+  const q = findQ(id);
+  if (choix === "auto") say(pick(BRAISE.shrug));
+  else if (choix === q.rec) say(pick(BRAISE.rec));
+  else say(pick(BRAISE.other));
+  save(id);
+  const after = chapDoneById(id);
+  renderChapter(); renderTabs(); renderHud(true);
+  if (!before && after) { setTimeout(() => { say(pick(BRAISE.chest)); toast("🎁 Coffre ouvert !"); }, 350); }
+  if (answeredCount() === TOTAL) setTimeout(() => say(BRAISE.done), 1400);
+  const s = document.getElementById("saved-" + id);
+  if (s) { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1600); }
+}
+function findQ(id) { for (const c of CHAPTERS) for (const q of c.qs) if (q.id === id) return q; }
+function chapDoneById(id) { return chapDone(CHAPTERS.find(c => c.qs.some(q => q.id === id))); }
+
+function payload(id) {
+  const a = answers[id] || {}, q = findQ(id), c = CHAPTERS.find(c => c.qs.includes(q));
+  const choix = a.choix;
+  const label = choix === "auto" ? "🤷 À toi de voir (→ " + q.o[q.rec][0] + ")" : (typeof choix === "number" ? q.o[choix][0] : null);
+  return { chapitre: c.title, question: q.t, choix: choix === undefined ? null : choix, reponse: label, recommandee: typeof choix === "number" ? choix === q.rec : choix === "auto", precision: a.precision || "", maj: new Date().toISOString() };
+}
+async function save(id) {
+  try { localStorage.setItem("lumenfall-conseil-objets", JSON.stringify(answers)); } catch (e) {}
+  if (!db) return;
+  if (saving[id]) { pendingSave[id] = true; return; }
+  saving[id] = true;
+  try { await db.doc("reponses/" + id).set(payload(id)); }
+  catch (e) { setNote("⚠ Une réponse n'a pas pu être envoyée au serveur. Elle reste gardée dans ce navigateur ; réessaie en la recliquant."); }
+  saving[id] = false;
+  if (pendingSave[id]) { pendingSave[id] = false; save(id); }
+}
+
+function say(t) { document.getElementById("bubble").innerHTML = "<b>Braise :</b> " + esc(t); }
+let tt;
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1800); }
+function setNote(t) { document.getElementById("storenote").textContent = t; }
+
+function boot() {
+  try { const l = JSON.parse(localStorage.getItem("lumenfall-conseil-objets") || "{}"); if (l && typeof l === "object") answers = l; } catch (e) {}
+  lastLevel = levelOf(xp());
+  renderTabs(); renderChapter(); renderHud(false);
+  setNote("Connexion au registre de Braise…");
+  (async () => {
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { setNote("Le registre partagé n'est pas joignable ici : tes réponses restent dans ce navigateur. Ouvre la page depuis claude.ai, connecté, pour que je puisse les lire."); return; }
+    try {
+      const snap = await db.collection("reponses").get();
+      const remote = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = { choix: v.choix, precision: v.precision || "" }; });
+      // Le registre fait foi ; ce qui n'existe qu'en local est renvoyé.
+      const localOnly = Object.keys(answers).filter(k => !remote[k] && findQ(k));
+      answers = Object.assign({}, answers, remote);
+      for (const k of localOnly) save(k);
+      storeOk = true;
+      setNote("✓ Registre connecté : chaque réponse est sauvegardée toute seule, et je la relis de mon côté.");
+      lastLevel = levelOf(xp());
+      renderTabs(); renderChapter(); renderHud(false);
+      if (answeredCount() > 0 && answeredCount() < TOTAL) say(`Re-bonjour ! ${answeredCount()} réponses déjà gravées, plus que ${TOTAL - answeredCount()}.`);
+    } catch (e) {
+      setNote("Le registre n'a pas répondu. Tes réponses restent dans ce navigateur pour l'instant ; recharge la page dans un moment.");
+    }
+  })();
+}
+boot();
+</script>
