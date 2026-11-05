@@ -18,12 +18,15 @@ const WorldScreen := preload("res://scripts/world_screen.gd")
 var ui_root: CanvasLayer
 var current: Node
 var args := {}
+var _journal_t := 0.0
+var _journal_min := 0
 
 
 func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		var kv: PackedStringArray = a.trim_prefix("--").split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else "true"
+	_journal_debut()
 	get_window().title = "Lumenfall, les Chroniques d'Erydor"
 	get_window().min_size = Vector2i(640, 360)
 	RenderingServer.set_default_clear_color(UI.NIGHT)
@@ -34,6 +37,29 @@ func _ready() -> void:
 		show_heroes()
 	else:
 		show_login()
+
+
+## Le journal de bord (godot.log) : de quoi comprendre un plantage ou un gel
+## après coup. Une ligne au lancement, une par minute, une à chaque saccade.
+func _journal_debut() -> void:
+	print("[jeu] Lumenfall %s · %s · %s · %s" % [ProjectSettings.get_setting("application/config/version"),
+		OS.get_name(), RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()])
+
+
+func _journal_etat() -> String:
+	return "écran %s, %d ips, %d Mo, %d nœuds, %d objets" % [current.get_script().resource_path.get_file().get_basename() if current != null and current.get_script() != null else "?",
+		Engine.get_frames_per_second(), int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0),
+		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_COUNT))]
+
+
+func _process(delta: float) -> void:
+	if delta > 0.4:
+		print("[saccade] image de %.1f s (%s)" % [delta, _journal_etat()])
+	_journal_t += delta
+	if _journal_t >= 60.0:
+		_journal_t = 0.0
+		_journal_min += 1
+		print("[jeu] %d min · %s" % [_journal_min, _journal_etat()])
 
 
 func _swap(node: Node) -> void:
@@ -66,6 +92,7 @@ func enter_world(hero: Dictionary) -> void:
 
 
 func _on_disconnected(reason: String) -> void:
+	print("[jeu] déconnecté : %s (%s)" % [reason, _journal_etat()])
 	if current is WorldScreen:
 		show_login(reason + " Reconnecte-toi pour reprendre l'aventure.")
 

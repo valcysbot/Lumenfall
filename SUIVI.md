@@ -400,6 +400,13 @@
 
 ## 📦 Notes de version
 
+### V0.6.1 · Petits correctifs (5 novembre 2026)
+
+- 🖥️ **Sur PC, le jeu passe à Vulkan** au lieu d'OpenGL, pour éviter les plantages et les gels vus sur une carte NVIDIA. Si ta carte ne connaît pas Vulkan, le jeu revient tout seul à OpenGL. Le rendu ne change pas. Sur téléphone, rien ne change.
+- 📓 **Un journal de bord** dans `godot.log` : une ligne par minute et une à chaque saccade. Si le jeu plante encore, envoie ce fichier (dans `%APPDATA%\Godot\app_userdata\Lumenfall\logs`).
+- 🎲 **On peut rater, un peu** : 5 % de chance de rater une récolte, un dépeçage ou une fabrication au niveau demandé, moins en montant de niveau, 1 % au minimum. Une fabrication ratée gâche la moitié des matériaux.
+- La v0.6.0 peut toujours entrer dans le monde.
+
 ### V0.6 · « Mille trésors » (5 novembre 2026)
 
 L'Acte V arrive d'un coup : objets, métiers et économie.
